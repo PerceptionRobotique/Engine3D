@@ -1,0 +1,783 @@
+#include "Camera.h"
+
+Camera::Camera()
+    : size(1920, 1080)
+    , FBO(nullptr)
+    , textureFBO(nullptr)
+    , backgroundColor(0, 0, 0, 255)
+    , samples(0)
+    , projectionType(PERSPECTIVE)
+    , viewPoint(FIRST_PERSON_VIEW)
+    , nearPlane(0.1f)
+    , farPlane(500.0f)
+    , au(540)
+    , av(540)
+    , ku(30)
+    , kv(30)
+    , u0(size.width()/2.0f)
+    , v0(size.height()/2.0f)
+{
+}
+
+Camera::~Camera()
+{
+    if(textureFBO) delete textureFBO;
+    if(FBO) delete FBO;
+}
+
+QOpenGLFramebufferObject* Camera::getFBO()
+{
+    return FBO;
+}
+
+bool Camera::bind()
+{
+    if(FBO == nullptr)
+    {
+        QOpenGLFramebufferObjectFormat FBO_Format;
+        FBO_Format.setAttachment(QOpenGLFramebufferObject::Depth);
+        FBO_Format.setSamples(samples);
+        FBO = new QOpenGLFramebufferObject(size, FBO_Format);
+    }
+    return FBO->bind();
+}
+
+void Camera::release()
+{
+    FBO->release();
+}
+
+GLuint Camera::texture()
+{
+    if(!textureFBO)
+    {
+        textureFBO = new QOpenGLFramebufferObject(size);
+        textureFBO->release();
+    }
+
+    QOpenGLFramebufferObject::blitFramebuffer(textureFBO, FBO, GL_COLOR_BUFFER_BIT);
+    return textureFBO->texture();
+}
+
+QImage Camera::toImage()
+{
+    return FBO->toImage();
+}
+
+void Camera::setSamples(unsigned int _samples)
+{
+    samples = _samples;
+    if(FBO)
+    {
+        delete FBO;
+        FBO = nullptr;
+    }
+    emit objectChanged();
+}
+
+void Camera::setSize(QSize _size)
+{
+    float fov = getFOV();
+    size = _size;
+    u0 = size.width()/2.0f;
+    v0 = size.height()/2.0f;
+    setFOV(fov);
+
+    if(FBO)
+    {
+        delete FBO;
+        FBO = nullptr;
+    }
+
+    if(textureFBO)
+    {
+        delete textureFBO;
+        textureFBO = nullptr;
+    }
+
+    emit sizeChanged();
+    emit objectChanged();
+}
+
+void Camera::setSize(int _width, int _height)
+{
+    setSize(QSize(_width, _height));
+}
+
+void Camera::setWidth(int _width)
+{
+    setSize(_width, size.height());
+}
+
+void Camera::setHeight(int _height)
+{
+    setSize(size.width(), _height);
+}
+
+void Camera::setBackgroundColor(QColor _backgroundColor)
+{
+    backgroundColor = _backgroundColor;
+}
+
+void Camera::setBackgroundColor(float red, float green, float blue, float alpha)
+{
+    backgroundColor = QColor(red * 255.0f, green * 255.0f, blue * 255.0f, alpha * 255.0f);
+}
+
+void Camera::setViewCenter(vec3 _viewCenter)
+{
+    viewCenter = _viewCenter;
+    emit objectChanged();
+}
+
+void Camera::setNearPlane(float _nearPlane)
+{
+    nearPlane = _nearPlane;
+    emit objectChanged();
+}
+
+void Camera::setFarPlane(float _farPlane)
+{
+    farPlane = _farPlane;
+    emit objectChanged();
+}
+
+void Camera::setProjectionType(ProjectionType _projectionType)
+{
+    projectionType = _projectionType;
+    emit objectChanged();
+}
+
+void Camera::setCustomProjection(mat4 _customProjection)
+{
+    customProjection = _customProjection;
+    if(projectionType == CUSTOM)
+        emit objectChanged();
+}
+
+void Camera::setViewPoint(ViewPoint _viewPoint)
+{
+    viewPoint = _viewPoint;
+    if(viewPoint == THIRD_PERSON_VIEW) lookAt(viewCenter);
+    emit objectChanged();
+}
+
+void Camera::setcMw(mat4 _cMw)
+{
+    setPose(glm::inverse(_cMw));
+}
+
+void Camera::setwMc(mat4 _wMc)
+{
+    setPose(_wMc);
+}
+
+void Camera::lookAt(vec3 _point)
+{
+    vec3 position = getPosition();
+    setcMw(glm::lookAt(getPosition(), _point, vec3(0, 1, 0)));
+    setPosition(position);
+    if(viewPoint == THIRD_PERSON_VIEW) viewCenter = _point;
+}
+
+void Camera::lookAt(Model3D* model)
+{
+    lookAt((model->getwMo() * model->getAABB()).center);
+}
+
+void Camera::setView(Model3D* model, Camera::View view)
+{
+    switch(view)
+    {
+    case FRONT:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(center);
+        setRotation(vec3(0, 0, 0));
+        translate(vec3(0, 0, distance));
+        setViewCenter(center);
+        break;
+    }
+
+    case BACK:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(center);
+        setRotation(vec3(0, 180, 0));
+        translate(vec3(0, 0, distance));
+        setViewCenter(center);
+        break;
+    }
+
+    case TOP:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(vec3(center.x, center.y+distance, center.z));
+        setRotation(vec3(-90, 0, 0));
+        setViewCenter(center);
+        break;
+    }
+
+    case BOTTOM:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(vec3(center.x, center.y-distance, center.z));
+        setRotation(vec3(90, 0, 0));
+        setViewCenter(center);
+        break;
+    }
+
+    case LEFT:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(center);
+        setRotation(vec3(0, -90, 0));
+        translate(vec3(0, 0, distance));
+        setViewCenter(center);
+        break;
+    }
+
+    case RIGHT:
+    {
+        vec3 center = (model->getwMo() * model->getAABB()).center;
+        float distance = glm::distance(center, getPosition());
+        setPosition(center);
+        setRotation(vec3(0, 90, 0));
+        translate(vec3(0, 0, distance));
+        setViewCenter(center);
+        break;
+    }
+
+    case CENTER:
+    {
+        lookAt(model);
+        if(getProjectionType() != Camera::EQUIRECTANGULAR)
+        {
+            QVector<glm::vec3> box = model->getBox();
+            vec4 point(0, 0, 0, 1.0f);
+            vec3 point2D(0, 0, 0);
+            float currentMax = 0;
+            for(int i = 0 ; i < box.count() ; i++)
+            {
+                vec3 _point2D = getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                if(max(abs(_point2D.x), abs(_point2D.y)) > currentMax || i == 0)
+                {
+                    currentMax = max(abs(_point2D.x), abs(_point2D.y));
+                    point2D = _point2D;
+                    point = getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                }
+            }
+            float factor = point.y;
+            float fov = getFOV();
+            if(abs(point2D.x) > abs(point2D.y))
+            {
+                factor = point.x;
+                fov = getHFOV();
+            }
+            if(getProjectionType() == Camera::ORTHOGRAPHIC)
+            {
+                fov = 180;
+            }
+            float d = factor / sin(radians(fov/2.0f)) * cos(radians(fov/2.0f));
+            translate(vec3(0, 0, point.z+abs(d)));
+        }
+        break;
+    }
+    }
+}
+
+mat4 Camera::getProjection()
+{
+    mat4 projection;
+    switch(projectionType)
+    {
+    case PERSPECTIVE:
+        projection = mat4(
+            2.0f * au / size.width(),               0.0f,                                                       0.0f,                                                           	0.0f ,
+            0.0f,                                   (2.0f * av / size.height()),                        		0.0f,                                                       		0.0f,
+            -(2.0f * (u0 / size.width()) - 1.0f),	-(2.0f * ((size.height() - v0) / size.height()) - 1.0f),	(-1.0f * (farPlane + nearPlane) / (farPlane - nearPlane)),	-1.0f,
+            0.0f,                                   0.0f,                                                   	(-2.0f * farPlane * nearPlane / (farPlane - nearPlane)),	0.0f
+        );
+        break;
+
+    case ORTHOGRAPHIC:
+    {
+        float aspectRatio = getAspectRatio();
+        float BM = distance(getPosition(), viewCenter) * size.width() / (2 * au);
+
+        float XM = BM;
+        float Xm = -BM;
+        float YM = BM / aspectRatio;
+        float Ym = -BM / aspectRatio;
+
+        projection = mat4(
+            (2.0f / (XM - Xm)),     0.0f,						0.0f,                                                   	0.0f,
+            0.0f,               	(2.0f / (YM - Ym)),			0.0f,                                               		0.0f,
+            0.0f,               	0.0f,						(-2.0f / (farPlane - nearPlane)),                   	0.0f,
+            -(XM + Xm) / (XM - Xm),	-(YM + Ym) / (YM - Ym),		-(farPlane + nearPlane) / (farPlane - nearPlane),	1.0f
+        );
+        break;
+    }
+
+    case EQUIRECTANGULAR:
+    {
+        float arg1122 = 1.0f / pi<float>();
+        projection = mat4(
+            arg1122,    0.0f,       0.0f,                                                       0.0f,
+            0.0f,       arg1122,    0.0f,                                                       0.0f,
+            0.0f,       0.0f,       (-2.0f / (farPlane - nearPlane)),                           0.0f,
+            0.0f,       0.0f,       -(farPlane + nearPlane) / (farPlane - nearPlane),           1.0f
+        );
+        break;
+    }
+
+    case CUSTOM:
+        projection = customProjection;
+        break;
+    }
+    return projection;
+}
+
+float* Camera::getProjectionPtr()
+{
+    proj = getProjection();
+    return value_ptr(proj);
+}
+
+mat4 Camera::getcMw()
+{
+    return inverse(getPose());
+}
+
+float* Camera::getcMwPtr()
+{
+    view = inverse(getPose());
+    return value_ptr(view);
+}
+
+mat4 Camera::getwMc()
+{
+    return getPose();
+}
+
+bool Camera::cullingTest(Model3D* model)
+{
+    QVector<glm::vec3> box = model->getBox();
+    QVector<vec4> points;
+    float minZ = 0.0f, maxZ = 0.0f;
+    for(int i = 0 ; i < box.count() ; i++)
+    {
+        float z = -vec4(getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1)).z;
+        if(minZ > z || i == 0) minZ = z;
+        if(maxZ < z || i == 0) maxZ = z;
+    }
+    for(int i = 0 ; i < box.count() ; i++)
+    {
+        float z = vec4(getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1)).z;
+        if((-z >= nearPlane && -z <= farPlane) || (minZ <= nearPlane && maxZ >= farPlane))
+        {
+            points.append(getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1));
+            points.last() /= points.last().w;
+        }
+    }
+
+    if(!points.isEmpty())
+    {
+        vec4 min = points[0];
+        vec4 max = points[0];
+        for(int i = 1 ; i < points.count() ; i++)
+        {
+            if(min.x > points[i].x) min.x = points[i].x;
+            if(min.y > points[i].y) min.y = points[i].y;
+            if(min.z > points[i].z) min.z = points[i].z;
+
+            if(max.x < points[i].x) max.x = points[i].x;
+            if(max.y < points[i].y) max.y = points[i].y;
+            if(max.z < points[i].z) max.z = points[i].z;
+        }
+
+        float limit = 1.0f;
+
+        return (min.x >= -limit && min.x <= limit && min.y >= -limit && min.y <= limit) ||
+                (min.x >= -limit && min.x <= limit && max.y >= -limit && max.y <= limit) ||
+                (max.x >= -limit && max.x <= limit && min.y >= -limit && min.y <= limit) ||
+                (max.x >= -limit && max.x <= limit && max.y >= -limit && max.y <= limit) ||
+                (min.y <= -limit && max.y >= limit && ((min.x >= -limit && min.x <= limit) || (max.x >= -limit && max.x <= limit))) ||
+                (min.x <= -limit && max.x >= limit && ((min.y >= -limit && min.y <= limit) || (max.y >= -limit && max.y <= limit))) ||
+                (min.x <= -limit && max.x >= limit && min.y <= -limit && max.y >= limit)
+                ;
+    }
+    else
+        return false;
+
+//    bool result = true;
+//    int out,in;
+
+//    // for each plane do ...
+//    for(int i=0; i < 6; i++)
+//    {
+//        // reset counters for corners in and out
+//        out=0;in=0;
+//        // for each corner of the box do ...
+//        // get out of the cycle as soon as a box as corners
+//        // both inside and out of the frustum
+//        for (int k = 0; k < 8 && (in==0 || out==0); k++) {
+
+//            // is the corner outside or inside
+//            if (pl[i].distance(QVector3D(model->getBox()[k * 3], model->getBox()[k * 3 + 1], model->getBox()[k * 3 + 2])) < 0)
+//                out++;
+//            else
+//                in++;
+//        }
+//        //if all corners are out
+//        if (!in)
+//            return (false);
+//        // if some corners are out and others are in
+//        else if (out)
+//            result = true;
+//    }
+//    return(result);
+}
+
+void Camera::translate(const vec3 &_translation, const bool &_onGround)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::translate(_translation, _onGround);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        if(_translation.z < 0 && abs(_translation.z) > glm::distance(getPosition(), viewCenter))
+            Object3DQt::translate(vec3(_translation.x, _translation.y, -glm::distance(getPosition(), viewCenter)+1), _onGround);
+        else
+            Object3DQt::translate(_translation, _onGround);
+        float dist = glm::distance(getPosition(), viewCenter);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -dist))[3];
+        break;
+    }
+}
+
+void Camera::rotate(const float& _angle, const vec3 &_axis, const bool &_verticalAxis)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::rotate(_angle, _axis, _verticalAxis);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        float dist = glm::distance(getPosition(), viewCenter);
+        Object3DQt::translate(vec3(0, 0, -dist));
+        Object3DQt::rotate(_angle, _axis, _verticalAxis);
+        Object3DQt::translate(vec3(0, 0, dist));
+        float roll = getRoll();
+        lookAt(viewCenter);
+        Object3DQt::setRoll(roll);
+        break;
+    }
+}
+
+void Camera::rotate(const mat4 &_rotation, const bool &_verticalAxis)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::rotate(_rotation, _verticalAxis);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        float dist = glm::distance(getPosition(), viewCenter);
+        Object3DQt::translate(vec3(0, 0, -dist));
+        Object3DQt::rotate(_rotation, _verticalAxis);
+        Object3DQt::translate(vec3(0, 0, dist));
+        float roll = getRoll();
+        lookAt(viewCenter);
+        Object3DQt::setRoll(roll);
+        break;
+    }
+}
+
+void Camera::yaw(const float &_yaw)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::yaw(_yaw);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        float dist = glm::distance(getPosition(), viewCenter);
+        Object3DQt::translate(vec3(0, 0, -dist));
+        Object3DQt::yaw(_yaw);
+        Object3DQt::translate(vec3(0, 0, dist));
+        float roll = getRoll();
+        lookAt(viewCenter);
+        Object3DQt::setRoll(roll);
+        break;
+    }
+}
+
+void Camera::pitch(const float &_pitch)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::pitch(_pitch);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        float dist = glm::distance(getPosition(), viewCenter);
+        Object3DQt::translate(vec3(0, 0, -dist));
+        Object3DQt::pitch(_pitch);
+        Object3DQt::translate(vec3(0, 0, dist));
+        float roll = getRoll();
+        lookAt(viewCenter);
+        Object3DQt::setRoll(roll);
+        break;
+    }
+}
+
+void Camera::roll(const float &_roll)
+{
+    switch(viewPoint)
+    {
+    case FIRST_PERSON_VIEW:
+        Object3DQt::roll(_roll);
+        viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+        break;
+
+    case THIRD_PERSON_VIEW:
+        float dist = glm::distance(getPosition(), viewCenter);
+        Object3DQt::translate(vec3(0, 0, -dist));
+        Object3DQt::roll(_roll);
+        Object3DQt::translate(vec3(0, 0, dist));
+        float roll = getRoll();
+        lookAt(viewCenter);
+        Object3DQt::setRoll(roll);
+        break;
+    }
+}
+
+void Camera::setPose(const mat4 &_pose)
+{
+    Object3DQt::setPose(_pose);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setPosition(const vec3 &_position)
+{
+    Object3DQt::setPosition(_position);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setPositionX(const float& _tx)
+{
+    Object3DQt::setPositionX(_tx);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setPositionY(const float& _ty)
+{
+    Object3DQt::setPositionY(_ty);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setPositionZ(const float& _tz)
+{
+    Object3DQt::setPositionZ(_tz);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRotation(vec3 _rotation)
+{
+    Object3DQt::setRotation(_rotation);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRotation(mat4 _rotation)
+{
+    Object3DQt::setRotation(_rotation);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRotationX(const float &_rx)
+{
+    Object3DQt::setRotationX(_rx);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRotationY(const float &_ry)
+{
+    Object3DQt::setRotationY(_ry);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRotationZ(const float &_rz)
+{
+    Object3DQt::setRotationZ(_rz);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setYawPitchRoll(const float &_yaw, const float &_pitch, const float &_roll)
+{
+    Object3DQt::setYawPitchRoll(_yaw, _pitch, _roll);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setYaw(const float &_yaw)
+{
+    Object3DQt::setYaw(_yaw);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setPitch(const float &_pitch)
+{
+    Object3DQt::setPitch(_pitch);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+void Camera::setRoll(const float &_roll)
+{
+    Object3DQt::setRoll(_roll);
+    viewCenter = glm::translate(getwMc(), vec3(0, 0, -1))[3];
+}
+
+QColor Camera::getBackgroundColor() const
+{
+    return backgroundColor;
+}
+
+vec3 Camera::getViewCenter()
+{
+    return viewCenter;
+}
+
+float Camera::getAspectRatio()
+{
+    return (float)size.width()/size.height();
+}
+
+float Camera::getNearPlane()
+{
+    return nearPlane;
+}
+
+float Camera::getFarPlane()
+{
+    return farPlane;
+}
+
+float Camera::getAu()
+{
+    return au;
+}
+
+void Camera::setAu(double _au)
+{
+    float hfov = degrees(2.0f * atan(size.width() / (2.0f * _au)));
+    setFOV(2.0f * degrees(atan(tan(radians(hfov)/2.0f) / getAspectRatio())));
+}
+
+float Camera::getAv()
+{
+    return av;
+}
+
+void Camera::setAv(double _av)
+{
+    setFOV(degrees(2.0f * atan(size.height() / (2.0f * _av))));
+}
+
+float Camera::getKu()
+{
+    return ku;
+}
+
+void Camera::setKu(double _ku)
+{
+    ku = _ku;
+    emit objectChanged();
+}
+
+float Camera::getKv()
+{
+    return kv;
+}
+
+void Camera::setKv(double _kv)
+{
+    kv = _kv;
+    emit objectChanged();
+}
+
+float Camera::getU0()
+{
+    return u0;
+}
+
+void Camera::setU0(double _u0)
+{
+    u0 = _u0;
+    emit objectChanged();
+}
+
+float Camera::getV0()
+{
+    return v0;
+}
+
+void Camera::setV0(double _v0)
+{
+    v0 = _v0;
+    emit objectChanged();
+}
+
+void Camera::setNearPlane(double _nearPlane)
+{
+    setNearPlane((float)_nearPlane);
+}
+
+void Camera::setFarPlane(double _farPlane)
+{
+    setFarPlane((float)_farPlane);
+}
+
+float Camera::getFOV()
+{
+    return 2.0f * degrees(atan(size.height()/(2.0f * av)));
+}
+
+float Camera::getHFOV()
+{
+    return 2.0f * degrees(atan(size.width()/(2.0f * au)));
+}
+
+Camera::ViewPoint Camera::getViewPoint()
+{
+    return viewPoint;
+}
+
+void Camera::setFOV(float _fov)
+{
+    setFOV((double)_fov);
+}
+
+void Camera::setFOV(double _fov)
+{
+    float hfov = 2.0f * degrees(atan(tan(radians(_fov)/2.0f) * getAspectRatio()));
+    au = size.width()/(2.0f * tan(radians(hfov/2.0f)));
+    av = size.height()/(2.0f * tan(radians(_fov/2.0f)));
+    emit fovChanged(_fov);
+    emit objectChanged();
+}
