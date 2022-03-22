@@ -6,7 +6,7 @@ ModelPTS::ModelPTS(QString _fileName)
     liveLoading = false;
     primitives = Model3D::POINTS;
 
-    QTextStream ts(&file);
+    QTextStream ts(file);
     QString text;
     QStringList elements;
 
@@ -67,7 +67,7 @@ void ModelPTS::loadRAMthread()
 {
     int loadingPourcentage = 0;
     bool firstBlocComputed = false;
-    QTextStream ts(&file);
+    QTextStream ts(file);
 
     QString halfLine = "";
     QString line = ts.readLine();

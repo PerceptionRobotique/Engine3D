@@ -15,7 +15,7 @@
 #include "ModelBIN.h"
 #include "Octree.h"
 
-class ENGINE3D_EXPORT Engine3D : private QObject, public QOpenGLFunctions
+class ENGINE3D_EXPORT Engine3D : public QObject, public QOpenGLFunctions
 {
     Q_OBJECT
 
@@ -59,6 +59,16 @@ private:
     bool opacityEnabled;
     float opacity;
     BlendFunction blendFunction;
+
+    QMutex drawMutex;
+    QThread* modelsUpdater;
+    void updateModels();
+
+private slots:
+    void modelsUpdaterFinished();
+
+signals:
+    void askUpdate();
 };
 
 #endif // ENGINE3D_H

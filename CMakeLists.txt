@@ -96,7 +96,6 @@ set(HEADERS
     include/Octree.h
     include/ModelPTS.h
     include/ModelBIN.h
-    include/ModelOCT.h
     include/Object3D.h
     include/Object3DQt.h
     include/Engine3D_global.h
@@ -109,7 +108,6 @@ set(SOURCES
     src/Model3D.cpp
     src/ModelPTS.cpp
     src/ModelBIN.cpp
-    src/ModelOCT.cpp
     src/Octree.cpp
     src/Object3D.cpp
     src/Object3DQt.cpp

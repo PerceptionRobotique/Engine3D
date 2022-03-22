@@ -91,6 +91,7 @@ public:
     bool getShowIntensity() const;
     unsigned long long getVertexNumber() const;
     bool isPrepared() const;
+    bool isOnScreen() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
 
@@ -118,8 +119,8 @@ public slots:
     void loadBoxVRAM();
     void unloadBoxVRAM();
 
-    virtual void draw(QOpenGLShaderProgram* shader);
-    void drawBox(QOpenGLShaderProgram* shader);
+    virtual bool draw(QOpenGLShaderProgram* shader);
+    virtual bool drawBox(QOpenGLShaderProgram* shader);
 
     void setwMo(mat4 wMo);
 
@@ -157,7 +158,7 @@ private:
 protected:
     void setVertexOnRAM(unsigned long long value);
 
-    QFile file;
+    QFile* file;
     QFileInfo fileInfo;
     QSettings* settings;
 

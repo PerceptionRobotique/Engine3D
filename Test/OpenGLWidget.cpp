@@ -24,6 +24,8 @@ OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
     cameraController.setTranslationSensitivity(7);
     cameraController.setRotationSensitivity(7);
     cameraController.setMouseCaptureEnabled(true);
+
+    connect(&engine, SIGNAL(askUpdate()), this, SLOT(update()));
 }
 
 Engine3D& OpenGLWidget::getEngine()

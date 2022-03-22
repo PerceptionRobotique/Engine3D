@@ -6,9 +6,12 @@
 class ENGINE3D_EXPORT ModelBIN : public Model3D
 {
 public:
-	ModelBIN(QString _fileName);
+	ModelBIN(QString _fileName = "");
 
-	void loadRAMthread() override;
+	virtual void loadRAMthread() override;
+
+protected:
+	void prepare();
 
 protected:
 	long long filePos;

@@ -7,6 +7,7 @@ Engine3D::Engine3D(QObject* parent)
     , opacityEnabled(false)
     , opacity(1.0f)
     , blendFunction(BLEND_1)
+    , modelsUpdater(nullptr)
 {
     cameras.append(new Camera);
     mainCamera = cameras.last();
@@ -70,7 +71,7 @@ void Engine3D::openModel(QString fileName)
     QFileInfo fileInfo(fileName);
     if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName));
     else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName));
-    //else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(fileName));
+    else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName));
 }
 
 void Engine3D::closeModel(unsigned int index)
@@ -81,6 +82,15 @@ void Engine3D::closeModel(unsigned int index)
 
 void Engine3D::update()
 {
+    if (!modelsUpdater)
+    {
+        modelsUpdater = QThread::create(&Engine3D::updateModels, this);
+        connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
+        modelsUpdater->start();
+    }
+
+    static unsigned long long frameNumber = 0;
+
     for (Camera* camera : cameras)
     {
         if (camera->bind())
@@ -101,15 +111,17 @@ void Engine3D::update()
 
                 for (Model3D* model : models)
                 {
-                    if (camera->cullingTest(model))
+                    model->draw(shaders[Model3D::POINTS]);
+                    Octree* octree = dynamic_cast<Octree*>(model);
+                    if (octree)
                     {
-                        model->setOnScreen(true);
-                        model->draw(shaders[Model3D::POINTS]);
-                    }
-                    else
-                    {
-                        model->setOnScreen(false);
-                        model->unloadVRAM();
+                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                        {
+                            for (Octree* child : octree->getDepthChildren(i))
+                            {
+                                child->draw(shaders[Model3D::POINTS]);
+                            }
+                        }
                     }
                 }
                 shaders[Model3D::POINTS]->release();
@@ -123,6 +135,17 @@ void Engine3D::update()
                 for (Model3D* model : models)
                 {
                     if (camera->cullingTest(model)) model->drawBox(boxShader);
+                    Octree* octree = dynamic_cast<Octree*>(model);
+                    if (octree)
+                    {
+                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                        {
+                            for (Octree* child : octree->getDepthChildren(i))
+                            {
+                                child->drawBox(boxShader);
+                            }
+                        }
+                    }
                 }
                 boxShader->release();
             }
@@ -134,6 +157,8 @@ void Engine3D::update()
 
     GLenum err;
     while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
+
+    qDebug() << ++frameNumber;
 }
 
 void Engine3D::setPointSizeEnabled(bool enabled)
@@ -183,4 +208,30 @@ void Engine3D::setBlendFunction(BlendFunction _blendFunction)
 {
     blendFunction = _blendFunction;
     glBlendFunc(GL_SRC_ALPHA, blendFunction);
+}
+
+void Engine3D::updateModels()
+{
+    for (Model3D* model : models)
+    {
+        model->setOnScreen(mainCamera->cullingTest(model));
+        Octree* octree = dynamic_cast<Octree*>(model);
+        if (octree)
+        {
+            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+            {
+                for (Octree* child : octree->getDepthChildren(i))
+                {
+                    child->setOnScreen(mainCamera->cullingTest(child));
+                }
+            }
+        }
+    }
+}
+
+void Engine3D::modelsUpdaterFinished()
+{
+    delete modelsUpdater;
+    modelsUpdater = nullptr;
+    emit askUpdate();
 }
