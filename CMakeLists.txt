@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(WIN32)
     if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-        set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "Install directory" FORCE)
+        set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install CACHE PATH "Install directory" FORCE)
     endif()
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
@@ -31,6 +31,8 @@ if(WIN32)
 
     set(WITH_CONTROLLER OFF CACHE BOOL "Include controller functions")
     set(WITH_VR OFF CACHE BOOL "Include VR functions")
+
+    set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
 elseif(UNIX)
     set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
     set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
@@ -93,6 +95,8 @@ set(HEADERS
     include/Model3D.h
     include/Octree.h
     include/ModelPTS.h
+    include/ModelBIN.h
+    include/ModelOCT.h
     include/Object3D.h
     include/Object3DQt.h
     include/Engine3D_global.h
@@ -103,8 +107,10 @@ set(SOURCES
     src/Camera.cpp
     src/CameraController.cpp
     src/Model3D.cpp
-    src/Octree.cpp
     src/ModelPTS.cpp
+    src/ModelBIN.cpp
+    src/ModelOCT.cpp
+    src/Octree.cpp
     src/Object3D.cpp
     src/Object3DQt.cpp
     src/Engine3D.cpp
@@ -112,6 +118,14 @@ set(SOURCES
 
 set(RESOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Resources.qrc
+)
+
+set(SHADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Point.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Point.frag
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.frag
 )
 
 if(${QT_VERSION_MAJOR} EQUAL 5)
@@ -127,6 +141,8 @@ if(BUILD_SHARED_LIBS)
 
         ${RESOURCES}
         ${QRC}
+
+        ${SHADERS}
 
         ${EXTRA_SOURCES}
     )
@@ -176,6 +192,20 @@ elseif(UNIX)
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
         DESTINATION ${CMAKE_INSTALL_PREFIX}/Engine3D
         FILES_MATCHING PATTERN "include/*.h*"
+    )
+endif()
+
+set(Engine3D_FOUND ON)
+set(Engine3D_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
+
+if(BUILD_EXAMPLE)
+    add_subdirectory(Test)
+    add_custom_command(TARGET Engine3D POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+        $<TARGET_FILE_DIR:Example>
     )
 endif()
 

@@ -3,6 +3,7 @@
 ModelPTS::ModelPTS(QString _fileName)
     : Model3D(_fileName)
 {
+    liveLoading = false;
     primitives = Model3D::POINTS;
 
     QTextStream ts(&file);
@@ -42,197 +43,202 @@ ModelPTS::ModelPTS(QString _fileName)
     if (elements.count() > 6)
         m_hasIntensity = true;
 
-    QThread* ramLoader = QThread::create(&ModelPTS::loadRAM, this);
-    connect(ramLoader, SIGNAL(finished()), ramLoader, SLOT(deleteLater()));
+    ts.seek(0);
+    ts.flush();
+
+    ramLoaderMutex.lock();
+    ramLoader = QThread::create(&ModelPTS::loadRAMthread, this);
+    connect(ramLoader, SIGNAL(finished()), this, SLOT(loadingRAMfinished()));
     ramLoader->start();
 }
 
-void ModelPTS::loadRAM()
+ModelPTS::~ModelPTS()
 {
-    static QMutex ramLoaderMutex;
-
-    if (ramLoaderMutex.try_lock())
+    if (ramLoader != nullptr)
     {
-        if (!onRAM)
-        {
-            int loadingPourcentage = 0;
-            bool firstBlocComputed = false;
-            QTextStream ts(&file);
-
-            QString halfLine = "";
-            QString line = ts.readLine();
-            QStringList elements = line.split(' ');
-            elements.removeAll("");
-            if (elements.count() >= 3)
-            {
-                ts.seek(0);
-                ts.flush();
-            }
-
-            QVector<QThread*> loaders;
-            QList<QStringList> computedLines;
-            QList<AABB*> computedAABB;
-            QList<QVector<glm::vec3>*> computedPos;
-            QList<QVector<glm::vec3>*> computedColor;
-            QList<QVector<float>*> computedIntensity;
-
-            for (unsigned int i = 0; i < (unsigned int)QThread::idealThreadCount() && !ts.atEnd() && !QThread::currentThread()->isInterruptionRequested(); i++)
-            {
-                QString text = halfLine + ts.read(BYTES_PER_READ);
-                computedLines.append(text.split('\n'));
-                if (!ts.atEnd())
-                {
-                    halfLine = computedLines.last().last();
-                    computedLines.last().pop_back();
-                }
-
-                computedAABB.append(new AABB);
-                computedPos.append(new QVector<glm::vec3>);
-                computedColor.append(new QVector<glm::vec3>);
-                computedIntensity.append(new QVector<float>);
-
-                loaders.append(QThread::create(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
-                loaders.last()->start();
-            }
-
-            while (!ts.atEnd() && !QThread::currentThread()->isInterruptionRequested())
-            {
-                loaders.first()->wait();
-
-                //AABB
-                if (!firstBlocComputed)
-                {
-                    aabb = *computedAABB.first();
-                    firstBlocComputed = true;
-                }
-                else
-                {
-                    if (computedAABB.first()->min.x < aabb.min.x) aabb.min.x = computedAABB.first()->min.x;
-                    if (computedAABB.first()->min.y < aabb.min.y) aabb.min.y = computedAABB.first()->min.y;
-                    if (computedAABB.first()->min.z < aabb.min.z) aabb.min.z = computedAABB.first()->min.z;
-
-                    if (computedAABB.first()->max.x > aabb.max.x) aabb.max.x = computedAABB.first()->max.x;
-                    if (computedAABB.first()->max.y > aabb.max.y) aabb.max.y = computedAABB.first()->max.y;
-                    if (computedAABB.first()->max.z > aabb.max.z) aabb.max.z = computedAABB.first()->max.z;
-                }
-
-                //BUFFERS
-                pos.append(*computedPos.first());
-                color.append(*computedColor.first());
-                intensity.append(*computedIntensity.first());
-
-                loaders.first()->deleteLater();
-                delete computedAABB.first();
-                delete computedPos.first();
-                delete computedColor.first();
-                delete computedIntensity.first();
-                ;
-                loaders.pop_front();
-                computedLines.pop_front();
-                computedAABB.pop_front();
-                computedPos.pop_front();
-                computedColor.pop_front();
-                computedIntensity.pop_front();
-
-                QString text = halfLine + ts.read(BYTES_PER_READ);
-                computedLines.append(text.split('\n'));
-                if (!ts.atEnd())
-                {
-                    halfLine = computedLines.last().last();
-                    computedLines.last().pop_back();
-                }
-
-                computedAABB.append(new AABB);
-                computedPos.append(new QVector<glm::vec3>);
-                computedColor.append(new QVector<glm::vec3>);
-                computedIntensity.append(new QVector<float>);
-
-                loaders.append(QThread::create(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
-                loaders.last()->start();
-
-                if ((int)(pos.count() / vertexNumber * 100.0f) > loadingPourcentage)
-                {
-                    loadingPourcentage = pos.count() / vertexNumber * 100.0f;
-                    //emit modelLoadingUpdate(this, loadingPourcentage);
-                }
-            }
-
-            while (!loaders.isEmpty() && !QThread::currentThread()->isInterruptionRequested())
-            {
-                loaders.first()->wait();
-                loaders.first()->deleteLater();
-
-                //AABB
-                if (!firstBlocComputed)
-                {
-                    aabb = *computedAABB.first();
-                    firstBlocComputed = true;
-                }
-                else
-                {
-                    if (computedAABB.first()->min.x < aabb.min.x) aabb.min.x = computedAABB.first()->min.x;
-                    if (computedAABB.first()->min.y < aabb.min.y) aabb.min.y = computedAABB.first()->min.y;
-                    if (computedAABB.first()->min.z < aabb.min.z) aabb.min.z = computedAABB.first()->min.z;
-
-                    if (computedAABB.first()->max.x > aabb.max.x) aabb.max.x = computedAABB.first()->max.x;
-                    if (computedAABB.first()->max.y > aabb.max.y) aabb.max.y = computedAABB.first()->max.y;
-                    if (computedAABB.first()->max.z > aabb.max.z) aabb.max.z = computedAABB.first()->max.z;
-                }
-
-                //BUFFERS
-                pos.append(*computedPos.first());
-                color.append(*computedColor.first());
-                intensity.append(*computedIntensity.first());
-
-                loaders.first()->deleteLater();
-                delete computedAABB.first();
-                delete computedPos.first();
-                delete computedColor.first();
-                delete computedIntensity.first();
-                ;
-                loaders.pop_front();
-                computedLines.pop_front();
-                computedAABB.pop_front();
-                computedPos.pop_front();
-                computedColor.pop_front();
-                computedIntensity.pop_front();
-
-                if ((int)(pos.count() / vertexNumber * 100.0f) > loadingPourcentage)
-                {
-                    loadingPourcentage = pos.count() / vertexNumber * 100.0f;
-                    //emit modelLoadingUpdate(this, loadingPourcentage);
-                }
-            }
-
-            if (QThread::currentThread()->isInterruptionRequested())
-            {
-                for (QThread* loader : loaders) loader->requestInterruption();
-                for (QThread* loader : loaders)
-                {
-                    loader->wait();
-                    delete loader;
-                }
-                loaders.clear();
-            }
-
-            for (AABB* _aabb : computedAABB) delete _aabb;
-            for (QVector<glm::vec3>* _pos : computedPos) delete _pos;
-            for (QVector<glm::vec3>* _color : computedColor) delete _color;
-            for (QVector<float>* _intensity : computedIntensity) delete _intensity;
-
-            aabb.gravity /= vertexNumber;
-            aabb.center = (aabb.max + aabb.min) / 2.0f;
-
-            prepared = true;
-            onRAM = true;
-            Model3D::setVertexOnRAM(Model3D::getVertexOnRAM() + vertexNumber);
-        }
-
-        ramLoaderMutex.unlock();
+        ramLoader->requestInterruption();
+        ramLoader->wait();
+        delete ramLoader;
+        ramLoader = nullptr;
     }
 }
 
-void ModelPTS::computePTSLines(const QStringList& lines, Model3D::AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<glm::vec3>* currentColor, QVector<float>* currentIntensity)
+void ModelPTS::loadRAMthread()
+{
+    int loadingPourcentage = 0;
+    bool firstBlocComputed = false;
+    QTextStream ts(&file);
+
+    QString halfLine = "";
+    QString line = ts.readLine();
+    QStringList elements = line.split(' ');
+    elements.removeAll("");
+    if (elements.count() >= 3)
+    {
+        ts.seek(0);
+        ts.flush();
+    }
+
+    QVector<QThread*> loaders;
+    QList<QStringList> computedLines;
+    QList<AABB*> computedAABB;
+    QList<QVector<glm::vec3>*> computedPos;
+    QList<QVector<unsigned char>*> computedColor;
+    QList<QVector<unsigned char>*> computedIntensity;
+
+    for (unsigned int i = 0; i < (unsigned int)QThread::idealThreadCount() && !ts.atEnd() && !QThread::currentThread()->isInterruptionRequested(); i++)
+    {
+        QString text = halfLine + ts.read(BYTES_PER_READ);
+        computedLines.append(text.split('\n'));
+        if (!ts.atEnd())
+        {
+            halfLine = computedLines.last().last();
+            computedLines.last().pop_back();
+        }
+
+        computedAABB.append(new AABB);
+        computedPos.append(new QVector<glm::vec3>);
+        computedColor.append(new QVector<unsigned char>);
+        computedIntensity.append(new QVector<unsigned char>);
+
+        loaders.append(QThread::create(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
+        loaders.last()->start();
+    }
+
+    while (!ts.atEnd() && !QThread::currentThread()->isInterruptionRequested())
+    {
+        loaders.first()->wait();
+
+        //AABB
+        if (!firstBlocComputed)
+        {
+            aabb = *computedAABB.first();
+            firstBlocComputed = true;
+        }
+        else
+        {
+            if (computedAABB.first()->min.x < aabb.min.x) aabb.min.x = computedAABB.first()->min.x;
+            if (computedAABB.first()->min.y < aabb.min.y) aabb.min.y = computedAABB.first()->min.y;
+            if (computedAABB.first()->min.z < aabb.min.z) aabb.min.z = computedAABB.first()->min.z;
+
+            if (computedAABB.first()->max.x > aabb.max.x) aabb.max.x = computedAABB.first()->max.x;
+            if (computedAABB.first()->max.y > aabb.max.y) aabb.max.y = computedAABB.first()->max.y;
+            if (computedAABB.first()->max.z > aabb.max.z) aabb.max.z = computedAABB.first()->max.z;
+        }
+
+        //BUFFERS
+        pos.append(*computedPos.first());
+        color.append(*computedColor.first());
+        intensity.append(*computedIntensity.first());
+
+        loaders.first()->deleteLater();
+        delete computedAABB.first();
+        delete computedPos.first();
+        delete computedColor.first();
+        delete computedIntensity.first();
+        ;
+        loaders.pop_front();
+        computedLines.pop_front();
+        computedAABB.pop_front();
+        computedPos.pop_front();
+        computedColor.pop_front();
+        computedIntensity.pop_front();
+
+        QString text = halfLine + ts.read(BYTES_PER_READ);
+        computedLines.append(text.split('\n'));
+        if (!ts.atEnd())
+        {
+            halfLine = computedLines.last().last();
+            computedLines.last().pop_back();
+        }
+
+        computedAABB.append(new AABB);
+        computedPos.append(new QVector<glm::vec3>);
+        computedColor.append(new QVector<unsigned char>);
+        computedIntensity.append(new QVector<unsigned char>);
+
+        loaders.append(QThread::create(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
+        loaders.last()->start();
+
+        if ((int)(100.0f * pos.count() / vertexNumber) > loadingPourcentage)
+        {
+            loadingPourcentage = 100.0f * pos.count() / vertexNumber;
+            emit modelLoadingUpdate(this, loadingPourcentage);
+        }
+    }
+    ts.seek(0);
+    ts.flush();
+
+    while (!loaders.isEmpty() && !QThread::currentThread()->isInterruptionRequested())
+    {
+        loaders.first()->wait();
+        loaders.first()->deleteLater();
+
+        //AABB
+        if (!firstBlocComputed)
+        {
+            aabb = *computedAABB.first();
+            firstBlocComputed = true;
+        }
+        else
+        {
+            if (computedAABB.first()->min.x < aabb.min.x) aabb.min.x = computedAABB.first()->min.x;
+            if (computedAABB.first()->min.y < aabb.min.y) aabb.min.y = computedAABB.first()->min.y;
+            if (computedAABB.first()->min.z < aabb.min.z) aabb.min.z = computedAABB.first()->min.z;
+
+            if (computedAABB.first()->max.x > aabb.max.x) aabb.max.x = computedAABB.first()->max.x;
+            if (computedAABB.first()->max.y > aabb.max.y) aabb.max.y = computedAABB.first()->max.y;
+            if (computedAABB.first()->max.z > aabb.max.z) aabb.max.z = computedAABB.first()->max.z;
+        }
+
+        //BUFFERS
+        pos.append(*computedPos.first());
+        color.append(*computedColor.first());
+        intensity.append(*computedIntensity.first());
+
+        loaders.first()->deleteLater();
+        delete computedAABB.first();
+        delete computedPos.first();
+        delete computedColor.first();
+        delete computedIntensity.first();
+        ;
+        loaders.pop_front();
+        computedLines.pop_front();
+        computedAABB.pop_front();
+        computedPos.pop_front();
+        computedColor.pop_front();
+        computedIntensity.pop_front();
+
+        if ((int)(100.0f * pos.count() / vertexNumber) > loadingPourcentage)
+        {
+            loadingPourcentage = 100.0f * pos.count() / vertexNumber;
+            emit modelLoadingUpdate(this, loadingPourcentage);
+        }
+    }
+
+    if (QThread::currentThread()->isInterruptionRequested())
+    {
+        for (QThread* loader : loaders) loader->requestInterruption();
+        for (QThread* loader : loaders)
+        {
+            loader->wait();
+            delete loader;
+        }
+        loaders.clear();
+    }
+
+    for (AABB* _aabb : computedAABB) delete _aabb;
+    for (QVector<glm::vec3>* _pos : computedPos) delete _pos;
+    for (QVector<unsigned char>* _color : computedColor) delete _color;
+    for (QVector<unsigned char>* _intensity : computedIntensity) delete _intensity;
+
+    aabb.gravity /= vertexNumber;
+    aabb.center = (aabb.max + aabb.min) / 2.0f;
+        
+    prepared = true;
+}
+
+void ModelPTS::computePTSLines(const QStringList& lines, Model3D::AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity)
 {
     bool firstLinePassed = false;
     for (const QString& line : lines)
@@ -249,11 +255,11 @@ void ModelPTS::computePTSLines(const QStringList& lines, Model3D::AABB* currentA
                 if (elements.count() <= 3)
                     currentIntensity->append(0);
                 else
-                    currentIntensity->append((elements.takeFirst().toInt() + 2048.0f) / 4096.0f);
+                    currentIntensity->append((unsigned char)((elements.takeFirst().toInt() + 2048.0) / 4096.0 * 255.0));
             }
 
-            glm::vec3 color;
-            for (unsigned int i = 0; i < 3; i++) color[i] = ((float)elements.takeFirst().toUShort()) / 255.0f;
+            QVector<unsigned char> color(3);
+            for (unsigned int i = 0; i < 3; i++) color[i] = elements.takeFirst().toUShort();
             currentColor->append(color);
 
             //AABB

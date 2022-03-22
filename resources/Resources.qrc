@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>Shaders/Point.frag</file>
         <file>Shaders/Point.vert</file>
+        <file>Shaders/Box.frag</file>
+        <file>Shaders/Box.vert</file>
     </qresource>
 </RCC>

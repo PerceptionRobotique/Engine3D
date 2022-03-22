@@ -13,11 +13,12 @@ class ENGINE3D_EXPORT ModelPTS : public Model3D
 {
 public:
 	ModelPTS(QString _fileName);
+	~ModelPTS();
 
-	void loadRAM() override;
+	void loadRAMthread() override;
 
 private:
-	void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<glm::vec3>* currentColor, QVector<float>* currentIntensity);
+	void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
 };
 
 #endif // MODELPTS_H

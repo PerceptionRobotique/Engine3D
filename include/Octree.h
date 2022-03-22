@@ -3,16 +3,15 @@
 
 #include "Model3D.h"
 
-class Octree : public Model3D
+class ENGINE3D_EXPORT Octree
 {
-	Octree(Octree* _parent = nullptr, QString _fileName = "");
+public:
+	Octree(Octree* _parent = nullptr);
 
 private:
-	Octree* first;
 	Octree* parent;
-	unsigned int depth;
-
 	QVector<Octree*> children;
+	unsigned int depth;
 };
 
 #endif // OCTREE_H

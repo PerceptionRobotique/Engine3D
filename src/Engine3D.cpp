@@ -2,14 +2,21 @@
 
 Engine3D::Engine3D(QObject* parent)
     : QObject(parent)
+    , pointSize(1.0f)
+    , lineWidth(3.0f)
+    , opacityEnabled(false)
+    , opacity(1.0f)
+    , blendFunction(BLEND_1)
 {
     cameras.append(new Camera);
+    mainCamera = cameras.last();
 }
 
 Engine3D::~Engine3D()
 {
     for (Camera* camera : cameras) delete camera;
     for (QOpenGLShaderProgram* shader : shaders) delete shader;
+    delete boxShader;
     for (Model3D* model : models) delete model;
 }
 
@@ -23,17 +30,34 @@ void Engine3D::initialize()
     shaders[Model3D::POINTS]->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/Point.frag");
     if (!shaders[Model3D::POINTS]->link()) qDebug() << "Can't link shader.";
 
-    setDepthTestEnabled(true);
+    boxShader = new QOpenGLShaderProgram;
+    boxShader->create();
+    boxShader->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/Box.vert");
+    boxShader->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/Box.frag");
+    if (!boxShader->link()) qDebug() << "Can't link box shader.";
+
+    glEnable(GL_DEPTH_TEST);
+    setPointSizeEnabled(true);
+    setPointSize(pointSize);
+    setLineWidth(lineWidth);
+    setOpacityEnabled(opacityEnabled);
+    setOpacity(opacity);
+    setBlendFunction(blendFunction);
 }
 
-Camera* Engine3D::getCamera()
+Camera* Engine3D::getMainCamera()
 {
-    return cameras[0];
+    return mainCamera;
 }
 
 QVector<Camera*>& Engine3D::getCameras()
 {
     return cameras;
+}
+
+Model3D* Engine3D::getModel(unsigned int index)
+{
+    return models[index];
 }
 
 QVector<Model3D*>& Engine3D::getModels()
@@ -44,10 +68,9 @@ QVector<Model3D*>& Engine3D::getModels()
 void Engine3D::openModel(QString fileName)
 {
     QFileInfo fileInfo(fileName);
-    if (fileInfo.suffix() == "pts")
-    {
-        models.append(new ModelPTS(fileName));
-    }
+    if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName));
+    else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName));
+    //else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(fileName));
 }
 
 void Engine3D::closeModel(unsigned int index)
@@ -64,7 +87,7 @@ void Engine3D::update()
         {
             if (shaders[Model3D::POINTS]->bind())
             {
-                glViewport(0, 0, camera->getWidth(), camera->getHeight());
+                //glViewport(0, 0, camera->getWidth(), camera->getHeight());
                 glClearColor(
                     camera->getBackgroundColor().redF(),
                     camera->getBackgroundColor().greenF(),
@@ -78,27 +101,86 @@ void Engine3D::update()
 
                 for (Model3D* model : models)
                 {
-                    if (model->isPrepared())
+                    if (camera->cullingTest(model))
                     {
-                        if (camera->cullingTest(model))
-                        {
-                            model->loadRAM();
-                            model->loadVRAM();
-                            model->draw(shaders[Model3D::POINTS]);
-                        }
+                        model->setOnScreen(true);
+                        model->draw(shaders[Model3D::POINTS]);
+                    }
+                    else
+                    {
+                        model->setOnScreen(false);
+                        model->unloadVRAM();
                     }
                 }
                 shaders[Model3D::POINTS]->release();
             }
             else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
+
+            if (boxShader->bind())
+            {
+                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
+                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+                for (Model3D* model : models)
+                {
+                    if (camera->cullingTest(model)) model->drawBox(boxShader);
+                }
+                boxShader->release();
+            }
+            else QMessageBox::warning(nullptr, "Error", "Can't bind box shader.");
             camera->release();
         }
         else QMessageBox::warning(nullptr, "Error", "Can't bind camera.");
     }
+
+    GLenum err;
+    while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
 }
 
-void Engine3D::setDepthTestEnabled(bool enabled)
+void Engine3D::setPointSizeEnabled(bool enabled)
 {
-    if (enabled) glEnable(GL_DEPTH_TEST);
-    else glDisable(GL_DEPTH_TEST);
+    if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
+    else glDisable(GL_PROGRAM_POINT_SIZE);
+}
+
+void Engine3D::setPointSize(float _pointSize)
+{
+    pointSize = _pointSize;
+    shaders[Model3D::POINTS]->bind();
+    shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
+    shaders[Model3D::POINTS]->release();
+}
+
+void Engine3D::setLineWidth(float _lineWidth)
+{
+    lineWidth = _lineWidth;
+    glLineWidth(lineWidth);
+}
+
+void Engine3D::setOpacityEnabled(bool enabled)
+{
+    opacityEnabled = enabled;
+    if (opacityEnabled)
+    {
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+    }
+    else
+    {
+        glEnable(GL_DEPTH_TEST);
+        glDisable(GL_BLEND);
+    }
+}
+
+void Engine3D::setOpacity(float _opacity)
+{
+    opacity = _opacity;
+    shaders[Model3D::POINTS]->bind();
+    shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
+    shaders[Model3D::POINTS]->release();
+}
+
+void Engine3D::setBlendFunction(BlendFunction _blendFunction)
+{
+    blendFunction = _blendFunction;
+    glBlendFunc(GL_SRC_ALPHA, blendFunction);
 }

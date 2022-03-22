@@ -11,21 +11,31 @@ Model3D::Model3D(QString _fileName)
     : vertexNumber(0)
     , prepared(false)
     , showIntensity(false)
+    , visible(true)
+    , boxVisible(true)
+    , onScreen(false)
+    , boxOnRAM(false)
+    , boxOnVRAM(false)
     , onVRAM(false)
+    //, box(8, glm::vec3(0, 0, 0))
     , fileName(_fileName)
     , file(_fileName)
     , fileInfo(_fileName)
+    , settings(nullptr)
     , m_hasIntensity(false)
+    , ramLoader(nullptr)
     , onRAM(false)
     , globalColorEnabled(false)
     , globalColor(255, 255, 255, 255)
+    , boxColor(0, 255, 0, 255)
+    , boxBuffer(QOpenGLBuffer::VertexBuffer)
     , posBuffer(QOpenGLBuffer::VertexBuffer)
     , colorBuffer(QOpenGLBuffer::VertexBuffer)
     , intensityBuffer(QOpenGLBuffer::VertexBuffer)
 {
     static QMutex model3DCreateMutex;
     model3DCreateMutex.lock();
-    if (!model3DNumber == 0)
+    if (model3DNumber == 0)
     {
         boxIndexBuffer.create();
         boxIndexBuffer.bind();
@@ -39,7 +49,64 @@ Model3D::Model3D(QString _fileName)
     {
         file.open(QFile::ReadOnly);
         name = fileInfo.fileName();
+        settings = new QSettings(fileInfo.path() + '/' + fileInfo.fileName().remove(fileInfo.suffix()) + "ini", QSettings::IniFormat);
+
+        mat4 wMo(1.0);
+        QVector<QVariant> v_wMo;
+        QVector<QVariant> def(16);
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            for (unsigned int j = 0; j < 4; j++)
+            {
+                def[i * 4 + j] = wMo[i][j];
+            }
+        }
+        v_wMo = settings->value("wMo", def).toList();
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            for (unsigned int j = 0; j < 4; j++)
+            {
+                wMo[i][j] = v_wMo[i * 4 + j].toFloat();
+            }
+        }
+        setwMo(wMo);
     }
+}
+
+Model3D::~Model3D()
+{
+    file.close();
+
+    if (ramLoader != nullptr)
+    {
+        ramLoader->requestInterruption();
+        if (ramLoader->isRunning()) ramLoader->wait();
+    }
+
+    if (onRAM) unloadRAM();
+    if (onVRAM) unloadVRAM();
+    if (boxOnRAM) unloadBoxRAM();
+    if (boxOnVRAM) unloadBoxVRAM();
+
+    model3DNumber--;
+    if (model3DNumber == 0)
+        boxIndexBuffer.destroy();
+
+    if (settings)
+    {
+        mat4 wMo = getwMo();
+        QVector<QVariant> v_wMo;
+        for (unsigned int i = 0; i < 4; i++)
+        {
+            for (unsigned int j = 0; j < 4; j++)
+            {
+                v_wMo.append(wMo[i][j]);
+            }
+        }
+        settings->setValue("wMo", v_wMo);
+        settings->sync();
+    }
+    emit modelDestroyed();
 }
 
 unsigned long long Model3D::getVertexOnRAM()
@@ -64,6 +131,7 @@ void Model3D::setVertexOnRAM(unsigned long long value)
 {
     vertexMutex.lock();
     vertexOnRAM = value;
+    emit vertexOnRAMChanged(vertexOnRAM);
     vertexMutex.unlock();
 }
 
@@ -71,16 +139,8 @@ void Model3D::setVertexOnVRAM(unsigned long long value)
 {
     vertexMutex.lock();
     vertexOnVRAM = value;
+    emit vertexOnVRAMChanged(vertexOnVRAM);
     vertexMutex.unlock();
-}
-
-Model3D::~Model3D()
-{
-    file.close();
-    if (onRAM) unloadRAM();
-    if (onVRAM) unloadVRAM();
-    model3DNumber--;
-    if (model3DNumber == 0) boxIndexBuffer.destroy();
 }
 
 QString Model3D::getName() const
@@ -105,7 +165,7 @@ Model3D::AABB Model3D::getAABB() const
 
 QVector<glm::vec3> Model3D::getBox()
 {
-    if (box.isEmpty()) loadBoxRAM();
+    if (!boxOnRAM) loadBoxRAM();
     return box;
 }
 
@@ -139,20 +199,53 @@ bool Model3D::isOnVRAM() const
     return onVRAM;
 }
 
+void Model3D::setVisible(bool _visible)
+{
+    visible = _visible;
+}
+
+void Model3D::setBoxVisible(bool _boxVisible)
+{
+    boxVisible = _boxVisible;
+}
+
+void Model3D::setOnScreen(bool _onScreen)
+{
+    onScreen = _onScreen;
+    if (onScreen) loadRAM();
+    else if (liveLoading) unloadRAM();
+}
+
+void Model3D::loadRAM()
+{
+    if (prepared && !onRAM)
+    {
+        if (ramLoaderMutex.tryLock())
+        {
+            ramLoader = QThread::create(&Model3D::loadRAMthread, this);
+            connect(ramLoader, SIGNAL(finished()), this, SLOT(loadingRAMfinished()));
+            ramLoader->start();
+        }
+    }
+}
+
 void Model3D::unloadRAM()
 {
     if (onRAM)
     {
-        ramMutex.lock();
-        pos.clear();
-        pos.squeeze();
-        color.clear();
-        color.squeeze();
-        intensity.clear();
-        intensity.squeeze();
+        if (ramLoaderMutex.tryLock())
+        {
+            pos.clear();
+            pos.squeeze();
+            color.clear();
+            color.squeeze();
+            intensity.clear();
+            intensity.squeeze();
 
-        setVertexOnRAM(getVertexOnRAM() - vertexNumber);
-        ramMutex.unlock();
+            setVertexOnRAM(getVertexOnRAM() - vertexNumber);
+            onRAM = false;
+            ramLoaderMutex.unlock();
+        }
     }
 }
 
@@ -162,19 +255,19 @@ void Model3D::loadVRAM()
     {
         if (!posBuffer.isCreated()) posBuffer.create();
         posBuffer.bind();
-        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * pos.count() * sizeof(float), pos.constData(), GL_STATIC_DRAW);
+        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(glm::vec3), pos.constData(), GL_STATIC_DRAW);
         posBuffer.release();
 
         if (!colorBuffer.isCreated()) colorBuffer.create();
         colorBuffer.bind();
-        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * color.count() * sizeof(float), color.constData(), GL_STATIC_DRAW);
+        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * vertexNumber * sizeof(unsigned char), color.constData(), GL_STATIC_DRAW);
         colorBuffer.release();
 
         if (hasIntensity())
         {
             if (!intensityBuffer.isCreated()) intensityBuffer.create();
             intensityBuffer.bind();
-            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, intensity.count() * sizeof(float), intensity.constData(), GL_STATIC_DRAW);
+            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(unsigned char), intensity.constData(), GL_STATIC_DRAW);
             intensityBuffer.release();
         }
         setVertexOnVRAM(getVertexOnVRAM() + vertexNumber);
@@ -201,120 +294,209 @@ void Model3D::unloadVRAM()
             intensityBuffer.release();
         }
         setVertexOnVRAM(getVertexOnVRAM() - vertexNumber);
+        onVRAM = false;
     }
 }
 
 void Model3D::loadBoxRAM()
 {
-    if (box.isEmpty())
+    boxLoaderMutex.lock();
+    if (!boxOnRAM)
     {
-        box.append(vec3(
+        box.clear();
+        QVector<glm::vec3> tempBox;
+
+        tempBox.append(vec3(
             aabb.min.x,
             aabb.min.y,
             aabb.min.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.max.x,
             aabb.min.y,
             aabb.min.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.max.x,
             aabb.min.y,
             aabb.max.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.min.x,
             aabb.min.y,
             aabb.max.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.min.x,
             aabb.max.y,
             aabb.min.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.max.x,
             aabb.max.y,
             aabb.min.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.max.x,
             aabb.max.y,
             aabb.max.z
         ));
 
-        box.append(vec3(
+        tempBox.append(vec3(
             aabb.min.x,
             aabb.max.y,
             aabb.max.z
         ));
+
+        for (unsigned int i : boxIndex) box.append(tempBox[i]);
+
+        boxOnRAM = true;
     }
+    boxLoaderMutex.unlock();
 }
 
 void Model3D::unloadBoxRAM()
 {
-    box.clear();
-    box.squeeze();
+    if (boxOnRAM)
+    {
+        box.clear();
+        box.squeeze();
+        boxOnRAM = false;
+    }
 }
 
 void Model3D::loadBoxVRAM()
 {
-    if (!boxBuffer.isCreated()) boxBuffer.create();
-    boxBuffer.bind();
-    boxBuffer.allocate(box.constData(), box.count() * (int)sizeof(float));
-    boxBuffer.release();
+    if (boxOnRAM && !boxOnVRAM)
+    {
+        if (!boxBuffer.isCreated()) boxBuffer.create();
+        boxBuffer.bind();
+        boxBuffer.allocate(box.constData(), box.count() * sizeof(glm::vec3));
+        boxBuffer.release();
+        boxOnVRAM = true;
+    }
 }
 
 void Model3D::unloadBoxVRAM()
 {
-    boxBuffer.bind();
-    boxBuffer.allocate(0);
-    boxBuffer.release();
+    if (boxOnVRAM)
+    {
+        boxBuffer.bind();
+        boxBuffer.allocate(0);
+        boxBuffer.release();
+        boxOnVRAM = false;
+    }
 }
 
 void Model3D::draw(QOpenGLShaderProgram* shader)
 {
-    if (onVRAM)
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+    if (prepared)
     {
-        shader->setUniformValue("customColor", globalColorEnabled);
-        shader->setUniformValue("R", globalColor.redF());
-        shader->setUniformValue("G", globalColor.greenF());
-        shader->setUniformValue("B", globalColor.blueF());
-
         mat4 wMo = getwMo();
-        QOpenGLContext::currentContext()->functions()->glUniformMatrix4fv(QOpenGLContext::currentContext()->functions()->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
-        shader->setUniformValue("showIntensity", getShowIntensity());
+        f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
 
-        posBuffer.bind();
-        shader->enableAttributeArray("in_vertex");
-        shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
-        posBuffer.release();
-
-        colorBuffer.bind();
-        shader->enableAttributeArray("in_color");
-        shader->setAttributeArray("in_color", GL_FLOAT, 0, 3);
-        colorBuffer.release();
-
-        if (hasIntensity())
+        if (visible)
         {
-            intensityBuffer.bind();
-            shader->enableAttributeArray("in_intensity");
-            shader->setAttributeArray("in_intensity", GL_FLOAT, 0, 1);
-            intensityBuffer.release();
+            if (!onVRAM) loadVRAM();
+
+            if (onVRAM)
+            {
+                shader->setUniformValue("customColor", globalColorEnabled);
+                shader->setUniformValue("R", globalColor.redF());
+                shader->setUniformValue("G", globalColor.greenF());
+                shader->setUniformValue("B", globalColor.blueF());
+                shader->setUniformValue("showIntensity", getShowIntensity());
+
+                posBuffer.bind();
+                shader->enableAttributeArray("in_vertex");
+                shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
+                posBuffer.release();
+
+                colorBuffer.bind();
+                shader->enableAttributeArray("in_color");
+                shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
+                colorBuffer.release();
+
+                if (hasIntensity())
+                {
+                    intensityBuffer.bind();
+                    shader->enableAttributeArray("in_intensity");
+                    shader->setAttributeArray("in_intensity", GL_UNSIGNED_BYTE, 0, 1);
+                    intensityBuffer.release();
+                }
+
+                f->glDrawArrays(primitives, 0, vertexNumber);
+
+                shader->disableAttributeArray("in_vertex");
+                shader->disableAttributeArray("in_color");
+                if (m_hasIntensity)
+                    shader->disableAttributeArray("in_intensity");
+            }
         }
-
-        QOpenGLContext::currentContext()->functions()->glDrawArrays(primitives, 0, vertexNumber);
-
-        shader->disableAttributeArray("in_vertex");
-        shader->disableAttributeArray("in_color");
-        if (m_hasIntensity)
-            shader->disableAttributeArray("in_intensity");
+        else
+        {
+            if (liveLoading) unloadRAM();
+            unloadVRAM();
+        }
     }
+}
+
+void Model3D::drawBox(QOpenGLShaderProgram* shader)
+{
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+    if (prepared)
+    {
+        if (boxVisible)
+        {
+            QColor boxColor = Qt::green;
+
+            loadBoxRAM();
+            loadBoxVRAM();
+            if (boxOnVRAM)
+            {
+                mat4 wMo = getwMo();
+                glm::vec3 color = glm::vec3(boxColor.redF(), boxColor.greenF(), boxColor.blueF());
+                f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
+                f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "in_color"), 1, value_ptr(color));
+
+                boxBuffer.bind();
+                shader->enableAttributeArray("pos");
+                shader->setAttributeBuffer("pos", GL_FLOAT, 0, 3);
+                boxBuffer.release();
+
+                //boxIndexBuffer.bind();
+                f->glDrawArrays(GL_LINES, 0, box.count());
+                //f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
+                //boxIndexBuffer.release();
+                shader->disableAttributeArray("pos");
+            }
+        }
+        else
+        {
+            unloadBoxRAM();
+            unloadBoxVRAM();
+        }
+    }
+}
+
+void Model3D::setwMo(mat4 wMo)
+{
+    setPose(wMo);
+}
+
+void Model3D::loadingRAMfinished()
+{
+    onRAM = true;
+    setVertexOnRAM(getVertexOnRAM() + vertexNumber);
+    delete ramLoader;
+    ramLoader = nullptr;
+    ramLoaderMutex.unlock();
+    emit modelLoaded();
 }

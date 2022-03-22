@@ -1,15 +1,12 @@
 #include "Octree.h"
 
-Octree::Octree(Octree* _parent, QString _fileName)
-	: Model3D(_fileName)
-	, first(this)
-	, parent(_parent)
-	, depth(0)
+Octree::Octree(Octree* _parent)
+	: parent(_parent)
 	, children(8, nullptr)
+	, depth(0)
 {
-	if (parent != nullptr)
+	if (parent)
 	{
-		first = parent->first;
 		depth = parent->depth + 1;
 	}
 }

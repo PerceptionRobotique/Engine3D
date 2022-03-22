@@ -12,19 +12,27 @@
 #include "Camera.h"
 #include "CameraController.h"
 #include "ModelPTS.h"
+#include "ModelBIN.h"
+#include "Octree.h"
 
 class ENGINE3D_EXPORT Engine3D : private QObject, public QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
+    enum BlendFunction {
+        BLEND_1 = GL_ONE,
+        BLEND_2 = GL_ONE_MINUS_SRC_ALPHA
+    };
+
     Engine3D(QObject* parent = nullptr);
     ~Engine3D();
 
     void initialize();
 
-    Camera* getCamera();
+    Camera* getMainCamera();
     QVector<Camera*>& getCameras();
+    Model3D* getModel(unsigned int index);
     QVector<Model3D*>& getModels();
 
 public slots:
@@ -32,12 +40,25 @@ public slots:
     void closeModel(unsigned int index);
     void update();
 
-    void setDepthTestEnabled(bool enabled);
+    void setPointSizeEnabled(bool enabled);
+    void setPointSize(float _pointSize);
+    void setLineWidth(float _lineWidth);
+    void setOpacityEnabled(bool enabled);
+    void setOpacity(float _opacity);
+    void setBlendFunction(BlendFunction _blendFunction);
 
 private:
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
+    QOpenGLShaderProgram* boxShader;
+    Camera* mainCamera;
     QVector<Camera*> cameras;
     QVector<Model3D*> models;
+
+    float pointSize;
+    float lineWidth;
+    bool opacityEnabled;
+    float opacity;
+    BlendFunction blendFunction;
 };
 
 #endif // ENGINE3D_H
