@@ -324,6 +324,7 @@ void Model3D::unloadVRAM()
 {
     if (onVRAM)
     {
+        vertexLoader.lock();
         posBuffer.bind();
         posBuffer.allocate(0);
         posBuffer.release();
@@ -340,6 +341,7 @@ void Model3D::unloadVRAM()
         }
         setVertexOnVRAM(getVertexOnVRAM() - vertexNumber);
         onVRAM = false;
+        vertexLoader.unlock();
     }
 }
 
@@ -441,50 +443,53 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
 {
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
     bool drawn = false;
-    if (prepared && onScreen && visible)
+    if (prepared)
     {
-        loadVRAM();
-        if (onVRAM)
+        if (onScreen && visible)
         {
-            mat4 wMo = getwMo();
-            f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
-
-            shader->setUniformValue("customColor", globalColorEnabled);
-            shader->setUniformValue("R", globalColor.redF());
-            shader->setUniformValue("G", globalColor.greenF());
-            shader->setUniformValue("B", globalColor.blueF());
-            shader->setUniformValue("showIntensity", getShowIntensity());
-
-            posBuffer.bind();
-            shader->enableAttributeArray("in_vertex");
-            shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
-            posBuffer.release();
-
-            colorBuffer.bind();
-            shader->enableAttributeArray("in_color");
-            shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
-            colorBuffer.release();
-
-            if (hasIntensity())
+            loadVRAM();
+            if (onVRAM)
             {
-                intensityBuffer.bind();
-                shader->enableAttributeArray("in_intensity");
-                shader->setAttributeArray("in_intensity", GL_UNSIGNED_BYTE, 0, 1);
-                intensityBuffer.release();
+                mat4 wMo = getwMo();
+                f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
+
+                shader->setUniformValue("customColor", globalColorEnabled);
+                shader->setUniformValue("R", globalColor.redF());
+                shader->setUniformValue("G", globalColor.greenF());
+                shader->setUniformValue("B", globalColor.blueF());
+                shader->setUniformValue("showIntensity", getShowIntensity());
+
+                posBuffer.bind();
+                shader->enableAttributeArray("in_vertex");
+                shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
+                posBuffer.release();
+
+                colorBuffer.bind();
+                shader->enableAttributeArray("in_color");
+                shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
+                colorBuffer.release();
+
+                if (hasIntensity())
+                {
+                    intensityBuffer.bind();
+                    shader->enableAttributeArray("in_intensity");
+                    shader->setAttributeArray("in_intensity", GL_UNSIGNED_BYTE, 0, 1);
+                    intensityBuffer.release();
+                }
+
+                f->glDrawArrays(primitives, 0, vertexNumber);
+
+                shader->disableAttributeArray("in_vertex");
+                shader->disableAttributeArray("in_color");
+                if (m_hasIntensity)
+                    shader->disableAttributeArray("in_intensity");
+
+                drawn = true;
             }
-
-            f->glDrawArrays(primitives, 0, vertexNumber);
-
-            shader->disableAttributeArray("in_vertex");
-            shader->disableAttributeArray("in_color");
-            if (m_hasIntensity)
-                shader->disableAttributeArray("in_intensity");
-
-            drawn = true;
+            else emit modelLoadingDelayed();
         }
-        else emit modelLoadingDelayed();
+        else unloadVRAM();
     }
-    if (!onScreen) unloadVRAM();
     return drawn;
 }
 
