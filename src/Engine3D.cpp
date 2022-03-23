@@ -8,6 +8,7 @@ Engine3D::Engine3D(QObject* parent)
     , opacity(1.0f)
     , blendFunction(BLEND_1)
     , strict(false)
+    , viewDistance(150.0f)
     , modelsUpdater(nullptr)
 {
     cameras.append(new Camera);
@@ -218,6 +219,12 @@ void Engine3D::setBlendFunction(BlendFunction _blendFunction)
     glBlendFunc(GL_SRC_ALPHA, blendFunction);
 }
 
+void Engine3D::setViewDistance(double _viewDistance)
+{
+    viewDistance = _viewDistance;
+    emit askUpdate();
+}
+
 void Engine3D::updateModels()
 {
     for (Model3D* model : models)
@@ -239,7 +246,8 @@ void Engine3D::updateModels()
                     bool childOnScreen = false;
                     for (Camera* camera : cameras)
                     {
-                        childOnScreen |= camera->cullingTest(child);
+                        if(child->getDepth() <= round((float)child->getMaxDepth() * (1 - camera->distanceWith(child) / viewDistance)))
+                            childOnScreen |= camera->cullingTest(child);
                     }
                     child->setOnScreen(childOnScreen);
                 }

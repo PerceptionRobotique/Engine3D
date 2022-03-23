@@ -81,6 +81,7 @@ public:
     float* getcMwPtr();
     mat4 getwMc();
     bool cullingTest(Model3D* model);
+    float distanceWith(Model3D* model);
 
 public slots:
     //TRANSFORMS

@@ -104,6 +104,11 @@ QVector<Octree*>& Octree::getDepthChildren(unsigned int _depth)
 	return childrenByDepth[_depth-1];
 }
 
+unsigned int Octree::getDepth() const
+{
+	return depth;
+}
+
 unsigned int Octree::getMaxDepth() const
 {
 	return *maxDepth;

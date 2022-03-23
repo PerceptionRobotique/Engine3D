@@ -444,6 +444,11 @@ bool Camera::cullingTest(Model3D* model)
 //    return(result);
 }
 
+float Camera::distanceWith(Model3D* model)
+{
+    return glm::distance(getPosition(), (model->getwMo() * model->getAABB()).center);
+}
+
 void Camera::translate(const vec3 &_translation, const bool &_onGround)
 {
     switch(viewPoint)

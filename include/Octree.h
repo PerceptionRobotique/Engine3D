@@ -14,6 +14,7 @@ public:
 	Octree* getChild(unsigned int index);
 	QVector<Octree*>& getChildren();
 	QVector<Octree*>& getDepthChildren(unsigned int _depth);
+	unsigned int getDepth() const;
 	unsigned int getMaxDepth() const;
 
 	Octree* operator[](std::size_t index);

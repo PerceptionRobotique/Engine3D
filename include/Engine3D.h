@@ -47,6 +47,9 @@ public slots:
     void setOpacity(float _opacity);
     void setBlendFunction(BlendFunction _blendFunction);
 
+    //Optimization
+    void setViewDistance(double _viewDistance);
+
 private:
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
     QOpenGLShaderProgram* boxShader;
@@ -60,6 +63,9 @@ private:
     float opacity;
     BlendFunction blendFunction;
     bool strict;
+
+    //Optimization
+    float viewDistance;
 
     QMutex drawMutex;
     QThread* modelsUpdater;
