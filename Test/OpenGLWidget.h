@@ -13,6 +13,7 @@
 
 class OpenGLWidget : public QOpenGLWidget
 {
+    Q_OBJECT
 public:
     OpenGLWidget(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
 
@@ -39,6 +40,9 @@ private:
     CameraController cameraController;
 
     QColor backgroundColor;
+
+private slots:
+    void updateAsked();
 };
 
 #endif // OPENGLWIDGET_H

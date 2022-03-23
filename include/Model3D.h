@@ -131,6 +131,7 @@ private:
     static QMutex vertexMutex;
     static unsigned long long vertexOnRAM;
     static unsigned long long vertexOnVRAM;
+    static unsigned int loaderNumber;
     void setVertexOnVRAM(unsigned long long value);
 
     QString fileName;
@@ -156,6 +157,9 @@ private:
     QOpenGLBuffer intensityBuffer;
 
 protected:
+    static QMutex loaderTaker;
+    static bool takeLoader(); //threads number managment
+    static void releaseloader();
     void setVertexOnRAM(unsigned long long value);
 
     QFile* file;
@@ -167,7 +171,7 @@ protected:
     bool liveLoading;
     bool m_hasIntensity;
 
-    QMutex ramLoaderMutex;
+    QMutex vertexLoader; //avoids load and unload at the same time
     QThread* ramLoader;
     bool onRAM;
     virtual void loadRAMthread() = 0;
@@ -180,6 +184,7 @@ protected:
 
 signals:
     void modelChanged();
+    void modelLoadingDelayed();
     void modelLoadingUpdate(Model3D* model, unsigned int value);
     void modelLoaded();
     void vertexOnRAMChanged(unsigned long long vertexOnRAM);

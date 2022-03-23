@@ -218,3 +218,9 @@ bool OpenGLWidget::event(QEvent* e)
     else
         return QOpenGLWidget::event(e);
 }
+
+void OpenGLWidget::updateAsked()
+{
+    qDebug() << "updateAsked";
+    update();
+}

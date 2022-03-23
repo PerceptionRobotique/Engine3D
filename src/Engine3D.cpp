@@ -7,6 +7,7 @@ Engine3D::Engine3D(QObject* parent)
     , opacityEnabled(false)
     , opacity(1.0f)
     , blendFunction(BLEND_1)
+    , strict(false)
     , modelsUpdater(nullptr)
 {
     cameras.append(new Camera);
@@ -15,6 +16,7 @@ Engine3D::Engine3D(QObject* parent)
 
 Engine3D::~Engine3D()
 {
+    if (modelsUpdater) modelsUpdater->wait();
     for (Camera* camera : cameras) delete camera;
     for (QOpenGLShaderProgram* shader : shaders) delete shader;
     delete boxShader;
@@ -72,6 +74,11 @@ void Engine3D::openModel(QString fileName)
     if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName));
     else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName));
     else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName));
+
+    connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
+    connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
+    connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SIGNAL(askUpdate()));
+    connect(models.last(), SIGNAL(modelDestroyed()), this, SIGNAL(askUpdate()));
 }
 
 void Engine3D::closeModel(unsigned int index)
@@ -87,6 +94,7 @@ void Engine3D::update()
         modelsUpdater = QThread::create(&Engine3D::updateModels, this);
         connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
         modelsUpdater->start();
+        if (strict) modelsUpdater->wait();
     }
 
     static unsigned long long frameNumber = 0;
@@ -149,10 +157,10 @@ void Engine3D::update()
                 }
                 boxShader->release();
             }
-            else QMessageBox::warning(nullptr, "Error", "Can't bind box shader.");
+            else qDebug() << "Can't bind box shader.";
             camera->release();
         }
-        else QMessageBox::warning(nullptr, "Error", "Can't bind camera.");
+        else qDebug() << "Can't bind camera.";
     }
 
     GLenum err;
@@ -214,7 +222,13 @@ void Engine3D::updateModels()
 {
     for (Model3D* model : models)
     {
-        model->setOnScreen(mainCamera->cullingTest(model));
+        bool modelOnScreen = false;
+        for (Camera* camera : cameras)
+        {
+            modelOnScreen |= camera->cullingTest(model);
+        }
+        model->setOnScreen(modelOnScreen);
+
         Octree* octree = dynamic_cast<Octree*>(model);
         if (octree)
         {
@@ -222,7 +236,12 @@ void Engine3D::updateModels()
             {
                 for (Octree* child : octree->getDepthChildren(i))
                 {
-                    child->setOnScreen(mainCamera->cullingTest(child));
+                    bool childOnScreen = false;
+                    for (Camera* camera : cameras)
+                    {
+                        childOnScreen |= camera->cullingTest(child);
+                    }
+                    child->setOnScreen(childOnScreen);
                 }
             }
         }
@@ -233,5 +252,4 @@ void Engine3D::modelsUpdaterFinished()
 {
     delete modelsUpdater;
     modelsUpdater = nullptr;
-    emit askUpdate();
 }

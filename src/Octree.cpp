@@ -17,11 +17,14 @@ Octree::Octree(Octree* _parent, QString _fileName)
 		maxDepth = main->maxDepth;
 		if (*maxDepth < depth) *maxDepth = depth;
 		m_hasIntensity = parent->hasIntensity();
-		file = main->file;
+		//file = main->file;
+		file = new QFile(main->file->fileName());
+		file->open(QFile::ReadOnly);
 		fileMutex = main->fileMutex;
+		file->seek(main->file->pos());
 		totalVertexNumber = main->totalVertexNumber;
 		ModelBIN::prepare();
-		file->seek(filePos
+		main->file->seek(filePos
 			+ 3 * vertexNumber * sizeof(float)
 			+ 3 * vertexNumber * sizeof(unsigned char)
 			+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
@@ -29,6 +32,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 		*totalVertexNumber += vertexNumber;
 
 		connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
+		connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
 		connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
 		connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
 		connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
@@ -82,7 +86,7 @@ Octree::~Octree()
 		delete maxDepth;
 		delete totalVertexNumber;
 	}
-	if (main != this) file = nullptr;
+	//if (main != this) file = nullptr;
 }
 
 Octree* Octree::getChild(unsigned int index)
@@ -112,9 +116,9 @@ Octree* Octree::operator[](std::size_t index)
 
 void Octree::loadRAMthread()
 {
-	fileMutex->lock();
+	//fileMutex->lock();
 	ModelBIN::loadRAMthread();
-	fileMutex->unlock();
+	//fileMutex->unlock();
 }
 
 bool Octree::draw(QOpenGLShaderProgram* shader)

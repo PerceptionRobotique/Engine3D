@@ -46,7 +46,7 @@ ModelPTS::ModelPTS(QString _fileName)
     ts.seek(0);
     ts.flush();
 
-    ramLoaderMutex.lock();
+    vertexLoader.lock();
     ramLoader = QThread::create(&ModelPTS::loadRAMthread, this);
     connect(ramLoader, SIGNAL(finished()), this, SLOT(loadingRAMfinished()));
     ramLoader->start();

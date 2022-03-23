@@ -59,6 +59,7 @@ private:
     bool opacityEnabled;
     float opacity;
     BlendFunction blendFunction;
+    bool strict;
 
     QMutex drawMutex;
     QThread* modelsUpdater;

@@ -29,11 +29,8 @@ void MainWindow::on_actionOpenFile_triggered()
         ui->openGLWidget->getEngine().openModel(fileName);
         ui->openGLWidget->getEngine().getModels().last()->setRotationX(-90.0f);
         connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(modelLoadingUpdate(Model3D*, unsigned int)), this, SLOT(updateModelLoading(Model3D*, unsigned int)));
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(modelChanged()), ui->openGLWidget, SLOT(update()));
         connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(vertexOnRAMChanged(unsigned long long)), this, SLOT(updateVertexOnRAM(unsigned long long)));
         connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(vertexOnVRAMChanged(unsigned long long)), this, SLOT(updateVertexOnVRAM(unsigned long long)));
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(modelLoaded()), ui->openGLWidget, SLOT(update()));
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(modelDestroyed()), ui->openGLWidget, SLOT(update()));
 
         ui->modelsListWidget->addItem(ui->openGLWidget->getEngine().getModels().last()->getName());
     }
@@ -71,6 +68,11 @@ void MainWindow::keyPressEvent(QKeyEvent* event)
             ui->openGLWidget->getEngine().closeModel(ui->modelsListWidget->currentRow());
             ui->modelsListWidget->takeItem(ui->modelsListWidget->currentRow());
         }
+        event->accept();
+    }
+    else if (event->modifiers().testFlag(Qt::ControlModifier) && event->key() == Qt::Key_U)
+    {
+        ui->openGLWidget->update();
         event->accept();
     }
     else

@@ -6,6 +6,8 @@ QVector<unsigned int> Model3D::boxIndex{ 0, 1, 1, 2, 2, 3, 3, 0, 0, 4, 1, 5, 2, 
 QMutex Model3D::vertexMutex;
 unsigned long long Model3D::vertexOnRAM(0);
 unsigned long long Model3D::vertexOnVRAM(0);
+unsigned int Model3D::loaderNumber(0);
+QMutex Model3D::loaderTaker;
 
 Model3D::Model3D(QString _fileName)
     : vertexNumber(0)
@@ -17,7 +19,7 @@ Model3D::Model3D(QString _fileName)
     , boxOnRAM(false)
     , boxOnVRAM(false)
     , onVRAM(false)
-    //, box(8, glm::vec3(0, 0, 0))
+    , box(8, glm::vec3(0, 0, 0))
     , fileName(_fileName)
     , file(nullptr)
     , fileInfo(_fileName)
@@ -133,6 +135,26 @@ unsigned long long Model3D::getVertexOnVRAM()
     return value;
 }
 
+bool Model3D::takeLoader()
+{
+    bool ok = false;
+    loaderTaker.lock();
+    if (loaderNumber < QThread::idealThreadCount())
+    {
+        loaderNumber++;
+        ok = true;
+    }
+    loaderTaker.unlock();
+    return ok;
+}
+
+void Model3D::releaseloader()
+{
+    loaderTaker.lock();
+    if(loaderNumber > 0) loaderNumber--;
+    loaderTaker.unlock();
+}
+
 void Model3D::setVertexOnRAM(unsigned long long value)
 {
     vertexMutex.lock();
@@ -222,21 +244,27 @@ void Model3D::setBoxVisible(bool _boxVisible)
 
 void Model3D::setOnScreen(bool _onScreen)
 {
-    onScreen = _onScreen;
+    if (onScreen != _onScreen)
+    {
+        onScreen = _onScreen;
+        emit modelChanged();
+    }
     if (onScreen) loadRAM();
     else if (liveLoading) unloadRAM();
 }
 
 void Model3D::loadRAM()
 {
-    if (prepared && !onRAM)
+    if (prepared && !onRAM && !ramLoader)
     {
-        if (ramLoaderMutex.tryLock())
+        if (takeLoader())
         {
+            vertexLoader.lock();
             ramLoader = QThread::create(&Model3D::loadRAMthread, this);
             connect(ramLoader, SIGNAL(finished()), this, SLOT(loadingRAMfinished()));
             ramLoader->start();
         }
+        else emit modelLoadingDelayed();
     }
 }
 
@@ -244,7 +272,7 @@ void Model3D::unloadRAM()
 {
     if (onRAM)
     {
-        if (ramLoaderMutex.tryLock())
+        if (vertexLoader.tryLock())
         {
             pos.clear();
             pos.squeeze();
@@ -255,8 +283,9 @@ void Model3D::unloadRAM()
 
             setVertexOnRAM(getVertexOnRAM() - vertexNumber);
             onRAM = false;
-            ramLoaderMutex.unlock();
+            vertexLoader.unlock();
         }
+        else emit modelLoadingDelayed();
     }
 }
 
@@ -264,7 +293,7 @@ void Model3D::loadVRAM()
 {
     if (onRAM && !onVRAM)
     {
-        if (ramLoaderMutex.tryLock())
+        if (vertexLoader.tryLock())
         {
             if (!posBuffer.isCreated()) posBuffer.create();
             posBuffer.bind();
@@ -285,8 +314,9 @@ void Model3D::loadVRAM()
             }
             setVertexOnVRAM(getVertexOnVRAM() + vertexNumber);
             onVRAM = true;
-            ramLoaderMutex.unlock();
+            vertexLoader.unlock();
         }
+        else emit modelLoadingDelayed();
     }
 }
 
@@ -319,57 +349,53 @@ void Model3D::loadBoxRAM()
     if (!boxOnRAM)
     {
         box.clear();
-        QVector<glm::vec3> tempBox;
-
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.min.x,
             aabb.min.y,
             aabb.min.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.max.x,
             aabb.min.y,
             aabb.min.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.max.x,
             aabb.min.y,
             aabb.max.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.min.x,
             aabb.min.y,
             aabb.max.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.min.x,
             aabb.max.y,
             aabb.min.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.max.x,
             aabb.max.y,
             aabb.min.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.max.x,
             aabb.max.y,
             aabb.max.z
         ));
 
-        tempBox.append(vec3(
+        box.append(vec3(
             aabb.min.x,
             aabb.max.y,
             aabb.max.z
         ));
-
-        for (unsigned int i : boxIndex) box.append(tempBox[i]);
 
         boxOnRAM = true;
     }
@@ -380,9 +406,11 @@ void Model3D::unloadBoxRAM()
 {
     if (boxOnRAM)
     {
+        boxLoaderMutex.lock();
         box.clear();
         box.squeeze();
         boxOnRAM = false;
+        boxLoaderMutex.unlock();
     }
 }
 
@@ -415,8 +443,7 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
     bool drawn = false;
     if (prepared && onScreen && visible)
     {
-        if (onRAM && !onVRAM) loadVRAM();
-
+        loadVRAM();
         if (onVRAM)
         {
             mat4 wMo = getwMo();
@@ -455,8 +482,9 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
 
             drawn = true;
         }
+        else emit modelLoadingDelayed();
     }
-    if (!drawn) unloadVRAM();
+    if (!onScreen) unloadVRAM();
     return drawn;
 }
 
@@ -484,17 +512,16 @@ bool Model3D::drawBox(QOpenGLShaderProgram* shader)
                 shader->setAttributeBuffer("pos", GL_FLOAT, 0, 3);
                 boxBuffer.release();
 
-                //boxIndexBuffer.bind();
-                f->glDrawArrays(GL_LINES, 0, box.count());
-                //f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
-                //boxIndexBuffer.release();
+                boxIndexBuffer.bind();
+                f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
+                boxIndexBuffer.release();
                 shader->disableAttributeArray("pos");
 
                 drawn = true;
             }
         }
     }
-    if (!drawn)
+    if (!onScreen)
     {
         unloadBoxRAM();
         unloadBoxVRAM();
@@ -513,6 +540,7 @@ void Model3D::loadingRAMfinished()
     setVertexOnRAM(getVertexOnRAM() + vertexNumber);
     delete ramLoader;
     ramLoader = nullptr;
-    ramLoaderMutex.unlock();
+    vertexLoader.unlock();
+    releaseloader();
     emit modelLoaded();
 }

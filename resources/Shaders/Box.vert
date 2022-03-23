@@ -13,7 +13,7 @@ attribute vec3 pos;
 uniform vec3 in_color;
 uniform float opacity;
 
-varying vec3 color;
+varying vec4 color;
 
 void main()
 {
