@@ -14,10 +14,11 @@ Engine3D::Engine3D(QObject* parent)
     , viewDistanceEnabled(true)
     , waitLoading(false)
     , maxDepth(-1)
+    , limitMaxVertex(true)
+    , vertexMaxLimit(100000000)
+    , maxVertexToVRAM(1000000)
     , modelsUpdater(nullptr)
 {
-    cameras.append(new Camera);
-    mainCamera = cameras.last();
 }
 
 Engine3D::~Engine3D()
@@ -152,6 +153,7 @@ void Engine3D::update()
     }
 
     static unsigned long long frameNumber = 0;
+    unsigned long long vertexToVRAM = 0;
 
     for (Camera* camera : cameras)
     {
@@ -173,7 +175,13 @@ void Engine3D::update()
 
                 for (Model3D* model : models)
                 {
-                    model->draw(shaders[Model3D::POINTS]);
+                    if (model->isOnRAM() && !model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                    {
+                        vertexToVRAM += model->getVertexNumber();
+                        model->draw(shaders[Model3D::POINTS]);
+                    }
+                    else if(model->isOnVRAM() || waitLoading) model->draw(shaders[Model3D::POINTS]);
+                    //else if(vertexToVRAM > maxVertexToVRAM) break;
                     Octree* octree = dynamic_cast<Octree*>(model);
                     if (octree)
                     {
@@ -181,7 +189,13 @@ void Engine3D::update()
                         {
                             for (Octree* child : octree->getDepthChildren(i))
                             {
-                                child->draw(shaders[Model3D::POINTS]);
+                                if (child->isOnRAM() && !child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                                {
+                                    vertexToVRAM += child->getVertexNumber();
+                                    child->draw(shaders[Model3D::POINTS]);
+                                }
+                                else if (child->isOnVRAM() || waitLoading) child->draw(shaders[Model3D::POINTS]);
+                                //else if (vertexToVRAM > maxVertexToVRAM) break;
                             }
                         }
                     }
@@ -290,6 +304,18 @@ void Engine3D::setWaitLoading(bool enabled)
     emit askUpdate();
 }
 
+void Engine3D::setLimitMaxVertexEnabled(bool enabled)
+{
+    limitMaxVertex = enabled;
+    emit askUpdate();
+}
+
+void Engine3D::setLimitMaxVertex(double _vertexMaxLimit)
+{
+    vertexMaxLimit = _vertexMaxLimit;
+    emit askUpdate();
+}
+
 void Engine3D::updateModels()
 {
     QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthDistance;
@@ -316,13 +342,20 @@ void Engine3D::updateModels()
         if (QThread::currentThread()->isInterruptionRequested()) break;
     }
 
+    unsigned long long currentTotalVertex = 0;
     for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
     {
         for (Model3D* model : modelsByDepthDistance[i])
         {
-            model->setOnScreen(isOnScreen(model), waitLoading);
+            if (currentTotalVertex + model->getVertexNumber() <= vertexMaxLimit || !limitMaxVertex)
+            {
+                model->setOnScreen(isOnScreen(model), waitLoading);
+                if (model->isOnScreen()) currentTotalVertex += model->getVertexNumber();
+            }
+            else model->setOnScreen(false, waitLoading);
             if (QThread::currentThread()->isInterruptionRequested()) break;
         }
+        if (QThread::currentThread()->isInterruptionRequested()) break;
     }
 
     //for (Model3D* model : models)

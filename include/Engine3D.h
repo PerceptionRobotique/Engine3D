@@ -55,6 +55,8 @@ public slots:
     void setViewDistance(double _viewDistance);
     void setViewDistanceEnabled(bool enabled);
     void setWaitLoading(bool enabled);
+    void setLimitMaxVertexEnabled(bool enabled);
+    void setLimitMaxVertex(double _vertexMaxLimit);
 
 private:
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
@@ -74,6 +76,9 @@ private:
     bool viewDistanceEnabled; //limit loading distance
     bool waitLoading; //wait models loading
     int maxDepth;
+    bool limitMaxVertex;
+    unsigned long long vertexMaxLimit;
+    unsigned long long maxVertexToVRAM;
 
     QMutex drawMutex;
     QThread* modelsUpdater;

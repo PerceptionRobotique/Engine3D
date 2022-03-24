@@ -11,6 +11,8 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->viewDistanceDoubleSpinBox, SIGNAL(valueChanged(double)), &ui->openGLWidget->getEngine(), SLOT(setViewDistance(double)));
     connect(ui->viewDistanceCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setViewDistanceEnabled(bool)));
     connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setWaitLoading(bool)));
+    connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setLimitMaxVertexEnabled(bool)));
+    connect(ui->limitMaxVertexDoubleSpinBox, SIGNAL(valueChanged(double)), &ui->openGLWidget->getEngine(), SLOT(setLimitMaxVertex(double)));
 
     restoreGeometry(settings.value("WindowGeometry").toByteArray());
     restoreState(settings.value("WindowState").toByteArray());
@@ -46,12 +48,16 @@ void MainWindow::on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item)
 
 void MainWindow::updateVertexOnRAM(unsigned long long vertexOnRAM)
 {
-    ui->vertexOnRAMLabel->setText(QString::number(vertexOnRAM));
+    QString value = QString::number(vertexOnRAM);
+    for (int i = value.count() - 3; i >= 0; i -= 3) value.insert(i, ' ');
+    ui->vertexOnRAMLabel->setText(value);
 }
 
 void MainWindow::updateVertexOnVRAM(unsigned long long vertexOnVRAM)
 {
-    ui->vertexOnVRAMLabel->setText(QString::number(vertexOnVRAM));
+    QString value = QString::number(vertexOnVRAM);
+    for (int i = value.count() - 3; i >= 0; i -= 3) value.insert(i, ' ');
+    ui->vertexOnVRAMLabel->setText(value);
 }
 
 void MainWindow::updateModelLoading(Model3D* model, unsigned int progressValue)
