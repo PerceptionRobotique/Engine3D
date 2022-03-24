@@ -292,12 +292,12 @@ void Engine3D::setWaitLoading(bool enabled)
 
 void Engine3D::updateModels()
 {
-    QMap<float, Model3D*> modelsByDistance;
+    QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthDistance;
     for (Model3D* model : models)
     {
         float minDist = cameras[0]->distanceWith(model);
         for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
-        modelsByDistance[minDist] = model;
+        modelsByDepthDistance[0][minDist] = model;
         Octree* octree = dynamic_cast<Octree*>(model);
         if (octree)
         {
@@ -307,7 +307,7 @@ void Engine3D::updateModels()
                 {
                     minDist = cameras[0]->distanceWith(child);
                     for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
-                    modelsByDistance[minDist] = child;
+                    modelsByDepthDistance[child->getDepth()][minDist] = child;
                 }
                 if (QThread::currentThread()->isInterruptionRequested()) break;
             }
@@ -316,10 +316,13 @@ void Engine3D::updateModels()
         if (QThread::currentThread()->isInterruptionRequested()) break;
     }
 
-    for (Model3D* model : modelsByDistance)
+    for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
     {
-        model->setOnScreen(isOnScreen(model), waitLoading);
-        if (QThread::currentThread()->isInterruptionRequested()) break;
+        for (Model3D* model : modelsByDepthDistance[i])
+        {
+            model->setOnScreen(isOnScreen(model), waitLoading);
+            if (QThread::currentThread()->isInterruptionRequested()) break;
+        }
     }
 
     //for (Model3D* model : models)
