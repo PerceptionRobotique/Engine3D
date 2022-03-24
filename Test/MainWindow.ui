@@ -48,13 +48,6 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="text">
-         <string>View distance : </string>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="1">
        <widget class="QDoubleSpinBox" name="viewDistanceDoubleSpinBox">
         <property name="maximum">
@@ -62,6 +55,23 @@
         </property>
         <property name="value">
          <double>150.000000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="viewDistanceCheckBox">
+        <property name="text">
+         <string>Distance de vue : </string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="waitLoadingCheckBox">
+        <property name="text">
+         <string>Attendre chargement</string>
         </property>
        </widget>
       </item>
@@ -107,5 +117,22 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>viewDistanceCheckBox</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>viewDistanceDoubleSpinBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>80</x>
+     <y>250</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>188</x>
+     <y>250</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

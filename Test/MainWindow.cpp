@@ -9,6 +9,8 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
     connect(ui->openGLWidget->getEngine().getMainCamera(), SIGNAL(objectChanged()), ui->openGLWidget, SLOT(update()));
     connect(ui->viewDistanceDoubleSpinBox, SIGNAL(valueChanged(double)), &ui->openGLWidget->getEngine(), SLOT(setViewDistance(double)));
+    connect(ui->viewDistanceCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setViewDistanceEnabled(bool)));
+    connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setWaitLoading(bool)));
 
     restoreGeometry(settings.value("WindowGeometry").toByteArray());
     restoreState(settings.value("WindowState").toByteArray());

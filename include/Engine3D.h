@@ -8,6 +8,7 @@
 #include <QOpenGLShaderProgram>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QMap>
 
 #include "Camera.h"
 #include "CameraController.h"
@@ -30,6 +31,9 @@ public:
 
     void initialize();
 
+    bool isOnCamera(const Model3D* model, const Camera* camera) const;
+    bool isOnScreen(const Model3D* model) const;
+
     Camera* getMainCamera();
     QVector<Camera*>& getCameras();
     Model3D* getModel(unsigned int index);
@@ -49,12 +53,14 @@ public slots:
 
     //Optimization
     void setViewDistance(double _viewDistance);
+    void setViewDistanceEnabled(bool enabled);
+    void setWaitLoading(bool enabled);
 
 private:
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
     QOpenGLShaderProgram* boxShader;
-    Camera* mainCamera;
     QVector<Camera*> cameras;
+    Camera* mainCamera;
     QVector<Model3D*> models;
 
     float pointSize;
@@ -62,10 +68,12 @@ private:
     bool opacityEnabled;
     float opacity;
     BlendFunction blendFunction;
-    bool strict;
 
     //Optimization
     float viewDistance;
+    bool viewDistanceEnabled; //limit loading distance
+    bool waitLoading; //wait models loading
+    int maxDepth;
 
     QMutex drawMutex;
     QThread* modelsUpdater;

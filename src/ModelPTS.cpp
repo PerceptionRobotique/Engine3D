@@ -79,6 +79,7 @@ void ModelPTS::loadRAMthread()
         ts.flush();
     }
 
+    AABB aabb;
     QVector<QThread*> loaders;
     QList<QStringList> computedLines;
     QList<AABB*> computedAABB;
@@ -234,7 +235,8 @@ void ModelPTS::loadRAMthread()
 
     aabb.gravity /= vertexNumber;
     aabb.center = (aabb.max + aabb.min) / 2.0f;
-        
+    setAABB(aabb);
+
     prepared = true;
 }
 

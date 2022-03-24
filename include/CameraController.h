@@ -4,7 +4,6 @@
 #include "Camera.h"
 
 #include <QObject>
-#include <QHash>
 #include <QPoint>
 #include <QTimer>
 #include <QCursor>

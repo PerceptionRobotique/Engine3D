@@ -25,7 +25,7 @@ Camera::~Camera()
     if(FBO) delete FBO;
 }
 
-QOpenGLFramebufferObject* Camera::getFBO()
+QOpenGLFramebufferObject* Camera::getFBO() const
 {
     return FBO;
 }
@@ -42,7 +42,7 @@ bool Camera::bind()
     return FBO->bind();
 }
 
-void Camera::release()
+void Camera::release() const
 {
     FBO->release();
 }
@@ -59,20 +59,24 @@ GLuint Camera::texture()
     return textureFBO->texture();
 }
 
-QImage Camera::toImage()
+QImage Camera::toImage() const
 {
     return FBO->toImage();
 }
 
-void Camera::setSamples(unsigned int _samples)
+QSize Camera::getSize() const
 {
-    samples = _samples;
-    if(FBO)
-    {
-        delete FBO;
-        FBO = nullptr;
-    }
-    emit objectChanged();
+    return size;
+}
+
+int Camera::getWidth() const
+{
+    return size.width();
+}
+
+int Camera::getHeight() const
+{
+    return size.height();
 }
 
 void Camera::setSize(QSize _size)
@@ -122,6 +126,17 @@ void Camera::setBackgroundColor(QColor _backgroundColor)
 void Camera::setBackgroundColor(float red, float green, float blue, float alpha)
 {
     backgroundColor = QColor(red * 255.0f, green * 255.0f, blue * 255.0f, alpha * 255.0f);
+}
+
+void Camera::setSamples(unsigned int _samples)
+{
+    samples = _samples;
+    if (FBO)
+    {
+        delete FBO;
+        FBO = nullptr;
+    }
+    emit objectChanged();
 }
 
 void Camera::setViewCenter(vec3 _viewCenter)
@@ -291,7 +306,7 @@ void Camera::setView(Model3D* model, Camera::View view)
     }
 }
 
-mat4 Camera::getProjection()
+mat4 Camera::getProjection() const
 {
     mat4 projection;
     switch(projectionType)
@@ -326,7 +341,7 @@ mat4 Camera::getProjection()
 
     case EQUIRECTANGULAR:
     {
-        float arg1122 = 1.0f / pi<float>();
+        constexpr float arg1122 = 1.0f / pi<float>();
         projection = mat4(
             arg1122,    0.0f,       0.0f,                                                       0.0f,
             0.0f,       arg1122,    0.0f,                                                       0.0f,
@@ -349,7 +364,7 @@ float* Camera::getProjectionPtr()
     return value_ptr(proj);
 }
 
-mat4 Camera::getcMw()
+mat4 Camera::getcMw() const
 {
     return inverse(getPose());
 }
@@ -360,12 +375,12 @@ float* Camera::getcMwPtr()
     return value_ptr(view);
 }
 
-mat4 Camera::getwMc()
+mat4 Camera::getwMc() const
 {
     return getPose();
 }
 
-bool Camera::cullingTest(Model3D* model)
+bool Camera::cullingTest(const Model3D* model) const
 {
     QVector<glm::vec3> box = model->getBox();
     QVector<vec4> points;
@@ -414,37 +429,9 @@ bool Camera::cullingTest(Model3D* model)
     }
     else
         return false;
-
-//    bool result = true;
-//    int out,in;
-
-//    // for each plane do ...
-//    for(int i=0; i < 6; i++)
-//    {
-//        // reset counters for corners in and out
-//        out=0;in=0;
-//        // for each corner of the box do ...
-//        // get out of the cycle as soon as a box as corners
-//        // both inside and out of the frustum
-//        for (int k = 0; k < 8 && (in==0 || out==0); k++) {
-
-//            // is the corner outside or inside
-//            if (pl[i].distance(QVector3D(model->getBox()[k * 3], model->getBox()[k * 3 + 1], model->getBox()[k * 3 + 2])) < 0)
-//                out++;
-//            else
-//                in++;
-//        }
-//        //if all corners are out
-//        if (!in)
-//            return (false);
-//        // if some corners are out and others are in
-//        else if (out)
-//            result = true;
-//    }
-//    return(result);
 }
 
-float Camera::distanceWith(Model3D* model)
+float Camera::distanceWith(const Model3D* model) const
 {
     return glm::distance(getPosition(), (model->getwMo() * model->getAABB()).center);
 }
@@ -663,27 +650,27 @@ QColor Camera::getBackgroundColor() const
     return backgroundColor;
 }
 
-vec3 Camera::getViewCenter()
+vec3 Camera::getViewCenter() const
 {
     return viewCenter;
 }
 
-float Camera::getAspectRatio()
+float Camera::getAspectRatio() const
 {
     return (float)size.width()/size.height();
 }
 
-float Camera::getNearPlane()
+float Camera::getNearPlane() const
 {
     return nearPlane;
 }
 
-float Camera::getFarPlane()
+float Camera::getFarPlane() const
 {
     return farPlane;
 }
 
-float Camera::getAu()
+float Camera::getAu() const
 {
     return au;
 }
@@ -694,7 +681,7 @@ void Camera::setAu(double _au)
     setFOV(2.0f * degrees(atan(tan(radians(hfov)/2.0f) / getAspectRatio())));
 }
 
-float Camera::getAv()
+float Camera::getAv() const
 {
     return av;
 }
@@ -704,7 +691,7 @@ void Camera::setAv(double _av)
     setFOV(degrees(2.0f * atan(size.height() / (2.0f * _av))));
 }
 
-float Camera::getKu()
+float Camera::getKu() const
 {
     return ku;
 }
@@ -715,7 +702,7 @@ void Camera::setKu(double _ku)
     emit objectChanged();
 }
 
-float Camera::getKv()
+float Camera::getKv() const
 {
     return kv;
 }
@@ -726,7 +713,7 @@ void Camera::setKv(double _kv)
     emit objectChanged();
 }
 
-float Camera::getU0()
+float Camera::getU0() const
 {
     return u0;
 }
@@ -737,7 +724,7 @@ void Camera::setU0(double _u0)
     emit objectChanged();
 }
 
-float Camera::getV0()
+float Camera::getV0() const
 {
     return v0;
 }
@@ -758,17 +745,22 @@ void Camera::setFarPlane(double _farPlane)
     setFarPlane((float)_farPlane);
 }
 
-float Camera::getFOV()
+float Camera::getFOV() const
 {
     return 2.0f * degrees(atan(size.height()/(2.0f * av)));
 }
 
-float Camera::getHFOV()
+float Camera::getHFOV() const
 {
     return 2.0f * degrees(atan(size.width()/(2.0f * au)));
 }
 
-Camera::ViewPoint Camera::getViewPoint()
+Camera::ProjectionType Camera::getProjectionType() const
+{
+    return projectionType;
+}
+
+Camera::ViewPoint Camera::getViewPoint() const
 {
     return viewPoint;
 }

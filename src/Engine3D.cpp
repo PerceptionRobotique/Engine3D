@@ -2,13 +2,18 @@
 
 Engine3D::Engine3D(QObject* parent)
     : QObject(parent)
+    , boxShader(nullptr)
+    , cameras(1, new Camera)
+    , mainCamera(cameras.first())
     , pointSize(1.0f)
     , lineWidth(3.0f)
     , opacityEnabled(false)
     , opacity(1.0f)
     , blendFunction(BLEND_1)
-    , strict(false)
     , viewDistance(150.0f)
+    , viewDistanceEnabled(true)
+    , waitLoading(false)
+    , maxDepth(-1)
     , modelsUpdater(nullptr)
 {
     cameras.append(new Camera);
@@ -49,6 +54,32 @@ void Engine3D::initialize()
     setBlendFunction(blendFunction);
 }
 
+bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
+{
+    bool onScreen = camera->cullingTest(model);
+    const Octree* octree = dynamic_cast<const Octree*>(model);
+    if (octree)
+    {
+        if(maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
+        if (viewDistanceEnabled)
+        {
+            if (octree->getDepth() > round((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
+                onScreen = false;
+        }
+    }
+    return onScreen;
+}
+
+bool Engine3D::isOnScreen(const Model3D* model) const
+{
+    bool onScreen = false;
+    for (Camera* camera : cameras)
+    {
+        onScreen |= isOnCamera(model, camera);
+    }
+    return onScreen;
+}
+
 Camera* Engine3D::getMainCamera()
 {
     return mainCamera;
@@ -84,18 +115,40 @@ void Engine3D::openModel(QString fileName)
 
 void Engine3D::closeModel(unsigned int index)
 {
+    if (modelsUpdater) modelsUpdater->wait();
     delete models[index];
     models.removeAt(index);
 }
 
 void Engine3D::update()
 {
-    if (!modelsUpdater)
+    if (!waitLoading)
     {
-        modelsUpdater = QThread::create(&Engine3D::updateModels, this);
-        connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
-        modelsUpdater->start();
-        if (strict) modelsUpdater->wait();
+        if (!modelsUpdater)
+        {
+            modelsUpdater = QThread::create(&Engine3D::updateModels, this);
+            connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
+            modelsUpdater->start();
+        }
+        else emit askUpdate();
+    }
+    else
+    {
+        if (modelsUpdater) modelsUpdater->wait();
+        updateModels();
+
+        for (Model3D* model : models)
+        {
+            model->waitRAMloading();
+            Octree* octree = dynamic_cast<Octree*>(model);
+            if (octree)
+            {
+                for (Octree* child : octree->getAllChildren())
+                {
+                    child->waitRAMloading();
+                }
+            }
+        }
     }
 
     static unsigned long long frameNumber = 0;
@@ -225,17 +278,26 @@ void Engine3D::setViewDistance(double _viewDistance)
     emit askUpdate();
 }
 
+void Engine3D::setViewDistanceEnabled(bool enabled)
+{
+    viewDistanceEnabled = enabled;
+    emit askUpdate();
+}
+
+void Engine3D::setWaitLoading(bool enabled)
+{
+    waitLoading = enabled;
+    emit askUpdate();
+}
+
 void Engine3D::updateModels()
 {
+    QMap<float, Model3D*> modelsByDistance;
     for (Model3D* model : models)
     {
-        bool modelOnScreen = false;
-        for (Camera* camera : cameras)
-        {
-            modelOnScreen |= camera->cullingTest(model);
-        }
-        model->setOnScreen(modelOnScreen);
-
+        float minDist = cameras[0]->distanceWith(model);
+        for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
+        modelsByDistance[minDist] = model;
         Octree* octree = dynamic_cast<Octree*>(model);
         if (octree)
         {
@@ -243,17 +305,41 @@ void Engine3D::updateModels()
             {
                 for (Octree* child : octree->getDepthChildren(i))
                 {
-                    bool childOnScreen = false;
-                    for (Camera* camera : cameras)
-                    {
-                        if(child->getDepth() <= round((float)child->getMaxDepth() * (1 - camera->distanceWith(child) / viewDistance)))
-                            childOnScreen |= camera->cullingTest(child);
-                    }
-                    child->setOnScreen(childOnScreen);
+                    minDist = cameras[0]->distanceWith(child);
+                    for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
+                    modelsByDistance[minDist] = child;
                 }
+                if (QThread::currentThread()->isInterruptionRequested()) break;
             }
+            if (QThread::currentThread()->isInterruptionRequested()) break;
         }
+        if (QThread::currentThread()->isInterruptionRequested()) break;
     }
+
+    for (Model3D* model : modelsByDistance)
+    {
+        model->setOnScreen(isOnScreen(model), waitLoading);
+        if (QThread::currentThread()->isInterruptionRequested()) break;
+    }
+
+    //for (Model3D* model : models)
+    //{
+    //    model->setOnScreen(isOnScreen(model), waitLoading);
+    //    Octree* octree = dynamic_cast<Octree*>(model);
+    //    if (octree)
+    //    {
+    //        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+    //        {
+    //            for (Octree* child : octree->getDepthChildren(i))
+    //            {
+    //                child->setOnScreen(isOnScreen(child), waitLoading);
+    //                if (QThread::currentThread()->isInterruptionRequested()) break;
+    //            }
+    //            if (QThread::currentThread()->isInterruptionRequested()) break;
+    //        }
+    //    }
+    //    if (QThread::currentThread()->isInterruptionRequested()) break;
+    //}
 }
 
 void Engine3D::modelsUpdaterFinished()

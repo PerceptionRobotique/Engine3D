@@ -86,7 +86,7 @@ public:
     Primitives getPrimitives() const;
     mat4 getwMo() const;
     AABB getAABB() const;
-    QVector<glm::vec3> getBox();
+    QVector<glm::vec3> getBox() const;
     bool hasIntensity() const;
     bool getShowIntensity() const;
     unsigned long long getVertexNumber() const;
@@ -94,6 +94,7 @@ public:
     bool isOnScreen() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
+    void waitRAMloading() const;
 
 public slots:
     //visibility
@@ -101,11 +102,14 @@ public slots:
     void setBoxVisible(bool _boxVisible);
 
     //on screen
-    void setOnScreen(bool _onScreen);
+    void setOnScreen(bool _onScreen, bool force = false);
+
+    //AABB
+    void setAABB(AABB _aabb);
 
     //RAM
-    void loadRAM();
-    void unloadRAM();
+    void loadRAM(bool force = false);
+    void unloadRAM(bool force = false);
 
     //VRAM
     void loadVRAM();
@@ -150,6 +154,7 @@ private:
     QColor globalColor;
     QColor boxColor;
 
+    AABB aabb;
     QVector<glm::vec3> box;
     QOpenGLBuffer boxBuffer;
     QOpenGLBuffer posBuffer;
@@ -177,12 +182,12 @@ protected:
     virtual void loadRAMthread() = 0;
 
     unsigned long long vertexNumber;
-    AABB aabb;
     QVector<glm::vec3> pos;
     QVector<unsigned char> color;
     QVector<unsigned char> intensity;
 
 signals:
+    void modelCreated();
     void modelChanged();
     void modelLoadingDelayed();
     void modelLoadingUpdate(Model3D* model, unsigned int value);

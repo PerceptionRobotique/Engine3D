@@ -78,6 +78,13 @@ Model3D::Model3D(QString _fileName)
 
 Model3D::~Model3D()
 {
+    if (ramLoader != nullptr)
+    {
+        ramLoader->requestInterruption();
+        if (ramLoader->isRunning()) ramLoader->wait();
+        loadingRAMfinished();
+    }
+
     if (file != nullptr)
     {
         file->close();
@@ -85,13 +92,7 @@ Model3D::~Model3D()
         file = nullptr;
     }
 
-    if (ramLoader != nullptr)
-    {
-        ramLoader->requestInterruption();
-        if (ramLoader->isRunning()) ramLoader->wait();
-    }
-
-    if (onRAM) unloadRAM();
+    if (onRAM) unloadRAM(true);
     if (onVRAM) unloadVRAM();
     if (boxOnRAM) unloadBoxRAM();
     if (boxOnVRAM) unloadBoxVRAM();
@@ -191,9 +192,8 @@ Model3D::AABB Model3D::getAABB() const
     return aabb;
 }
 
-QVector<glm::vec3> Model3D::getBox()
+QVector<glm::vec3> Model3D::getBox() const
 {
-    if (!boxOnRAM) loadBoxRAM();
     return box;
 }
 
@@ -232,6 +232,11 @@ bool Model3D::isOnVRAM() const
     return onVRAM;
 }
 
+void Model3D::waitRAMloading() const
+{
+    if (ramLoader) ramLoader->wait();
+}
+
 void Model3D::setVisible(bool _visible)
 {
     visible = _visible;
@@ -242,22 +247,29 @@ void Model3D::setBoxVisible(bool _boxVisible)
     boxVisible = _boxVisible;
 }
 
-void Model3D::setOnScreen(bool _onScreen)
+void Model3D::setOnScreen(bool _onScreen, bool force)
 {
     if (onScreen != _onScreen)
     {
         onScreen = _onScreen;
         emit modelChanged();
     }
-    if (onScreen) loadRAM();
-    else if (liveLoading) unloadRAM();
+    if (onScreen) loadRAM(force);
+    else if (liveLoading) unloadRAM(force);
 }
 
-void Model3D::loadRAM()
+void Model3D::setAABB(AABB _aabb)
+{
+    aabb = _aabb;
+    unloadBoxVRAM();
+    loadBoxRAM();
+}
+
+void Model3D::loadRAM(bool force)
 {
     if (prepared && !onRAM && !ramLoader)
     {
-        if (takeLoader())
+        if (force ? true : takeLoader())
         {
             vertexLoader.lock();
             ramLoader = QThread::create(&Model3D::loadRAMthread, this);
@@ -268,11 +280,12 @@ void Model3D::loadRAM()
     }
 }
 
-void Model3D::unloadRAM()
+void Model3D::unloadRAM(bool force)
 {
     if (onRAM)
     {
-        if (vertexLoader.tryLock())
+        if (force) vertexLoader.lock();
+        if (vertexLoader.tryLock() || force)
         {
             pos.clear();
             pos.squeeze();
@@ -526,11 +539,7 @@ bool Model3D::drawBox(QOpenGLShaderProgram* shader)
             }
         }
     }
-    if (!onScreen)
-    {
-        unloadBoxRAM();
-        unloadBoxVRAM();
-    }
+    if (!onScreen) unloadBoxVRAM();
     return drawn;
 }
 

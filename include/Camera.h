@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QColor>
 #include <QDebug>
+#include <QMutex>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -21,7 +22,7 @@
 
 using namespace glm;
 
-class ENGINE3D_EXPORT Camera : public Object3DQt
+class ENGINE3D_EXPORT Camera : public Object3DQt, public QMutex
 {
     Q_OBJECT
 public:
@@ -50,38 +51,37 @@ public:
     Camera();
     ~Camera();
 
-    QOpenGLFramebufferObject* getFBO();
+    QOpenGLFramebufferObject* getFBO() const;
     bool bind();
-    void release();
+    void release() const;
     GLuint texture();
-    QImage toImage();
-    void setSamples(unsigned int _samples);
+    QImage toImage() const;
 
-    inline QSize getSize() { return size; };
-    inline int getWidth() {return size.width(); };
-    inline int getHeight() { return size.height(); };
+    QSize getSize() const;
+    int getWidth() const;
+    int getHeight() const;
     QColor getBackgroundColor() const;
-    vec3 getViewCenter();
-    float getAspectRatio();
-    float getNearPlane();
-    float getFarPlane();
-    float getAu();
-    float getAv();
-    float getKu();
-    float getKv();
-    float getU0();
-    float getV0();
-    float getFOV();
-    float getHFOV();
-    inline Camera::ProjectionType getProjectionType() { return projectionType; };
-    Camera::ViewPoint getViewPoint();
-    mat4 getProjection();
+    vec3 getViewCenter() const;
+    float getAspectRatio() const;
+    float getNearPlane() const;
+    float getFarPlane() const;
+    float getAu() const;
+    float getAv() const;
+    float getKu() const;
+    float getKv() const;
+    float getU0() const;
+    float getV0() const;
+    float getFOV() const;
+    float getHFOV() const;
+    Camera::ProjectionType getProjectionType() const;
+    Camera::ViewPoint getViewPoint() const;
+    mat4 getProjection() const;
     float* getProjectionPtr();
-    mat4 getcMw();
+    mat4 getcMw() const;
     float* getcMwPtr();
-    mat4 getwMc();
-    bool cullingTest(Model3D* model);
-    float distanceWith(Model3D* model);
+    mat4 getwMc() const;
+    bool cullingTest(const Model3D* model) const;
+    float distanceWith(const Model3D* model) const;
 
 public slots:
     //TRANSFORMS
@@ -114,6 +114,7 @@ public slots:
     void setHeight(int _height);
     void setBackgroundColor(QColor _backgroundColor);
     void setBackgroundColor(float red, float green, float blue, float alpha = 1.0f);
+    void setSamples(unsigned int _samples);
     void setViewCenter(vec3 _viewCenter);
     void setNearPlane(float _nearPlane);
     void setFarPlane(float _farPlane);
@@ -141,7 +142,6 @@ signals:
     void fovChanged(float);
 
 private:
-//    float viewCenterDistance;
     vec3 viewCenter;
 
     QSize size;

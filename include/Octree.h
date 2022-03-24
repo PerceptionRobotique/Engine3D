@@ -13,6 +13,7 @@ public:
 
 	Octree* getChild(unsigned int index);
 	QVector<Octree*>& getChildren();
+	QVector<Octree*>& getAllChildren();
 	QVector<Octree*>& getDepthChildren(unsigned int _depth);
 	unsigned int getDepth() const;
 	unsigned int getMaxDepth() const;
@@ -27,6 +28,7 @@ private:
 	Octree* main;
 	Octree* parent;
 	QVector<Octree*> children;
+	QVector<Octree*> allChildren;
 	QVector<QVector<Octree*>> childrenByDepth;
 	unsigned int depth;
 	unsigned int* maxDepth;

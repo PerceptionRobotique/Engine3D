@@ -70,6 +70,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 					currentParent->children[childIndex] = current;
 					if (childrenByDepth.count() < current->depth) childrenByDepth.append(QVector<Octree*>(0));
 					childrenByDepth[current->depth-1].append(current);
+					allChildren.append(current);
 				}
 			}
 			listOctree.close();
@@ -97,6 +98,11 @@ Octree* Octree::getChild(unsigned int index)
 QVector<Octree*>& Octree::getChildren()
 {
 	return children;
+}
+
+QVector<Octree*>& Octree::getAllChildren()
+{
+	return main->allChildren;
 }
 
 QVector<Octree*>& Octree::getDepthChildren(unsigned int _depth)

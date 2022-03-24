@@ -10,6 +10,7 @@
 #include <QImage>
 #include <QListWidgetItem>
 #include <QSettings>
+#include <QEventLoop>
 
 #include <QDebug>
 
