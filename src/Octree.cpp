@@ -47,6 +47,8 @@ Octree::Octree(Octree* _parent, QString _fileName)
 			+ 3 * vertexNumber * sizeof(unsigned char)
 			+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
 		);
+		//file->seek(0);
+		//ModelBIN::prepare();
 		fileMutex = new QMutex;
 		maxDepth = new unsigned int(0);
 		totalVertexNumber = new unsigned long long(vertexNumber);
