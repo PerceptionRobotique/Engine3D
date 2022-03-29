@@ -119,6 +119,7 @@
      <string>Fichier</string>
     </property>
     <addaction name="actionOpenFile"/>
+    <addaction name="actionSaveFile"/>
    </widget>
    <addaction name="menuFichier"/>
   </widget>
@@ -129,6 +130,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionSaveFile">
+   <property name="text">
+    <string>Enregistrer</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>

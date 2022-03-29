@@ -82,6 +82,7 @@ if(WITH_CONTROLLER)
         include/Controller.h
         src/Controller.cpp
     )
+    add_compile_definitions(WITH_CONTROLLER)
 endif()
 
 # include_directories(
@@ -90,27 +91,29 @@ endif()
 # )
 
 set(HEADERS
+    include/Object3D.h
+    include/Object3DQt.h
     include/Camera.h
     include/CameraController.h
     include/Model3D.h
-    include/Octree.h
     include/ModelPTS.h
     include/ModelBIN.h
-    include/Object3D.h
-    include/Object3DQt.h
+    include/Octree.h
+    include/Model3DWriter.h
     include/Engine3D_global.h
     include/Engine3D.h
 )
 
 set(SOURCES
+    src/Object3D.cpp
+    src/Object3DQt.cpp
     src/Camera.cpp
     src/CameraController.cpp
     src/Model3D.cpp
     src/ModelPTS.cpp
     src/ModelBIN.cpp
     src/Octree.cpp
-    src/Object3D.cpp
-    src/Object3DQt.cpp
+    src/Model3DWriter.cpp
     src/Engine3D.cpp
 )
 
@@ -200,11 +203,21 @@ set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
 
 if(BUILD_EXAMPLE)
     add_subdirectory(Test)
-    add_custom_command(TARGET Engine3D POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-        $<TARGET_FILE_DIR:Example>
-    )
+    if(BUILD_SHARED_LIBS)
+        if(WIN32)
+            add_custom_command(TARGET Engine3D POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+                $<TARGET_FILE_DIR:Example>
+            )
+        elseif(UNIX)
+            add_custom_command(TARGET Engine3D POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
+                $<TARGET_FILE_DIR:Example>
+            )
+        endif()
+    endif()
 endif()
 
 if(PRINT_CMAKE_VARIABLES)

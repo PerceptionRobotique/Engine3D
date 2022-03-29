@@ -36,10 +36,39 @@ public:
     };
 
     struct AABB{
-        vec3 center = vec3(0, 0, 0);
-        vec3 gravity = vec3(0, 0, 0);
         vec3 min = vec3(0, 0, 0);
         vec3 max = vec3(0, 0, 0);
+        vec3 center = vec3(0, 0, 0);
+        vec3 gravity = vec3(0, 0, 0);
+
+        //AABB()
+        //    : min(0, 0, 0)
+        //    , max(0, 0, 0)
+        //    , center(0, 0, 0)
+        //    , gravity(0, 0, 0)
+        //{
+        //};
+
+        //AABB(const AABB& aabb)
+        //{
+        //    min = aabb.min;
+        //    max = aabb.max;
+        //    center = aabb.center;
+        //    gravity = aabb.gravity;
+        //};
+
+        void updateCenter()
+        {
+            center.x = (max.x + min.x) / 2.0f;
+            center.y = (max.y + min.y) / 2.0f;
+            center.z = (max.z + min.z) / 2.0f;
+        };
+
+        bool pointInBox(glm::vec3 point)
+        {
+            return point.x >= min.x && point.y >= min.y && point.z >= min.z &&
+                point.x <= max.x && point.y <= max.y && point.z <= max.z;
+        }
     };
 
     struct StoredPose{
@@ -87,9 +116,13 @@ public:
     mat4 getwMo() const;
     AABB getAABB() const;
     QVector<glm::vec3> getBox() const;
-    bool hasIntensity() const;
     bool getShowIntensity() const;
     unsigned long long getVertexNumber() const;
+    QVector<glm::vec3>& getPos();
+    QVector<unsigned char>& getColor();
+    QVector<unsigned char>& getIntensity();
+
+    bool hasIntensity() const;
     bool isPrepared() const;
     bool isOnScreen() const;
     bool isOnRAM() const;

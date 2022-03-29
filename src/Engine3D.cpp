@@ -53,6 +53,8 @@ void Engine3D::initialize()
     setOpacityEnabled(opacityEnabled);
     setOpacity(opacity);
     setBlendFunction(blendFunction);
+
+    mainCamera->setSamples(8);
 }
 
 bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
@@ -74,10 +76,7 @@ bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
 bool Engine3D::isOnScreen(const Model3D* model) const
 {
     bool onScreen = false;
-    for (Camera* camera : cameras)
-    {
-        onScreen |= isOnCamera(model, camera);
-    }
+    for (Camera* camera : cameras) onScreen |= isOnCamera(model, camera);
     return onScreen;
 }
 
@@ -181,7 +180,6 @@ void Engine3D::update()
                         model->draw(shaders[Model3D::POINTS]);
                     }
                     else if(model->isOnVRAM() || waitLoading) model->draw(shaders[Model3D::POINTS]);
-                    //else if(vertexToVRAM > maxVertexToVRAM) break;
                     Octree* octree = dynamic_cast<Octree*>(model);
                     if (octree)
                     {
@@ -195,7 +193,6 @@ void Engine3D::update()
                                     child->draw(shaders[Model3D::POINTS]);
                                 }
                                 else if (child->isOnVRAM() || waitLoading) child->draw(shaders[Model3D::POINTS]);
-                                //else if (vertexToVRAM > maxVertexToVRAM) break;
                             }
                         }
                     }
@@ -228,7 +225,6 @@ void Engine3D::update()
             else qDebug() << "Can't bind box shader.";
             camera->release();
         }
-        else qDebug() << "Can't bind camera.";
     }
 
     GLenum err;

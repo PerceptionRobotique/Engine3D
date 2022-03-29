@@ -4,6 +4,8 @@
 #include "ModelBIN.h"
 #include "Camera.h"
 
+#define ONE_FILE_READER
+
 class ENGINE3D_EXPORT Octree : public ModelBIN
 {
 	Q_OBJECT
@@ -17,6 +19,7 @@ public:
 	QVector<Octree*>& getDepthChildren(unsigned int _depth);
 	unsigned int getDepth() const;
 	unsigned int getMaxDepth() const;
+	unsigned long long getTotaleVertexNumber() const;
 
 	Octree* operator[](std::size_t index);
 

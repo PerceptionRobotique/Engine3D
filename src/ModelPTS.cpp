@@ -87,6 +87,8 @@ void ModelPTS::loadRAMthread()
     QList<QVector<unsigned char>*> computedColor;
     QList<QVector<unsigned char>*> computedIntensity;
 
+    emit modelLoadingUpdate(this, loadingPourcentage);
+
     for (unsigned int i = 0; i < (unsigned int)QThread::idealThreadCount() && !ts.atEnd() && !QThread::currentThread()->isInterruptionRequested(); i++)
     {
         QString text = halfLine + ts.read(BYTES_PER_READ);

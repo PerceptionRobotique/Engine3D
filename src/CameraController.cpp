@@ -132,7 +132,7 @@ void CameraController::mouseMoved(MouseButton mouseButton, int x, int y)
                 else
                 {
 #endif
-                    camera->rotate((abs(camera->getRoll()) == 180.0f ? -1.0f : 1.0f) * rotationSensitivity * r.x() / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
+                    camera->rotate((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * r.x() / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
                     camera->rotate(rotationSensitivity * r.y() / 50.0f, vec3(1.0f, 0.0f, 0.0f), verticalAxisEnabled);
 #ifdef ANDROID
                 }

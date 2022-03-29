@@ -41,6 +41,29 @@ void MainWindow::on_actionOpenFile_triggered()
     }
 }
 
+void MainWindow::on_actionSaveFile_triggered()
+{
+    if (ui->modelsListWidget->currentItem())
+    {
+        QString fileName = QFileDialog::getSaveFileName(this, "Ouvrir modèle 3D", settings.value("ModelFileSave", QString()).toString(), "Modèle BIN (*.bin) ;; Modèle PTS (*.pts) ;; Modèle OCT (*.oct)");
+        if (!fileName.isEmpty())
+        {
+            bool yes = true;
+            if (QFileInfo(fileName).suffix() == "oct" && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
+            {
+                if (QMessageBox::question(this, "Fichier listOctree.txt déjà existant", "Voulez-vous écraser listOctree.txt ?") != QMessageBox::Yes)
+                    yes = false;
+            }
+            if(yes)
+            {
+                if (QFileInfo(fileName).suffix() != "pts" && ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow())->hasIntensity()) fileName.append('i');
+                settings.setValue("ModelFileSave", fileName);
+                Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
+            }
+        }
+    }
+}
+
 void MainWindow::on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item)
 {
     ui->openGLWidget->getEngine().getMainCamera()->lookAt(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->row(item)));
@@ -49,14 +72,14 @@ void MainWindow::on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item)
 void MainWindow::updateVertexOnRAM(unsigned long long vertexOnRAM)
 {
     QString value = QString::number(vertexOnRAM);
-    for (int i = value.count() - 3; i >= 0; i -= 3) value.insert(i, ' ');
+    for (int i = value.count() - 3; i >= 1; i -= 3) value.insert(i, ' ');
     ui->vertexOnRAMLabel->setText(value);
 }
 
 void MainWindow::updateVertexOnVRAM(unsigned long long vertexOnVRAM)
 {
     QString value = QString::number(vertexOnVRAM);
-    for (int i = value.count() - 3; i >= 0; i -= 3) value.insert(i, ' ');
+    for (int i = value.count() - 3; i >= 1; i -= 3) value.insert(i, ' ');
     ui->vertexOnVRAMLabel->setText(value);
 }
 

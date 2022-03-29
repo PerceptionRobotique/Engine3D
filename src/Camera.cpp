@@ -1,7 +1,9 @@
 #include "Camera.h"
 
 Camera::Camera()
-    : size(1920, 1080)
+    : active(true)
+    , viewCenter(vec3(0, 0, 0))
+    , size(1920, 1080)
     , FBO(nullptr)
     , textureFBO(nullptr)
     , backgroundColor(0, 0, 0, 255)
@@ -32,14 +34,18 @@ QOpenGLFramebufferObject* Camera::getFBO() const
 
 bool Camera::bind()
 {
-    if(FBO == nullptr)
+    if (active)
     {
-        QOpenGLFramebufferObjectFormat FBO_Format;
-        FBO_Format.setAttachment(QOpenGLFramebufferObject::Depth);
-        FBO_Format.setSamples(samples);
-        FBO = new QOpenGLFramebufferObject(size, FBO_Format);
+        if (FBO == nullptr)
+        {
+            QOpenGLFramebufferObjectFormat FBO_Format;
+            FBO_Format.setAttachment(QOpenGLFramebufferObject::Depth);
+            FBO_Format.setSamples(samples);
+            FBO = new QOpenGLFramebufferObject(size, FBO_Format);
+        }
+        return FBO->bind();
     }
-    return FBO->bind();
+    else return false;
 }
 
 void Camera::release() const
@@ -64,6 +70,11 @@ QImage Camera::toImage() const
     return FBO->toImage();
 }
 
+bool Camera::isActive() const
+{
+    return active;
+}
+
 QSize Camera::getSize() const
 {
     return size;
@@ -77,6 +88,11 @@ int Camera::getWidth() const
 int Camera::getHeight() const
 {
     return size.height();
+}
+
+void Camera::setActive(bool _active)
+{
+    active = _active;
 }
 
 void Camera::setSize(QSize _size)

@@ -57,6 +57,7 @@ public:
     GLuint texture();
     QImage toImage() const;
 
+    bool isActive() const;
     QSize getSize() const;
     int getWidth() const;
     int getHeight() const;
@@ -108,6 +109,7 @@ public slots:
     void setPitch(const float& _pitch);
     void setRoll(const float& _roll);
 
+    void setActive(bool _active);
     void setSize(QSize _size);
     void setSize(int _width, int _height); 
     void setWidth(int _width);
@@ -142,6 +144,7 @@ signals:
     void fovChanged(float);
 
 private:
+    bool active;
     vec3 viewCenter;
 
     QSize size;

@@ -10,13 +10,14 @@
 #include <QImage>
 #include <QListWidgetItem>
 #include <QSettings>
-#include <QEventLoop>
+#include <QEventLoop>>
 
 #include <QDebug>
 
 #include <glm/gtx/string_cast.hpp>
 
 #include <Model3D.h>
+#include <Model3DWriter.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -32,6 +33,7 @@ public:
 
 private slots:
     void on_actionOpenFile_triggered();
+    void on_actionSaveFile_triggered();
     void on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item);
 
     void updateVertexOnRAM(unsigned long long vertexOnRAM);

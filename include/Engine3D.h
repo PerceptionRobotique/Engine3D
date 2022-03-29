@@ -76,6 +76,7 @@ private:
     bool viewDistanceEnabled; //limit loading distance
     bool waitLoading; //wait models loading
     int maxDepth;
+    int maxMovingDepth;
     bool limitMaxVertex;
     unsigned long long vertexMaxLimit;
     unsigned long long maxVertexToVRAM;

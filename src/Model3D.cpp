@@ -197,11 +197,6 @@ QVector<glm::vec3> Model3D::getBox() const
     return box;
 }
 
-bool Model3D::hasIntensity() const
-{
-    return m_hasIntensity;
-}
-
 bool Model3D::getShowIntensity() const
 {
     return showIntensity;
@@ -210,6 +205,26 @@ bool Model3D::getShowIntensity() const
 unsigned long long Model3D::getVertexNumber() const
 {
     return vertexNumber;
+}
+
+QVector<glm::vec3>& Model3D::getPos()
+{
+    return pos;
+}
+
+QVector<unsigned char>& Model3D::getColor()
+{
+    return color;
+}
+
+QVector<unsigned char>& Model3D::getIntensity()
+{
+    return intensity;
+}
+
+bool Model3D::hasIntensity() const
+{
+    return m_hasIntensity;
 }
 
 bool Model3D::isPrepared() const
