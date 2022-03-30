@@ -1,17 +1,31 @@
 #include "Model3DWriter.h"
 
+Model3DWriter::Model3DWriter(QObject* parent)
+	: QObject(parent)
+	, writer(nullptr)
+{
+
+}
+
+Model3DWriter::~Model3DWriter()
+{
+	if (writer)
+	{
+		writer->requestInterruption();
+		writer->wait();
+		writerFinished();
+	}
+}
+
 bool Model3DWriter::write(Model3D* model, QString fileName)
 {
 	bool ok = true;
-	QFile* file = new QFile(fileName);
+	file.setFileName(fileName);
 	QFileInfo fileInfo(fileName);
-	if (file->open(QFile::WriteOnly))
+	if (file.open(QFile::WriteOnly))
 	{
 		unsigned long long vertexNumber = model->getVertexNumber();
 		float aabb[6];
-		QVector<glm::vec3> pos;
-		QVector<unsigned char> color;
-		QVector<unsigned char> intensity;
 
 		Octree* octree = dynamic_cast<Octree*>(model);
 		if (octree) vertexNumber = octree->getTotaleVertexNumber();
@@ -40,16 +54,17 @@ bool Model3DWriter::write(Model3D* model, QString fileName)
 			}
 		}
 
-		if (fileInfo.suffix() == "pts")										writePTS(file, vertexNumber, pos, color, intensity);
-		else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writeBIN(file, vertexNumber, aabb, pos, color, intensity);
-		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writeOCT(file, fileInfo, vertexNumber, model->getAABB(), pos, color, intensity);
-		file->close();
+		if (fileInfo.suffix() == "pts")										writer = QThread::create(&Model3DWriter::writePTS, &file, vertexNumber, &pos, &color, &intensity);
+		else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writer = QThread::create(&Model3DWriter::writeBIN, &file, vertexNumber, aabb, &pos, &color, &intensity);
+		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QThread::create(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity);
+		connect(writer, SIGNAL(finished()), this, SLOT(writerFinished()));
+		writer->start();
 	}
 	else ok = false;
 	return ok;
 }
 
-void Model3DWriter::writePTS(QFile* file, unsigned long long vertexNumber, QVector<glm::vec3>& pos, QVector<unsigned char>& color, QVector<unsigned char>& intensity)
+void Model3DWriter::writePTS(QFile* file, unsigned long long vertexNumber, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
 {
 	QString out;
 	QTextStream fs(file);
@@ -58,9 +73,9 @@ void Model3DWriter::writePTS(QFile* file, unsigned long long vertexNumber, QVect
 	unsigned long long nbLines = 0;
 	for (unsigned long long vertex = 0; vertex < vertexNumber; vertex++)
 	{
-		ts << Qt::endl << pos[vertex].x << ' ' << pos[vertex].y << ' ' << pos[vertex].z;
-		if (!intensity.isEmpty()) ts << ' ' << intensity[vertex];
-		ts << ' ' << color[3 * vertex] << ' ' << color[3 * vertex + 1] << ' ' << color[3 * vertex + 2];
+		ts << Qt::endl << pos->at(vertex).x << ' ' << pos->at(vertex).y << ' ' << pos->at(vertex).z;
+		if (!intensity->isEmpty()) ts << ' ' << intensity->at(vertex);
+		ts << ' ' << color->at(3 * vertex) << ' ' << color->at(3 * vertex + 1) << ' ' << color->at(3 * vertex + 2);
 		nbLines++;
 		if (nbLines >= PTS_LINES_TO_WRITE)
 		{
@@ -73,22 +88,22 @@ void Model3DWriter::writePTS(QFile* file, unsigned long long vertexNumber, QVect
 	fs << out;
 }
 
-void Model3DWriter::writeBIN(QFile* file, unsigned long long vertexNumber, float* aabb, QVector<glm::vec3>& pos, QVector<unsigned char>& color, QVector<unsigned char>& intensity)
+void Model3DWriter::writeBIN(QFile* file, unsigned long long vertexNumber, float* aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
 {
 	bool wasFileOpen = file->isOpen();
 	if (!wasFileOpen) file->open(QFile::Append);
 	file->write((char*)&vertexNumber, sizeof(unsigned long long));
 	file->write((char*)aabb, sizeof(float[6]));
-	file->write((char*)pos.constData(), pos.count() * sizeof(glm::vec3));
-	file->write((char*)color.constData(), color.count() * sizeof(unsigned char));
-	file->write((char*)intensity.constData(), intensity.count() * sizeof(unsigned char));
+	file->write((char*)pos->constData(), pos->count() * sizeof(glm::vec3));
+	file->write((char*)color->constData(), color->count() * sizeof(unsigned char));
+	file->write((char*)intensity->constData(), intensity->count() * sizeof(unsigned char));
 	if (!wasFileOpen) file->close();
 }
 
-void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>& pos, QVector<unsigned char>& color, QVector<unsigned char>& intensity)
+void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
 {
 	QFile listOctree(fileInfo.path() + "/listOctree.txt");
-	QDir(fileInfo.path()).mkdir("temp");
+	QDir(fileInfo.path()).mkdir("octTemp");
 	if (listOctree.open(QFile::WriteOnly))
 	{
 		QTextStream los(&listOctree);
@@ -103,19 +118,21 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 		vertexToCompute.last()->node = "r";
 		vertexToCompute.last()->aabb = aabb;
 
-		vertexToCompute.last()->pos = pos;
-		pos.clear();
-		vertexToCompute.last()->color = color;
-		color.clear();
-		vertexToCompute.last()->intensity = intensity;
-		intensity.clear();
+		vertexToCompute.last()->pos = *pos;
+		pos->clear();
+		vertexToCompute.last()->color = *color;
+		color->clear();
+		vertexToCompute.last()->intensity = *intensity;
+		intensity->clear();
 
 		Vertex* firstVertexToFile = new Vertex;
 		QVector<float>* firstAABB = new QVector<float>(aabbToVector(aabb));
 		takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexNumber), vertexToCompute.first(), firstVertexToFile);
-		writeBIN(file, firstVertexToFile->vertexNumber(), firstAABB->data(), firstVertexToFile->pos, firstVertexToFile->color, firstVertexToFile->intensity);
+		writeBIN(file, firstVertexToFile->vertexNumber(), firstAABB->data(), &firstVertexToFile->pos, &firstVertexToFile->color, &firstVertexToFile->intensity);
+		vertexNumber -= firstVertexToFile->vertexNumber();
 		delete firstVertexToFile;
 		delete firstAABB;
+		los << 'r';
 
 		while (vertexNumber > 0)
 		{
@@ -125,7 +142,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 			{
 				if (vertex->vertexNumber() > 0)
 				{
-					if (threads.count() >= QThread::idealThreadCount() - 2)
+					if (threads.count() >= QThread::idealThreadCount())
 					{
 						threads.first()->wait();
 						delete threads.first();
@@ -139,15 +156,16 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 							takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
 
 							QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
-							QFile file(fileInfo.path() + "/temp/" + vertexToStore->node);
+							QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
 							file.open(QFile::WriteOnly);
-							writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile.data(), vertexToWrite.pos, vertexToWrite.color, vertexToWrite.intensity);
+							writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile.data(), &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
 							file.close();
 
 							vertexToFile[vertexToStore->node] = new QFile(file.fileName());
-							vertexNumber -= vertexToStore->vertexNumber();
+							vertexNumber -= vertexToWrite.vertexNumber();
 						}
-						nextToCompute.append(*computedVertex.first());
+						if (computedVertex.first()->count() > 0)
+							nextToCompute.append(*computedVertex.first());
 						//for (Vertex* vertex : *computedVertex.first()) delete vertex;
 						//delete computedVertex.first();
 						computedVertex.removeFirst();
@@ -161,40 +179,42 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 
 			for (QThread* thread : threads)
 			{
-				thread->wait();
-				delete thread;
+				threads.first()->wait();
+				delete threads.first();
 				threads.removeFirst();
 
 				qDebug() << depth << " : " << ++computed << "/" << vertexToCompute.count() << "  " << vertexNumber;
 
 				for (Vertex* vertexToStore : *computedVertex.first())
 				{
+					Vertex vertexToWrite;
+					takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
+
 					QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
-					QFile file(fileInfo.path() + "/temp/" + vertexToStore->node);
+					QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
 					file.open(QFile::WriteOnly);
-					writeBIN(&file, vertexToStore->vertexNumber(), aabbToFile.data(), vertexToStore->pos, vertexToStore->color, vertexToStore->intensity);
+					writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile.data(), &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
 					file.close();
 
 					vertexToFile[vertexToStore->node] = new QFile(file.fileName());
-					vertexNumber -= vertexToStore->vertexNumber();
+					vertexNumber -= vertexToWrite.vertexNumber();
 				}
-				nextToCompute.append(*computedVertex.first());
+				if (computedVertex.first()->count() > 0)
+					nextToCompute.append(*computedVertex.first());
 				//for (Vertex* vertex : *computedVertex.first()) delete vertex;
 				//delete computedVertex.first();
 				computedVertex.removeFirst();
 			}
 
 			for (Vertex* vertexToDelete : vertexToCompute) delete vertexToDelete;
+			vertexToCompute.clear();
 			vertexToCompute = nextToCompute;
 
 			depth++;
-			qDebug() << "Vertex : " << vertexNumber << "  Depth : " << depth;
 		}
 
 		for (QString node : vertexToFile.keys())
-		{
-			los << node << Qt::endl;
-		}
+			los << Qt::endl << node;
 
 		for (QFile* vertexFile : vertexToFile)
 		{
@@ -205,7 +225,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 		}
 
 		listOctree.close();
-		QDir(fileInfo.path() + "/temp").removeRecursively();
+		QDir(fileInfo.path() + "/octTemp").removeRecursively();
 	}
 }
 
@@ -246,7 +266,6 @@ void Model3DWriter::computeNode(Vertex* vertex, QVector<Vertex*>* computedVertex
 			computedVertex->last()->append(vertexInBox);
 		}
 	}
-	qDebug() << vertex->vertexNumber();
 }
 
 void Model3DWriter::getVertexInBox(Vertex* vertex, Vertex* outVertex)
@@ -261,7 +280,7 @@ void Model3DWriter::getVertexInBox(Vertex* vertex, Vertex* outVertex)
 		{
 			indexes.append(i);
 			outVertex->pos.append(vertex->pos.at(i));
-			for (unsigned int j = 0; j < 3; j++) outVertex->color.append(vertex->color.at(i + j));
+			for (unsigned int j = 0; j < 3; j++) outVertex->color.append(vertex->color.at(3 * i + j));
 			if (vertex->hasIntensity())
 				outVertex->intensity.append(vertex->intensity.at(i));
 		}
@@ -281,7 +300,7 @@ void Model3DWriter::takeRandomVertex(unsigned long long vertexNumber, Vertex* ve
 	{
 		unsigned long long vertexChoosen = rg.bounded((unsigned long long)0, vertex->vertexNumber());
 		outVertex->pos.append(vertex->pos.at(vertexChoosen));
-		for (unsigned j = 0; j < 3; j++) outVertex->color.append(vertex->color.at(vertexChoosen + j));
+		for (unsigned j = 0; j < 3; j++) outVertex->color.append(vertex->color.at(3 * vertexChoosen + j));
 		if (vertex->hasIntensity())
 			outVertex->intensity.append(vertex->intensity.at(vertexChoosen));
 
@@ -301,13 +320,25 @@ void Model3DWriter::deleteIndexes(QVector<T>* vector, const QVector<U>* indexes,
 		//for (unsigned int j = 0; j < groupSize; j++)
 			//vector->swapItemsAt(indexes->at(i) + j, vector->count() - (indexes->count() - i) * groupSize + j);
 	//vector->remove(vector->count() - indexes->count() * groupSize, indexes->count() * groupSize);
-	for (unsigned long long i = 0; i < indexes->count(); i++) deleteIndex(vector, indexes->at(i)-i, groupSize);
+	if (indexes->count() > 0)
+	{
+		for (unsigned long long i = indexes->count() - 1; i > 0; i--) deleteIndex(vector, indexes->at(i), groupSize);
+		deleteIndex(vector, indexes->at(0), groupSize);
+	}
 }
 
 template<typename T, typename U>
 void Model3DWriter::deleteIndex(QVector<T>* vector, const U index, unsigned int groupSize)
 {
 	for (unsigned int i = 0; i < groupSize; i++)
-		vector->swapItemsAt(index + i, vector->count() - groupSize + i);
+		vector->swapItemsAt(groupSize * index + i, vector->count() - groupSize + i);
 	vector->remove(vector->count() - groupSize, groupSize);
+}
+
+void Model3DWriter::writerFinished()
+{
+	delete writer;
+	writer = nullptr;
+	file.close();
+	emit finished();
 }

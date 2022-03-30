@@ -100,6 +100,26 @@ QVector<Model3D*>& Engine3D::getModels()
     return models;
 }
 
+void Engine3D::lockDraw()
+{
+    drawMutex.lock();
+}
+
+void Engine3D::unlockDraw()
+{
+    drawMutex.unlock();
+}
+
+void Engine3D::lockModelsUpdater()
+{
+    modelsUpdaterMutex.lock();
+}
+
+void Engine3D::unlockModelsUpdater()
+{
+    modelsUpdaterMutex.unlock();
+}
+
 void Engine3D::openModel(QString fileName)
 {
     QFileInfo fileInfo(fileName);
@@ -122,115 +142,119 @@ void Engine3D::closeModel(unsigned int index)
 
 void Engine3D::update()
 {
-    if (!waitLoading)
+    if (drawMutex.tryLock())
     {
-        if (!modelsUpdater)
+        if (!waitLoading)
         {
-            modelsUpdater = QThread::create(&Engine3D::updateModels, this);
-            connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
-            modelsUpdater->start();
-        }
-        else emit askUpdate();
-    }
-    else
-    {
-        if (modelsUpdater) modelsUpdater->wait();
-        updateModels();
-
-        for (Model3D* model : models)
-        {
-            model->waitRAMloading();
-            Octree* octree = dynamic_cast<Octree*>(model);
-            if (octree)
+            if (!modelsUpdater)
             {
-                for (Octree* child : octree->getAllChildren())
+                modelsUpdater = QThread::create(&Engine3D::updateModels, this);
+                connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
+                modelsUpdater->start();
+            }
+            else emit askUpdate();
+        }
+        else
+        {
+            if (modelsUpdater) modelsUpdater->wait();
+            updateModels();
+
+            for (Model3D* model : models)
+            {
+                model->waitRAMloading();
+                Octree* octree = dynamic_cast<Octree*>(model);
+                if (octree)
                 {
-                    child->waitRAMloading();
+                    for (Octree* child : octree->getAllChildren())
+                    {
+                        child->waitRAMloading();
+                    }
                 }
             }
         }
-    }
 
-    static unsigned long long frameNumber = 0;
-    unsigned long long vertexToVRAM = 0;
+        static unsigned long long frameNumber = 0;
+        unsigned long long vertexToVRAM = 0;
 
-    for (Camera* camera : cameras)
-    {
-        if (camera->bind())
+        for (Camera* camera : cameras)
         {
-            if (shaders[Model3D::POINTS]->bind())
+            if (camera->bind())
             {
-                //glViewport(0, 0, camera->getWidth(), camera->getHeight());
-                glClearColor(
-                    camera->getBackgroundColor().redF(),
-                    camera->getBackgroundColor().greenF(),
-                    camera->getBackgroundColor().blueF(),
-                    camera->getBackgroundColor().alphaF());
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-                shaders[Model3D::POINTS]->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
-                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
-                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
-
-                for (Model3D* model : models)
+                if (shaders[Model3D::POINTS]->bind())
                 {
-                    if (model->isOnRAM() && !model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                    //glViewport(0, 0, camera->getWidth(), camera->getHeight());
+                    glClearColor(
+                        camera->getBackgroundColor().redF(),
+                        camera->getBackgroundColor().greenF(),
+                        camera->getBackgroundColor().blueF(),
+                        camera->getBackgroundColor().alphaF());
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                    shaders[Model3D::POINTS]->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
+                    glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
+                    glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+
+                    for (Model3D* model : models)
                     {
-                        vertexToVRAM += model->getVertexNumber();
-                        model->draw(shaders[Model3D::POINTS]);
-                    }
-                    else if(model->isOnVRAM() || waitLoading) model->draw(shaders[Model3D::POINTS]);
-                    Octree* octree = dynamic_cast<Octree*>(model);
-                    if (octree)
-                    {
-                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                        if (model->isOnRAM() && !model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
                         {
-                            for (Octree* child : octree->getDepthChildren(i))
+                            vertexToVRAM += model->getVertexNumber();
+                            model->draw(shaders[Model3D::POINTS]);
+                        }
+                        else if (model->isOnVRAM() || waitLoading) model->draw(shaders[Model3D::POINTS]);
+                        Octree* octree = dynamic_cast<Octree*>(model);
+                        if (octree)
+                        {
+                            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
                             {
-                                if (child->isOnRAM() && !child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                                for (Octree* child : octree->getDepthChildren(i))
                                 {
-                                    vertexToVRAM += child->getVertexNumber();
-                                    child->draw(shaders[Model3D::POINTS]);
+                                    if (child->isOnRAM() && !child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                                    {
+                                        vertexToVRAM += child->getVertexNumber();
+                                        child->draw(shaders[Model3D::POINTS]);
+                                    }
+                                    else if (child->isOnVRAM() || waitLoading) child->draw(shaders[Model3D::POINTS]);
                                 }
-                                else if (child->isOnVRAM() || waitLoading) child->draw(shaders[Model3D::POINTS]);
                             }
                         }
                     }
+                    shaders[Model3D::POINTS]->release();
                 }
-                shaders[Model3D::POINTS]->release();
-            }
-            else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
+                else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
 
-            if (boxShader->bind())
-            {
-                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
-                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
-                for (Model3D* model : models)
+                if (boxShader->bind())
                 {
-                    if (camera->cullingTest(model)) model->drawBox(boxShader);
-                    Octree* octree = dynamic_cast<Octree*>(model);
-                    if (octree)
+                    glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
+                    glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+                    for (Model3D* model : models)
                     {
-                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                        if (camera->cullingTest(model)) model->drawBox(boxShader);
+                        Octree* octree = dynamic_cast<Octree*>(model);
+                        if (octree)
                         {
-                            for (Octree* child : octree->getDepthChildren(i))
+                            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
                             {
-                                child->drawBox(boxShader);
+                                for (Octree* child : octree->getDepthChildren(i))
+                                {
+                                    child->drawBox(boxShader);
+                                }
                             }
                         }
                     }
+                    boxShader->release();
                 }
-                boxShader->release();
+                else qDebug() << "Can't bind box shader.";
+                camera->release();
             }
-            else qDebug() << "Can't bind box shader.";
-            camera->release();
         }
+
+        GLenum err;
+        while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
+
+        qDebug() << ++frameNumber;
+        drawMutex.unlock();
     }
-
-    GLenum err;
-    while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
-
-    qDebug() << ++frameNumber;
 }
 
 void Engine3D::setPointSizeEnabled(bool enabled)
@@ -314,64 +338,68 @@ void Engine3D::setLimitMaxVertex(double _vertexMaxLimit)
 
 void Engine3D::updateModels()
 {
-    QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthDistance;
-    for (Model3D* model : models)
+    if (modelsUpdaterMutex.tryLock())
     {
-        float minDist = cameras[0]->distanceWith(model);
-        for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
-        modelsByDepthDistance[0][minDist] = model;
-        Octree* octree = dynamic_cast<Octree*>(model);
-        if (octree)
+        QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthDistance;
+        for (Model3D* model : models)
         {
-            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+            float minDist = cameras[0]->distanceWith(model);
+            for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
+            modelsByDepthDistance[0][minDist] = model;
+            Octree* octree = dynamic_cast<Octree*>(model);
+            if (octree)
             {
-                for (Octree* child : octree->getDepthChildren(i))
+                for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
                 {
-                    minDist = cameras[0]->distanceWith(child);
-                    for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
-                    modelsByDepthDistance[child->getDepth()][minDist] = child;
+                    for (Octree* child : octree->getDepthChildren(i))
+                    {
+                        minDist = cameras[0]->distanceWith(child);
+                        for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
+                        modelsByDepthDistance[child->getDepth()][minDist] = child;
+                    }
+                    if (QThread::currentThread()->isInterruptionRequested()) break;
                 }
                 if (QThread::currentThread()->isInterruptionRequested()) break;
             }
             if (QThread::currentThread()->isInterruptionRequested()) break;
         }
-        if (QThread::currentThread()->isInterruptionRequested()) break;
-    }
 
-    unsigned long long currentTotalVertex = 0;
-    for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
-    {
-        for (Model3D* model : modelsByDepthDistance[i])
+        unsigned long long currentTotalVertex = 0;
+        for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
         {
-            if (currentTotalVertex + model->getVertexNumber() <= vertexMaxLimit || !limitMaxVertex)
+            for (Model3D* model : modelsByDepthDistance[i])
             {
-                model->setOnScreen(isOnScreen(model), waitLoading);
-                if (model->isOnScreen()) currentTotalVertex += model->getVertexNumber();
+                if (currentTotalVertex + model->getVertexNumber() <= vertexMaxLimit || !limitMaxVertex)
+                {
+                    model->setOnScreen(isOnScreen(model), waitLoading);
+                    if (model->isOnScreen()) currentTotalVertex += model->getVertexNumber();
+                }
+                else model->setOnScreen(false, waitLoading);
+                if (QThread::currentThread()->isInterruptionRequested()) break;
             }
-            else model->setOnScreen(false, waitLoading);
             if (QThread::currentThread()->isInterruptionRequested()) break;
         }
-        if (QThread::currentThread()->isInterruptionRequested()) break;
-    }
 
-    //for (Model3D* model : models)
-    //{
-    //    model->setOnScreen(isOnScreen(model), waitLoading);
-    //    Octree* octree = dynamic_cast<Octree*>(model);
-    //    if (octree)
-    //    {
-    //        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-    //        {
-    //            for (Octree* child : octree->getDepthChildren(i))
-    //            {
-    //                child->setOnScreen(isOnScreen(child), waitLoading);
-    //                if (QThread::currentThread()->isInterruptionRequested()) break;
-    //            }
-    //            if (QThread::currentThread()->isInterruptionRequested()) break;
-    //        }
-    //    }
-    //    if (QThread::currentThread()->isInterruptionRequested()) break;
-    //}
+        //for (Model3D* model : models)
+        //{
+        //    model->setOnScreen(isOnScreen(model), waitLoading);
+        //    Octree* octree = dynamic_cast<Octree*>(model);
+        //    if (octree)
+        //    {
+        //        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+        //        {
+        //            for (Octree* child : octree->getDepthChildren(i))
+        //            {
+        //                child->setOnScreen(isOnScreen(child), waitLoading);
+        //                if (QThread::currentThread()->isInterruptionRequested()) break;
+        //            }
+        //            if (QThread::currentThread()->isInterruptionRequested()) break;
+        //        }
+        //    }
+        //    if (QThread::currentThread()->isInterruptionRequested()) break;
+        //}
+        modelsUpdaterMutex.unlock();
+    }
 }
 
 void Engine3D::modelsUpdaterFinished()

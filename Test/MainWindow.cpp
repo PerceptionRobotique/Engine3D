@@ -5,6 +5,7 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , settings("settings.ini", QSettings::IniFormat, this)
+    , modelWriter(this)
 {
     ui->setupUi(this);
     connect(ui->openGLWidget->getEngine().getMainCamera(), SIGNAL(objectChanged()), ui->openGLWidget, SLOT(update()));
@@ -13,6 +14,7 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setWaitLoading(bool)));
     connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setLimitMaxVertexEnabled(bool)));
     connect(ui->limitMaxVertexDoubleSpinBox, SIGNAL(valueChanged(double)), &ui->openGLWidget->getEngine(), SLOT(setLimitMaxVertex(double)));
+    connect(&modelWriter, SIGNAL(finished()), this, SLOT(modelWriterFinished()));
 
     restoreGeometry(settings.value("WindowGeometry").toByteArray());
     restoreState(settings.value("WindowState").toByteArray());
@@ -45,20 +47,41 @@ void MainWindow::on_actionSaveFile_triggered()
 {
     if (ui->modelsListWidget->currentItem())
     {
-        QString fileName = QFileDialog::getSaveFileName(this, "Ouvrir modèle 3D", settings.value("ModelFileSave", QString()).toString(), "Modèle BIN (*.bin) ;; Modèle PTS (*.pts) ;; Modèle OCT (*.oct)");
+        QString fileName = settings.value("ModelFileSave", QString()).toString();
+        QStringList filterList = { "Modèle PTS (*.pts)", "Modèle BIN (*.bin)", "Modèle BINI (*.bini)", "Modèle OCT (*.oct)", "Modèle OCTI (*.octi)" };
+        QString selectedFilter;
+        for (QString filter : filterList)
+            if (QFileInfo(fileName).suffix() == filter.split("*.")[1].remove(')')) selectedFilter = filter;
+        
+        QString filters = filterList[0];
+        for (unsigned int i = 1; i < filterList.count(); i++) filters += " ;; " + filterList[i];
+
+        fileName = QFileDialog::getSaveFileName(this, "Ouvrir modèle 3D", fileName, filters, &selectedFilter);
         if (!fileName.isEmpty())
         {
             bool yes = true;
-            if (QFileInfo(fileName).suffix() == "oct" && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
+            if (QFileInfo(fileName).suffix().contains("oct") && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
             {
                 if (QMessageBox::question(this, "Fichier listOctree.txt déjà existant", "Voulez-vous écraser listOctree.txt ?") != QMessageBox::Yes)
                     yes = false;
             }
             if(yes)
             {
-                if (QFileInfo(fileName).suffix() != "pts" && ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow())->hasIntensity()) fileName.append('i');
                 settings.setValue("ModelFileSave", fileName);
-                Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
+                settings.sync();
+
+                ui->openGLWidget->getEngine().lockModelsUpdater();
+                QEventLoop loop(this);
+
+                QThread* loader = QThread::create(&Model3DWriter::write, &modelWriter, ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
+                connect(loader, SIGNAL(finished()), &loop, SLOT(quit()));
+                loader->start();
+                loop.exec();
+
+                delete loader;
+
+                ui->openGLWidget->getEngine().unlockModelsUpdater();
+                //Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
             }
         }
     }
@@ -89,6 +112,11 @@ void MainWindow::updateModelLoading(Model3D* model, unsigned int progressValue)
     for (index = 0; index < ui->modelsListWidget->count() && ui->openGLWidget->getEngine().getModel(index) != model; index++);
 
     ui->modelsListWidget->item(index)->setText(model->getName() + (progressValue < 100 ? " (" + QString::number(progressValue) + "%)" : ""));
+}
+
+void MainWindow::modelWriterFinished()
+{
+    QMessageBox::information(this, "Ecriture du modèle", "L'écriture du modèle est terminée !");
 }
 
 void MainWindow::keyPressEvent(QKeyEvent* event)

@@ -10,7 +10,7 @@
 #include <QImage>
 #include <QListWidgetItem>
 #include <QSettings>
-#include <QEventLoop>>
+#include <QEventLoop>
 
 #include <QDebug>
 
@@ -40,9 +40,13 @@ private slots:
     void updateVertexOnVRAM(unsigned long long vertexOnVRAM);
     void updateModelLoading(Model3D* model, unsigned int progressValue);
 
+    void modelWriterFinished();
+
 private:
     Ui::MainWindow* ui;
     QSettings settings;
+
+    Model3DWriter modelWriter;
 
     void keyPressEvent(QKeyEvent* event) override;
 };

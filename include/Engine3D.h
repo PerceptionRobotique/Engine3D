@@ -39,6 +39,11 @@ public:
     Model3D* getModel(unsigned int index);
     QVector<Model3D*>& getModels();
 
+    void lockDraw();
+    void unlockDraw();
+    void lockModelsUpdater();
+    void unlockModelsUpdater();
+
 public slots:
     void openModel(QString fileName);
     void closeModel(unsigned int index);
@@ -82,6 +87,7 @@ private:
     unsigned long long maxVertexToVRAM;
 
     QMutex drawMutex;
+    QMutex modelsUpdaterMutex;
     QThread* modelsUpdater;
     void updateModels();
 
