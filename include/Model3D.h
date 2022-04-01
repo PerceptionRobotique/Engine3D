@@ -29,10 +29,10 @@ class ENGINE3D_EXPORT Model3D : public Object3DQt
     Q_OBJECT
 
 public:
-    enum Primitives{
-        TRIANGLES = GL_TRIANGLES,
+    enum Primitives : GLuint {
         POINTS = GL_POINTS,
-        LINES = GL_LINES
+        LINES = GL_LINES,
+        TRIANGLES = GL_TRIANGLES
     };
 
     struct AABB{
@@ -40,22 +40,6 @@ public:
         vec3 max = vec3(0, 0, 0);
         vec3 center = vec3(0, 0, 0);
         vec3 gravity = vec3(0, 0, 0);
-
-        //AABB()
-        //    : min(0, 0, 0)
-        //    , max(0, 0, 0)
-        //    , center(0, 0, 0)
-        //    , gravity(0, 0, 0)
-        //{
-        //};
-
-        //AABB(const AABB& aabb)
-        //{
-        //    min = aabb.min;
-        //    max = aabb.max;
-        //    center = aabb.center;
-        //    gravity = aabb.gravity;
-        //};
 
         void updateCenter()
         {
@@ -218,6 +202,7 @@ protected:
     QThread* ramLoader;
     bool onRAM;
     virtual void loadRAMthread() = 0;
+    void endRAMloading();
 
     unsigned long long vertexNumber;
     QVector<glm::vec3> pos;

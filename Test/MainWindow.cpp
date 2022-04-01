@@ -119,22 +119,22 @@ void MainWindow::modelWriterFinished()
     QMessageBox::information(this, "Ecriture du modèle", "L'écriture du modèle est terminée !");
 }
 
-void MainWindow::keyPressEvent(QKeyEvent* event)
+void MainWindow::keyPressEvent(QKeyEvent* e)
 {
-    if (event->modifiers().testFlag(Qt::ControlModifier) && event->key() == Qt::Key_W)
+    if (e->modifiers().testFlag(Qt::ControlModifier) && e->key() == Qt::Key_W)
     {
         if (ui->modelsListWidget->currentItem() != nullptr)
         {
             ui->openGLWidget->getEngine().closeModel(ui->modelsListWidget->currentRow());
             ui->modelsListWidget->takeItem(ui->modelsListWidget->currentRow());
         }
-        event->accept();
+        e->accept();
     }
-    else if (event->modifiers().testFlag(Qt::ControlModifier) && event->key() == Qt::Key_U)
+    else if (e->modifiers().testFlag(Qt::ControlModifier) && e->key() == Qt::Key_U)
     {
         ui->openGLWidget->update();
-        event->accept();
+        e->accept();
     }
     else
-        event->ignore();
+        e->ignore();
 }

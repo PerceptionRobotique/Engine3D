@@ -5,6 +5,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <QMouseEvent>
+#include <QKeyEvent>
 #include <QTouchEvent>
 #include <QColor>
 
@@ -29,6 +30,7 @@ private:
     void mouseReleaseEvent(QMouseEvent* e) override;
     void mouseDoubleClickEvent(QMouseEvent* e) override;
     void wheelEvent(QWheelEvent* e) override;
+    void keyPressEvent(QKeyEvent* e) override;
     bool event(QEvent* e) override;
 
     QOpenGLShaderProgram shader;

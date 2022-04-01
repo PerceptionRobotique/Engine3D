@@ -3,7 +3,7 @@
 ModelBIN::ModelBIN(QString _fileName)
 	: Model3D(_fileName)
 {
-	primitives = Model3D::POINTS;
+	primitives = POINTS;
 
 	if (file != nullptr)
 	{
@@ -41,4 +41,5 @@ void ModelBIN::loadRAMthread()
 	file->read((char*)pos.data(), vertexNumber * sizeof(glm::vec3));
 	file->read((char*)color.data(), 3 * vertexNumber * sizeof(unsigned char));
 	if(hasIntensity()) file->read((char*)intensity.data(), vertexNumber * sizeof(unsigned char));
+	endRAMloading();
 }

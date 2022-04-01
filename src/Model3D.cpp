@@ -563,13 +563,17 @@ void Model3D::setwMo(mat4 wMo)
     setPose(wMo);
 }
 
-void Model3D::loadingRAMfinished()
+void Model3D::endRAMloading()
 {
     onRAM = true;
-    setVertexOnRAM(getVertexOnRAM() + vertexNumber);
-    delete ramLoader;
-    ramLoader = nullptr;
     vertexLoader.unlock();
     releaseloader();
+    setVertexOnRAM(getVertexOnRAM() + vertexNumber);
     emit modelLoaded();
+}
+
+void Model3D::loadingRAMfinished()
+{
+    delete ramLoader;
+    ramLoader = nullptr;
 }

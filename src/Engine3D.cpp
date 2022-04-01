@@ -53,8 +53,6 @@ void Engine3D::initialize()
     setOpacityEnabled(opacityEnabled);
     setOpacity(opacity);
     setBlendFunction(blendFunction);
-
-    mainCamera->setSamples(8);
 }
 
 bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
@@ -248,6 +246,37 @@ void Engine3D::update()
                 camera->release();
             }
         }
+
+        //ANALYSE
+        //unsigned long long vertexOnScreen = 0;
+        //unsigned long long vertexOnRAM = 0;
+        //unsigned long long vertexOnVRAM = 0;
+        //unsigned long long problems = 0;
+        //for (Model3D* model : models)
+        //{
+        //    vertexOnScreen += (int)model->isOnScreen();
+        //    vertexOnRAM += (int)model->isOnRAM();
+        //    vertexOnVRAM += (int)model->isOnVRAM();
+
+        //    Octree* octree = dynamic_cast<Octree*>(model);
+        //    if (octree)
+        //    {
+        //        for (Model3D* child : octree->getAllChildren())
+        //        {
+        //            vertexOnScreen += (int)child->isOnScreen();
+        //            vertexOnRAM += (int)child->isOnRAM();
+        //            vertexOnVRAM += (int)child->isOnVRAM();
+        //            if (child->isOnScreen())
+        //                if (!child->isOnRAM())
+        //                    problems++;
+        //                else if (!child->isOnVRAM())
+        //                    problems++;
+        //        }
+        //    }
+        //}
+        //qDebug() << "On screen : " << vertexOnScreen;
+        //qDebug() << "On RAM : " << vertexOnRAM;
+        //qDebug() << "On VRAM : " << vertexOnVRAM;
 
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;

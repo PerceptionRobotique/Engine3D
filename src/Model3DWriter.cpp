@@ -25,7 +25,7 @@ bool Model3DWriter::write(Model3D* model, QString fileName)
 	if (file.open(QFile::WriteOnly))
 	{
 		unsigned long long vertexNumber = model->getVertexNumber();
-		float aabb[6];
+		QVector<float> aabb(6);
 
 		Octree* octree = dynamic_cast<Octree*>(model);
 		if (octree) vertexNumber = octree->getTotaleVertexNumber();
@@ -88,12 +88,12 @@ void Model3DWriter::writePTS(QFile* file, unsigned long long vertexNumber, QVect
 	fs << out;
 }
 
-void Model3DWriter::writeBIN(QFile* file, unsigned long long vertexNumber, float* aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
+void Model3DWriter::writeBIN(QFile* file, unsigned long long vertexNumber, QVector<float> aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
 {
 	bool wasFileOpen = file->isOpen();
 	if (!wasFileOpen) file->open(QFile::Append);
 	file->write((char*)&vertexNumber, sizeof(unsigned long long));
-	file->write((char*)aabb, sizeof(float[6]));
+	file->write((char*)aabb.constData(), sizeof(float[6]));
 	file->write((char*)pos->constData(), pos->count() * sizeof(glm::vec3));
 	file->write((char*)color->constData(), color->count() * sizeof(unsigned char));
 	file->write((char*)intensity->constData(), intensity->count() * sizeof(unsigned char));
@@ -128,7 +128,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 		Vertex* firstVertexToFile = new Vertex;
 		QVector<float>* firstAABB = new QVector<float>(aabbToVector(aabb));
 		takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexNumber), vertexToCompute.first(), firstVertexToFile);
-		writeBIN(file, firstVertexToFile->vertexNumber(), firstAABB->data(), &firstVertexToFile->pos, &firstVertexToFile->color, &firstVertexToFile->intensity);
+		writeBIN(file, firstVertexToFile->vertexNumber(), *firstAABB, &firstVertexToFile->pos, &firstVertexToFile->color, &firstVertexToFile->intensity);
 		vertexNumber -= firstVertexToFile->vertexNumber();
 		delete firstVertexToFile;
 		delete firstAABB;
@@ -158,7 +158,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 							QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
 							QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
 							file.open(QFile::WriteOnly);
-							writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile.data(), &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
+							writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile, &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
 							file.close();
 
 							vertexToFile[vertexToStore->node] = new QFile(file.fileName());
@@ -193,7 +193,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 					QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
 					QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
 					file.open(QFile::WriteOnly);
-					writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile.data(), &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
+					writeBIN(&file, vertexToWrite.vertexNumber(), aabbToFile, &vertexToWrite.pos, &vertexToWrite.color, &vertexToWrite.intensity);
 					file.close();
 
 					vertexToFile[vertexToStore->node] = new QFile(file.fileName());

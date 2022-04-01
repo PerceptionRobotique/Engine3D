@@ -240,6 +240,7 @@ void ModelPTS::loadRAMthread()
     setAABB(aabb);
 
     prepared = true;
+    endRAMloading();
 }
 
 void ModelPTS::computePTSLines(const QStringList& lines, Model3D::AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity)

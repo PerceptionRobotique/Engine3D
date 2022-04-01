@@ -164,6 +164,81 @@ void OpenGLWidget::mouseDoubleClickEvent(QMouseEvent* e)
     Q_UNUSED(e);
 }
 
+void OpenGLWidget::keyPressEvent(QKeyEvent* e)
+{
+    switch (e->key())
+    {
+    case Qt::Key_Up:
+        cameraController.keyPressed(CameraController::K_UP);
+        e->accept();
+        break;
+
+    case Qt::Key_Down:
+        cameraController.keyPressed(CameraController::K_DOWN);
+        e->accept();
+        break;
+
+    case Qt::Key_Left:
+        cameraController.keyPressed(CameraController::K_LEFT);
+        e->accept();
+        break;
+
+    case Qt::Key_Right:
+        cameraController.keyPressed(CameraController::K_RIGHT);
+        e->accept();
+        break;
+
+    case Qt::Key_Shift:
+        cameraController.keyPressed(CameraController::K_SHIFT);
+        e->accept();
+        break;
+
+    case Qt::Key_Space:
+        cameraController.keyPressed(CameraController::K_SPACE);
+        e->accept();
+        break;
+
+    case Qt::Key_Control:
+        cameraController.keyPressed(CameraController::K_CTRL);
+        e->accept();
+        break;
+
+    case Qt::Key_Z:
+        cameraController.keyPressed(CameraController::K_Z);
+        e->accept();
+        break;
+
+    case Qt::Key_Q:
+        cameraController.keyPressed(CameraController::K_Q);
+        e->accept();
+        break;
+
+    case Qt::Key_S:
+        cameraController.keyPressed(CameraController::K_S);
+        e->accept();
+        break;
+
+    case Qt::Key_D:
+        cameraController.keyPressed(CameraController::K_D);
+        e->accept();
+        break;
+
+    case Qt::Key_A:
+        cameraController.keyPressed(CameraController::K_A);
+        e->accept();
+        break;
+
+    case Qt::Key_E:
+        cameraController.keyPressed(CameraController::K_E);
+        e->accept();
+        break;
+
+    default:
+        e->ignore();
+        break;
+    }
+}
+
 void OpenGLWidget::wheelEvent(QWheelEvent* e)
 {
     cameraController.mouseWheelMoved(e->angleDelta().x(), e->angleDelta().y());

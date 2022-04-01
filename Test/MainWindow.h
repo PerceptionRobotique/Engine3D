@@ -8,6 +8,7 @@
 #include <QGraphicsPixmapItem>
 #include <QPixmap>
 #include <QImage>
+#include <QKeyEvent>
 #include <QListWidgetItem>
 #include <QSettings>
 #include <QEventLoop>
@@ -48,7 +49,7 @@ private:
 
     Model3DWriter modelWriter;
 
-    void keyPressEvent(QKeyEvent* event) override;
+    void keyPressEvent(QKeyEvent* e) override;
 };
 
 #endif // MAINWINDOW_H
