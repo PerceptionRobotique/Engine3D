@@ -44,8 +44,8 @@ set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
 # set(WITH_CONTROLLER OFF CACHE BOOL "Include controller functions")
 # set(WITH_VR OFF CACHE BOOL "Include VR functions")
 
-find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL OpenGLWidgets REQUIRED)
+find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets Concurrent REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL OpenGLWidgets Concurrent REQUIRED)
 
 if(WIN32)
     find_package(GLM REQUIRED)
@@ -136,6 +136,7 @@ target_link_libraries(Example
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::OpenGL
     Qt${QT_VERSION_MAJOR}::OpenGLWidgets
+    Qt${QT_VERSION_MAJOR}::Concurrent
 
     ${Engine3D_LIBRARIES}
 )
@@ -191,6 +192,10 @@ if(WIN32)
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGLWidgets$<$<CONFIG:Debug>:d>.dll"
+        $<TARGET_FILE_DIR:Example>
+
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Concurrent$<$<CONFIG:Debug>:d>.dll"
         $<TARGET_FILE_DIR:Example>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

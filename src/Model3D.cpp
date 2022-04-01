@@ -3,11 +3,9 @@
 unsigned int Model3D::model3DNumber(0);
 QOpenGLBuffer Model3D::boxIndexBuffer(QOpenGLBuffer::IndexBuffer);
 QVector<unsigned int> Model3D::boxIndex{ 0, 1, 1, 2, 2, 3, 3, 0, 0, 4, 1, 5, 2, 6, 3, 7, 4, 5, 5, 6, 6, 7, 7, 4 };
-QMutex Model3D::vertexMutex;
+QMutex Model3D::vertexNumberMutex;
 unsigned long long Model3D::vertexOnRAM(0);
 unsigned long long Model3D::vertexOnVRAM(0);
-unsigned int Model3D::loaderNumber(0);
-QMutex Model3D::loaderTaker;
 
 Model3D::Model3D(QString _fileName)
     : vertexNumber(0)
@@ -25,7 +23,6 @@ Model3D::Model3D(QString _fileName)
     , fileInfo(_fileName)
     , settings(nullptr)
     , m_hasIntensity(false)
-    , ramLoader(nullptr)
     , onRAM(false)
     , globalColorEnabled(false)
     , globalColor(255, 255, 255, 255)
@@ -78,12 +75,7 @@ Model3D::Model3D(QString _fileName)
 
 Model3D::~Model3D()
 {
-    if (ramLoader != nullptr)
-    {
-        ramLoader->requestInterruption();
-        if (ramLoader->isRunning()) ramLoader->wait();
-        loadingRAMfinished();
-    }
+    ramLoader.cancel();
 
     if (file != nullptr)
     {
@@ -121,55 +113,35 @@ Model3D::~Model3D()
 unsigned long long Model3D::getVertexOnRAM()
 {
     unsigned long long value;
-    vertexMutex.lock();
+    vertexNumberMutex.lock();
     value = vertexOnRAM;
-    vertexMutex.unlock();
+    vertexNumberMutex.unlock();
     return value;
 }
 
 unsigned long long Model3D::getVertexOnVRAM()
 {
     unsigned long long value;
-    vertexMutex.lock();
+    vertexNumberMutex.lock();
     value = vertexOnVRAM;
-    vertexMutex.unlock();
+    vertexNumberMutex.unlock();
     return value;
-}
-
-bool Model3D::takeLoader()
-{
-    bool ok = false;
-    loaderTaker.lock();
-    if (loaderNumber < QThread::idealThreadCount())
-    {
-        loaderNumber++;
-        ok = true;
-    }
-    loaderTaker.unlock();
-    return ok;
-}
-
-void Model3D::releaseloader()
-{
-    loaderTaker.lock();
-    if(loaderNumber > 0) loaderNumber--;
-    loaderTaker.unlock();
 }
 
 void Model3D::setVertexOnRAM(unsigned long long value)
 {
-    vertexMutex.lock();
+    vertexNumberMutex.lock();
     vertexOnRAM = value;
     emit vertexOnRAMChanged(vertexOnRAM);
-    vertexMutex.unlock();
+    vertexNumberMutex.unlock();
 }
 
 void Model3D::setVertexOnVRAM(unsigned long long value)
 {
-    vertexMutex.lock();
+    vertexNumberMutex.lock();
     vertexOnVRAM = value;
     emit vertexOnVRAMChanged(vertexOnVRAM);
-    vertexMutex.unlock();
+    vertexNumberMutex.unlock();
 }
 
 QString Model3D::getName() const
@@ -247,9 +219,9 @@ bool Model3D::isOnVRAM() const
     return onVRAM;
 }
 
-void Model3D::waitRAMloading() const
+void Model3D::waitRAMloading()
 {
-    if (ramLoader) ramLoader->wait();
+    ramLoader.waitForFinished();
 }
 
 void Model3D::setVisible(bool _visible)
@@ -282,15 +254,10 @@ void Model3D::setAABB(AABB _aabb)
 
 void Model3D::loadRAM(bool force)
 {
-    if (prepared && !onRAM && !ramLoader)
+    if (prepared && !onRAM && !ramLoader.isRunning())
     {
-        if (force ? true : takeLoader())
-        {
-            vertexLoader.lock();
-            ramLoader = QThread::create(&Model3D::loadRAMthread, this);
-            connect(ramLoader, SIGNAL(finished()), this, SLOT(loadingRAMfinished()));
-            ramLoader->start();
-        }
+        if (force) vertexLoader.lock();
+        if(force ? true : vertexLoader.tryLock()) ramLoader = QtConcurrent::run(&Model3D::loadRAMthread, this);
         else emit modelLoadingDelayed();
     }
 }
@@ -475,7 +442,6 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
     {
         if (onScreen && visible)
         {
-            loadVRAM();
             if (onVRAM)
             {
                 mat4 wMo = getwMo();
@@ -516,7 +482,6 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
             }
             else emit modelLoadingDelayed();
         }
-        else unloadVRAM();
     }
     return drawn;
 }
@@ -567,13 +532,6 @@ void Model3D::endRAMloading()
 {
     onRAM = true;
     vertexLoader.unlock();
-    releaseloader();
     setVertexOnRAM(getVertexOnRAM() + vertexNumber);
     emit modelLoaded();
-}
-
-void Model3D::loadingRAMfinished()
-{
-    delete ramLoader;
-    ramLoader = nullptr;
 }

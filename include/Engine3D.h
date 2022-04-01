@@ -16,6 +16,8 @@
 #include "ModelBIN.h"
 #include "Octree.h"
 
+//#define FRAME_COUNTER
+
 class ENGINE3D_EXPORT Engine3D : public QObject, public QOpenGLFunctions
 {
     Q_OBJECT
@@ -38,6 +40,7 @@ public:
     QVector<Camera*>& getCameras();
     Model3D* getModel(unsigned int index);
     QVector<Model3D*>& getModels();
+    float getOpacity() const;
 
     void lockDraw();
     void unlockDraw();
@@ -61,7 +64,7 @@ public slots:
     void setViewDistanceEnabled(bool enabled);
     void setWaitLoading(bool enabled);
     void setLimitMaxVertexEnabled(bool enabled);
-    void setLimitMaxVertex(double _vertexMaxLimit);
+    void setLimitMaxVertex(int _vertexMaxLimit);
 
 private:
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;

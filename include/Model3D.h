@@ -13,6 +13,8 @@
 #include <QColor>
 #include <QSettings>
 #include <QVariant>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -116,7 +118,7 @@ public:
     bool isOnScreen() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
-    void waitRAMloading() const;
+    void waitRAMloading();
 
 public slots:
     //visibility
@@ -150,14 +152,10 @@ public slots:
 
     void setwMo(mat4 wMo);
 
-private slots:
-    void loadingRAMfinished();
-
 private:
-    static QMutex vertexMutex;
+    static QMutex vertexNumberMutex;
     static unsigned long long vertexOnRAM;
     static unsigned long long vertexOnVRAM;
-    static unsigned int loaderNumber;
     void setVertexOnVRAM(unsigned long long value);
 
     QString fileName;
@@ -184,9 +182,6 @@ private:
     QOpenGLBuffer intensityBuffer;
 
 protected:
-    static QMutex loaderTaker;
-    static bool takeLoader(); //threads number managment
-    static void releaseloader();
     void setVertexOnRAM(unsigned long long value);
 
     QFile* file;
@@ -199,7 +194,7 @@ protected:
     bool m_hasIntensity;
 
     QMutex vertexLoader; //avoids load and unload at the same time
-    QThread* ramLoader;
+    QFuture<void> ramLoader;
     bool onRAM;
     virtual void loadRAMthread() = 0;
     void endRAMloading();

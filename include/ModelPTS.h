@@ -5,7 +5,7 @@
 
 #include <QFile>
 #include <QFileInfo>
-#include <QThread>
+#include <functional>
 
 #define BYTES_PER_READ 1000000
 
@@ -18,6 +18,8 @@ public:
 	void loadRAMthread() override;
 
 private:
+	bool stop;
+	QList<QFuture<void>> loaders;
 	void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
 };
 

@@ -64,7 +64,7 @@ bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
         if(maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
         if (viewDistanceEnabled)
         {
-            if (octree->getDepth() > round((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
+            if (octree->getDepth() > ceil((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
                 onScreen = false;
         }
     }
@@ -96,6 +96,11 @@ Model3D* Engine3D::getModel(unsigned int index)
 QVector<Model3D*>& Engine3D::getModels()
 {
     return models;
+}
+
+float Engine3D::getOpacity() const
+{
+    return opacity;
 }
 
 void Engine3D::lockDraw()
@@ -194,12 +199,18 @@ void Engine3D::update()
 
                     for (Model3D* model : models)
                     {
-                        if (model->isOnRAM() && !model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                        if (model->isOnRAM())
                         {
-                            vertexToVRAM += model->getVertexNumber();
-                            model->draw(shaders[Model3D::POINTS]);
+                            if (model->isOnVRAM()) model->draw(shaders[Model3D::POINTS]);
+                            else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || waitLoading)
+                            {
+                                vertexToVRAM += model->getVertexNumber();
+                                model->loadVRAM();
+                                model->draw(shaders[Model3D::POINTS]);
+                            }
+                            else emit askUpdate();
                         }
-                        else if (model->isOnVRAM() || waitLoading) model->draw(shaders[Model3D::POINTS]);
+                        else model->unloadVRAM();
                         Octree* octree = dynamic_cast<Octree*>(model);
                         if (octree)
                         {
@@ -207,12 +218,18 @@ void Engine3D::update()
                             {
                                 for (Octree* child : octree->getDepthChildren(i))
                                 {
-                                    if (child->isOnRAM() && !child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM)
+                                    if (child->isOnRAM())
                                     {
-                                        vertexToVRAM += child->getVertexNumber();
-                                        child->draw(shaders[Model3D::POINTS]);
+                                        if (child->isOnVRAM()) child->draw(shaders[Model3D::POINTS]);
+                                        else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || waitLoading)
+                                        {
+                                            vertexToVRAM += child->getVertexNumber();
+                                            child->loadVRAM();
+                                            child->draw(shaders[Model3D::POINTS]);
+                                        }
+                                        else emit askUpdate();
                                     }
-                                    else if (child->isOnVRAM() || waitLoading) child->draw(shaders[Model3D::POINTS]);
+                                    else child->unloadVRAM();
                                 }
                             }
                         }
@@ -257,7 +274,6 @@ void Engine3D::update()
         //    vertexOnScreen += (int)model->isOnScreen();
         //    vertexOnRAM += (int)model->isOnRAM();
         //    vertexOnVRAM += (int)model->isOnVRAM();
-
         //    Octree* octree = dynamic_cast<Octree*>(model);
         //    if (octree)
         //    {
@@ -281,7 +297,9 @@ void Engine3D::update()
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
 
+#ifdef FRAME_COUNTER
         qDebug() << ++frameNumber;
+#endif
         drawMutex.unlock();
     }
 }
@@ -319,6 +337,7 @@ void Engine3D::setOpacityEnabled(bool enabled)
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
     }
+    emit askUpdate();
 }
 
 void Engine3D::setOpacity(float _opacity)
@@ -327,12 +346,14 @@ void Engine3D::setOpacity(float _opacity)
     shaders[Model3D::POINTS]->bind();
     shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
     shaders[Model3D::POINTS]->release();
+    emit askUpdate();
 }
 
 void Engine3D::setBlendFunction(BlendFunction _blendFunction)
 {
     blendFunction = _blendFunction;
     glBlendFunc(GL_SRC_ALPHA, blendFunction);
+    emit askUpdate();
 }
 
 void Engine3D::setViewDistance(double _viewDistance)
@@ -359,7 +380,7 @@ void Engine3D::setLimitMaxVertexEnabled(bool enabled)
     emit askUpdate();
 }
 
-void Engine3D::setLimitMaxVertex(double _vertexMaxLimit)
+void Engine3D::setLimitMaxVertex(int _vertexMaxLimit)
 {
     vertexMaxLimit = _vertexMaxLimit;
     emit askUpdate();
