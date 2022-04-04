@@ -144,7 +144,7 @@ void Camera::setBackgroundColor(float red, float green, float blue, float alpha)
     backgroundColor = QColor(red * 255.0f, green * 255.0f, blue * 255.0f, alpha * 255.0f);
 }
 
-void Camera::setSamples(unsigned int _samples)
+void Camera::setSamples(int _samples)
 {
     samples = _samples;
     if (FBO)

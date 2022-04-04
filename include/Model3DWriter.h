@@ -17,7 +17,6 @@
 #include "Octree.h"
 
 #define PTS_LINES_TO_WRITE 10000000
-#define OCT_VERTEX_PER_NODE 200000
 
 class ENGINE3D_EXPORT Model3DWriter : public QObject
 {
@@ -42,10 +41,10 @@ public:
 		};
 	};
 
-	bool write(Model3D* model, QString fileName);
+	bool write(Model3D* model, QString fileName, unsigned long long vertexPerNode = 10000);
 	static void writePTS(QFile* file, unsigned long long vertexNumber, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity);
 	static void writeBIN(QFile* file, unsigned long long vertexNumber, QVector<float> aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity);
-	static void writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity);
+	static void writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode);
 
 private:
 	QThread* writer;

@@ -89,20 +89,24 @@ public:
 #endif
 
     float getTranslationSensitivity() const;
-    void setTranslationSensitivity(float _translationSensitivity);
     float getRotationSensitivity() const;
-    void setRotationSensitivity(float _rotationSensitivity);
 
     bool isMoving() const;
 
 #ifdef WITH_CONTROLLER
     QHash<QString, QHash<Action, Controller::Input>>& getControllerProfiles();
     QString getCurrentControllerProfile() const;
-    void setCurrentControllerProfile(QString newProfile);
 #endif
 
 signals:
     void movementFinished();
+
+public slots:
+    void setTranslationSensitivity(int _translationSensitivity);
+    void setRotationSensitivity(int _rotationSensitivity);
+#ifdef WITH_CONTROLLER
+    void setCurrentControllerProfile(QString newProfile);
+#endif
 
 private slots:
     void mouseWheelFinished();

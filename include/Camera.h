@@ -116,7 +116,7 @@ public slots:
     void setHeight(int _height);
     void setBackgroundColor(QColor _backgroundColor);
     void setBackgroundColor(float red, float green, float blue, float alpha = 1.0f);
-    void setSamples(unsigned int _samples);
+    void setSamples(int _samples);
     void setViewCenter(vec3 _viewCenter);
     void setNearPlane(float _nearPlane);
     void setFarPlane(float _farPlane);

@@ -88,6 +88,13 @@ QVector<Camera*>& Engine3D::getCameras()
     return cameras;
 }
 
+int Engine3D::getMaxSamples()
+{
+    int maxSamples;
+    glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+    return maxSamples;
+}
+
 Model3D* Engine3D::getModel(unsigned int index)
 {
     return models[index];
@@ -308,14 +315,16 @@ void Engine3D::setPointSizeEnabled(bool enabled)
 {
     if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
     else glDisable(GL_PROGRAM_POINT_SIZE);
+    emit askUpdate();
 }
 
-void Engine3D::setPointSize(float _pointSize)
+void Engine3D::setPointSize(double _pointSize)
 {
     pointSize = _pointSize;
     shaders[Model3D::POINTS]->bind();
     shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
     shaders[Model3D::POINTS]->release();
+    emit askUpdate();
 }
 
 void Engine3D::setLineWidth(float _lineWidth)
@@ -382,7 +391,7 @@ void Engine3D::setLimitMaxVertexEnabled(bool enabled)
 
 void Engine3D::setLimitMaxVertex(int _vertexMaxLimit)
 {
-    vertexMaxLimit = _vertexMaxLimit;
+    vertexMaxLimit = _vertexMaxLimit * 1000000;
     emit askUpdate();
 }
 

@@ -17,7 +17,7 @@ Model3DWriter::~Model3DWriter()
 	}
 }
 
-bool Model3DWriter::write(Model3D* model, QString fileName)
+bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long vertexPerNode)
 {
 	bool ok = true;
 	file.setFileName(fileName);
@@ -56,7 +56,7 @@ bool Model3DWriter::write(Model3D* model, QString fileName)
 
 		if (fileInfo.suffix() == "pts")										writer = QThread::create(&Model3DWriter::writePTS, &file, vertexNumber, &pos, &color, &intensity);
 		else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writer = QThread::create(&Model3DWriter::writeBIN, &file, vertexNumber, aabb, &pos, &color, &intensity);
-		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QThread::create(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity);
+		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QThread::create(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity, vertexPerNode);
 		connect(writer, SIGNAL(finished()), this, SLOT(writerFinished()));
 		writer->start();
 	}
@@ -100,7 +100,7 @@ void Model3DWriter::writeBIN(QFile* file, unsigned long long vertexNumber, QVect
 	if (!wasFileOpen) file->close();
 }
 
-void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity)
+void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode)
 {
 	QFile listOctree(fileInfo.path() + "/listOctree.txt");
 	QDir(fileInfo.path()).mkdir("octTemp");
@@ -127,7 +127,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 
 		Vertex* firstVertexToFile = new Vertex;
 		QVector<float>* firstAABB = new QVector<float>(aabbToVector(aabb));
-		takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexNumber), vertexToCompute.first(), firstVertexToFile);
+		takeRandomVertex(qMin(vertexPerNode, vertexNumber), vertexToCompute.first(), firstVertexToFile);
 		writeBIN(file, firstVertexToFile->vertexNumber(), *firstAABB, &firstVertexToFile->pos, &firstVertexToFile->color, &firstVertexToFile->intensity);
 		vertexNumber -= firstVertexToFile->vertexNumber();
 		delete firstVertexToFile;
@@ -153,7 +153,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 						for (Vertex* vertexToStore : *computedVertex.first())
 						{
 							Vertex vertexToWrite;
-							takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
+							takeRandomVertex(qMin(vertexPerNode, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
 
 							QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
 							QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
@@ -188,7 +188,7 @@ void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long
 				for (Vertex* vertexToStore : *computedVertex.first())
 				{
 					Vertex vertexToWrite;
-					takeRandomVertex(qMin((unsigned long long)OCT_VERTEX_PER_NODE, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
+					takeRandomVertex(qMin(vertexPerNode, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
 
 					QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
 					QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");

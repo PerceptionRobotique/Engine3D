@@ -59,29 +59,34 @@ void MainWindow::on_actionSaveFile_triggered()
         fileName = QFileDialog::getSaveFileName(this, "Ouvrir modèle 3D", fileName, filters, &selectedFilter);
         if (!fileName.isEmpty())
         {
-            bool yes = true;
-            if (QFileInfo(fileName).suffix().contains("oct") && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
+            bool ok;
+            int vertexPerNode = QInputDialog::getInt(this, "Nombre de vertex par noeud", "Vertex par noeud", settings.value("SaveModelVertexPerNode", 10000).toInt(), 1, INT_MAX, 1, &ok);
+            if (ok)
             {
-                if (QMessageBox::question(this, "Fichier listOctree.txt déjà existant", "Voulez-vous écraser listOctree.txt ?") != QMessageBox::Yes)
-                    yes = false;
-            }
-            if(yes)
-            {
-                settings.setValue("ModelFileSave", fileName);
-                settings.sync();
+                bool yes = true;
+                if (QFileInfo(fileName).suffix().contains("oct") && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
+                {
+                    if (QMessageBox::question(this, "Fichier listOctree.txt déjà existant", "Voulez-vous écraser listOctree.txt ?") != QMessageBox::Yes)
+                        yes = false;
+                }
+                if (yes)
+                {
+                    settings.setValue("ModelFileSave", fileName);
+                    settings.sync();
 
-                ui->openGLWidget->getEngine().lockModelsUpdater();
-                QEventLoop loop(this);
+                    ui->openGLWidget->getEngine().lockModelsUpdater();
+                    QEventLoop loop(this);
 
-                QThread* loader = QThread::create(&Model3DWriter::write, &modelWriter, ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
-                connect(loader, SIGNAL(finished()), &loop, SLOT(quit()));
-                loader->start();
-                loop.exec();
+                    QThread* loader = QThread::create(&Model3DWriter::write, &modelWriter, ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName, vertexPerNode);
+                    connect(loader, SIGNAL(finished()), &loop, SLOT(quit()));
+                    loader->start();
+                    loop.exec();
 
-                delete loader;
+                    delete loader;
 
-                ui->openGLWidget->getEngine().unlockModelsUpdater();
-                //Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
+                    ui->openGLWidget->getEngine().unlockModelsUpdater();
+                    //Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
+                }
             }
         }
     }

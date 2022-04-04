@@ -378,19 +378,9 @@ float CameraController::getTranslationSensitivity() const
     return translationSensitivity;
 }
 
-void CameraController::setTranslationSensitivity(float _translationSensitivity)
-{
-    translationSensitivity = _translationSensitivity;
-}
-
 float CameraController::getRotationSensitivity() const
 {
     return rotationSensitivity;
-}
-
-void CameraController::setRotationSensitivity(float _rotationSensitivity)
-{
-    rotationSensitivity = _rotationSensitivity;
 }
 
 bool CameraController::isMoving() const
@@ -416,7 +406,19 @@ QString CameraController::getCurrentControllerProfile() const
 {
     return currentControllerProfile;
 }
+#endif
 
+void CameraController::setTranslationSensitivity(int _translationSensitivity)
+{
+    translationSensitivity = _translationSensitivity;
+}
+
+void CameraController::setRotationSensitivity(int _rotationSensitivity)
+{
+    rotationSensitivity = _rotationSensitivity;
+}
+
+#ifdef WITH_CONTROLLER
 void CameraController::setCurrentControllerProfile(QString newProfile)
 {
     currentControllerProfile = newProfile;

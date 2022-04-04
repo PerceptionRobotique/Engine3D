@@ -38,6 +38,7 @@ public:
 
     Camera* getMainCamera();
     QVector<Camera*>& getCameras();
+    int getMaxSamples();
     Model3D* getModel(unsigned int index);
     QVector<Model3D*>& getModels();
     float getOpacity() const;
@@ -53,7 +54,7 @@ public slots:
     void update();
 
     void setPointSizeEnabled(bool enabled);
-    void setPointSize(float _pointSize);
+    void setPointSize(double _pointSize);
     void setLineWidth(float _lineWidth);
     void setOpacityEnabled(bool enabled);
     void setOpacity(float _opacity);
