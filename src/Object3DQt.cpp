@@ -98,6 +98,21 @@ void Object3DQt::setPositionZ(const float &_tz)
     emit objectChanged();
 }
 
+void Object3DQt::setPositionX(const double& _tx)
+{
+    setPositionX((float)_tx);
+}
+
+void Object3DQt::setPositionY(const double& _ty)
+{
+    setPositionY((float)_ty);
+}
+
+void Object3DQt::setPositionZ(const double& _tz)
+{
+    setPositionZ((float)_tz);
+}
+
 void Object3DQt::setRotation(vec3 _rotation)
 {
     Object3D::setRotation(_rotation);
@@ -126,4 +141,19 @@ void Object3DQt::setRotationZ(const float &_rz)
 {
     Object3D::setRotationZ(_rz);
     emit objectChanged();
+}
+
+void Object3DQt::setRotationX(const double& _rx)
+{
+    setRotationX((float)_rx);
+}
+
+void Object3DQt::setRotationY(const double& _ry)
+{
+    setRotationY((float)_ry);
+}
+
+void Object3DQt::setRotationZ(const double& _rz)
+{
+    setRotationZ((float)_rz);
 }

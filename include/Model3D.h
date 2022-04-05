@@ -104,26 +104,32 @@ public:
     QString getName() const;
 
     Primitives getPrimitives() const;
-    mat4 getwMo() const;
+    virtual mat4 getwMo() const;
     AABB getAABB() const;
     QVector<glm::vec3> getBox() const;
-    bool getShowIntensity() const;
     unsigned long long getVertexNumber() const;
     QVector<glm::vec3>& getPos();
     QVector<unsigned char>& getColor();
     QVector<unsigned char>& getIntensity();
 
-    bool hasIntensity() const;
+    virtual bool hasIntensity() const;
+    virtual bool getShowIntensity() const;
+    virtual bool isVisible() const;
+    virtual bool isBoxVisible() const;
     bool isPrepared() const;
     bool isOnScreen() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
     void waitRAMloading();
 
+    bool isGlobalColorEnabled() const;
+    QColor getGlobalColor() const;
+
 public slots:
     //visibility
     void setVisible(bool _visible);
     void setBoxVisible(bool _boxVisible);
+    void setShowIntensity(bool _showIntensity);
 
     //on screen
     void setOnScreen(bool _onScreen, bool force = false);

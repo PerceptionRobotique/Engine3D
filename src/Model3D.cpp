@@ -44,6 +44,8 @@ Model3D::Model3D(QString _fileName)
     model3DNumber++;
     model3DCreateMutex.unlock();
 
+    connect(this, SIGNAL(objectChanged()), this, SIGNAL(modelChanged()));
+
     if (!fileName.isEmpty())
     {
         file = new QFile(fileName);
@@ -169,11 +171,6 @@ QVector<glm::vec3> Model3D::getBox() const
     return box;
 }
 
-bool Model3D::getShowIntensity() const
-{
-    return showIntensity;
-}
-
 unsigned long long Model3D::getVertexNumber() const
 {
     return vertexNumber;
@@ -197,6 +194,21 @@ QVector<unsigned char>& Model3D::getIntensity()
 bool Model3D::hasIntensity() const
 {
     return m_hasIntensity;
+}
+
+bool Model3D::getShowIntensity() const
+{
+    return showIntensity;
+}
+
+bool Model3D::isVisible() const
+{
+    return visible;
+}
+
+bool Model3D::isBoxVisible() const
+{
+    return boxVisible;
 }
 
 bool Model3D::isPrepared() const
@@ -224,14 +236,32 @@ void Model3D::waitRAMloading()
     ramLoader.waitForFinished();
 }
 
+bool Model3D::isGlobalColorEnabled() const
+{
+    return globalColorEnabled;
+}
+
+QColor Model3D::getGlobalColor() const
+{
+    return globalColor;
+}
+
 void Model3D::setVisible(bool _visible)
 {
     visible = _visible;
+    emit modelChanged();
 }
 
 void Model3D::setBoxVisible(bool _boxVisible)
 {
     boxVisible = _boxVisible;
+    emit modelChanged();
+}
+
+void Model3D::setShowIntensity(bool _showIntensity)
+{
+    showIntensity = _showIntensity;
+    emit modelChanged();
 }
 
 void Model3D::setOnScreen(bool _onScreen, bool force)
@@ -250,6 +280,7 @@ void Model3D::setAABB(AABB _aabb)
     aabb = _aabb;
     unloadBoxVRAM();
     loadBoxRAM();
+    emit modelChanged();
 }
 
 void Model3D::loadRAM(bool force)
@@ -438,11 +469,11 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
 {
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
     bool drawn = false;
-    if (prepared)
+    if (isPrepared())
     {
-        if (onScreen && visible)
+        if (isOnScreen() && isVisible())
         {
-            if (onVRAM)
+            if (isOnVRAM())
             {
                 mat4 wMo = getwMo();
                 f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
@@ -475,7 +506,7 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
 
                 shader->disableAttributeArray("in_vertex");
                 shader->disableAttributeArray("in_color");
-                if (m_hasIntensity)
+                if (hasIntensity())
                     shader->disableAttributeArray("in_intensity");
 
                 drawn = true;

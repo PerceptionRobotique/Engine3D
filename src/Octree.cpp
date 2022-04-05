@@ -15,6 +15,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 		main = parent->main;
 		depth = parent->depth + 1;
 		maxDepth = main->maxDepth;
+		maxVisibleDepth = main->maxVisibleDepth;
 		if (*maxDepth < depth) *maxDepth = depth;
 		m_hasIntensity = parent->hasIntensity();
 #ifdef ONE_FILE_READER
@@ -51,6 +52,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 		//ModelBIN::prepare();
 		fileMutex = new QMutex;
 		maxDepth = new unsigned int(0);
+		maxVisibleDepth = new unsigned int;
 		totalVertexNumber = new unsigned long long(vertexNumber);
 		listOctree.setFileName(fileInfo.path() + "/listOctree.txt");
 		if (listOctree.open(QFile::ReadOnly))
@@ -79,6 +81,8 @@ Octree::Octree(Octree* _parent, QString _fileName)
 				}
 			}
 			listOctree.close();
+
+			*maxVisibleDepth = *maxDepth;
 		}
 	}
 }
@@ -90,6 +94,7 @@ Octree::~Octree()
 	{
 		delete fileMutex;
 		delete maxDepth;
+		delete maxVisibleDepth;
 		delete totalVertexNumber;
 	}
 #ifdef ONE_FILE_READER
@@ -127,9 +132,39 @@ unsigned int Octree::getMaxDepth() const
 	return *maxDepth;
 }
 
+unsigned int Octree::getMaxVisibleDepth() const
+{
+	return *maxVisibleDepth;
+}
+
 unsigned long long Octree::getTotaleVertexNumber() const
 {
 	return *totalVertexNumber;
+}
+
+mat4 Octree::getwMo() const
+{
+	return main->Model3D::getwMo();
+}
+
+bool Octree::hasIntensity() const
+{
+	return main->Model3D::hasIntensity();
+}
+
+bool Octree::getShowIntensity() const
+{
+	return main->Model3D::getShowIntensity();
+}
+
+bool Octree::isVisible() const
+{
+	return main->Model3D::isVisible();
+}
+
+bool Octree::isBoxVisible() const
+{
+	return main->Model3D::isBoxVisible();
 }
 
 Octree* Octree::operator[](std::size_t index)
@@ -148,26 +183,8 @@ void Octree::loadRAMthread()
 #endif
 }
 
-bool Octree::draw(QOpenGLShaderProgram* shader)
+void Octree::setMaxVisibleDepth(int value)
 {
-	setwMo(main->getwMo());
-	//if (drawn)
-	//{
-	//	for (Octree* child : children)
-	//		if (child)
-	//			child->draw(shader);
-	//}
-	return Model3D::draw(shader);
-}
-
-bool Octree::drawBox(QOpenGLShaderProgram* shader)
-{
-	setwMo(main->getwMo());
-	//if (drawn)
-	//{
-	//	for (Octree* child : children)
-	//		if (child)
-	//			child->drawBox(shader);
-	//}
-	return Model3D::drawBox(shader);
+	*maxVisibleDepth = value;
+	emit modelChanged();
 }

@@ -40,6 +40,7 @@ public:
     QVector<Camera*>& getCameras();
     int getMaxSamples();
     Model3D* getModel(unsigned int index);
+    int getModelIndex(const Model3D* _model) const;
     QVector<Model3D*>& getModels();
     float getOpacity() const;
 

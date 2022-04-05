@@ -27,11 +27,17 @@ public slots:
     void setPositionX(const float& _tx);
     void setPositionY(const float& _ty);
     void setPositionZ(const float& _tz);
+    void setPositionX(const double& _tx);
+    void setPositionY(const double& _ty);
+    void setPositionZ(const double& _tz);
     void setRotation(vec3 _rotation);
     void setRotation(mat4 _rotation);
     void setRotationX(const float& _rx);
     void setRotationY(const float& _ry);
     void setRotationZ(const float& _rz);
+    void setRotationX(const double& _rx);
+    void setRotationY(const double& _ry);
+    void setRotationZ(const double& _rz);
     void setYawPitchRoll(const float& _yaw, const float& _pitch, const float& _roll);
     void setYaw(const float& _yaw);
     void setPitch(const float& _pitch);

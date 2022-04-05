@@ -61,7 +61,8 @@ bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
     const Octree* octree = dynamic_cast<const Octree*>(model);
     if (octree)
     {
-        if(maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
+        onScreen &= octree->getDepth() <= octree->getMaxVisibleDepth();
+        if (maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
         if (viewDistanceEnabled)
         {
             if (octree->getDepth() > ceil((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
@@ -98,6 +99,16 @@ int Engine3D::getMaxSamples()
 Model3D* Engine3D::getModel(unsigned int index)
 {
     return models[index];
+}
+
+int Engine3D::getModelIndex(const Model3D* _model) const
+{
+    int index = -1;
+    for (unsigned int i = 0 ; i < models.count() ; i++)
+    {
+        if (_model == models[i]) index = i;
+    }
+    return index;
 }
 
 QVector<Model3D*>& Engine3D::getModels()

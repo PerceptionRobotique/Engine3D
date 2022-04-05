@@ -19,13 +19,21 @@ public:
 	QVector<Octree*>& getDepthChildren(unsigned int _depth);
 	unsigned int getDepth() const;
 	unsigned int getMaxDepth() const;
+	unsigned int getMaxVisibleDepth() const;
 	unsigned long long getTotaleVertexNumber() const;
+
+	mat4 getwMo() const override;
+	bool hasIntensity() const override	;
+	bool getShowIntensity() const override;
+	bool isVisible() const override;
+	bool isBoxVisible() const override;
 
 	Octree* operator[](std::size_t index);
 
 	void loadRAMthread() override;
-	bool draw(QOpenGLShaderProgram* shader) override;
-	bool drawBox(QOpenGLShaderProgram* shader) override;
+
+public slots:
+	void setMaxVisibleDepth(int value);
 
 private:
 	Octree* main;
@@ -35,6 +43,7 @@ private:
 	QVector<QVector<Octree*>> childrenByDepth;
 	unsigned int depth;
 	unsigned int* maxDepth;
+	unsigned int* maxVisibleDepth;
 	unsigned long long* totalVertexNumber;
 
 	QFile listOctree;
