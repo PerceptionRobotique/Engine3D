@@ -38,8 +38,8 @@ private slots:
     void on_actionSaveFile_triggered();
     void on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item);
 
-    void updateVertexOnRAM(unsigned long long vertexOnRAM);
-    void updateVertexOnVRAM(unsigned long long vertexOnVRAM);
+    void updateVertexOnRAM();
+    void updateVertexOnVRAM();
     void updateModelLoading(Model3D* model, unsigned int progressValue);
 
     void modelWriterFinished();

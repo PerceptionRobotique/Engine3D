@@ -296,6 +296,5 @@ bool OpenGLWidget::event(QEvent* e)
 
 void OpenGLWidget::updateAsked()
 {
-    qDebug() << "updateAsked";
     update();
 }

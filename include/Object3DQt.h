@@ -42,6 +42,9 @@ public slots:
     void setYaw(const float& _yaw);
     void setPitch(const float& _pitch);
     void setRoll(const float& _roll);
+    void setYaw(const double& _yaw);
+    void setPitch(const double& _pitch);
+    void setRoll(const double& _roll);
 
 signals:
     void objectChanged();

@@ -14,8 +14,8 @@ Engine3D::Engine3D(QObject* parent)
     , viewDistanceEnabled(true)
     , waitLoading(false)
     , maxDepth(-1)
-    , limitMaxVertex(true)
-    , vertexMaxLimit(100000000)
+    , maxVertexLimitEnabled(true)
+    , maxVertexLimit(100000000)
     , maxVertexToVRAM(1000000)
     , modelsUpdater(nullptr)
 {
@@ -161,6 +161,12 @@ void Engine3D::closeModel(unsigned int index)
     models.removeAt(index);
 }
 
+void Engine3D::closeModel(Model3D* model)
+{
+    int index = getModelIndex(model);
+    if (index >= 0) closeModel(index);
+}
+
 void Engine3D::update()
 {
     if (drawMutex.tryLock())
@@ -290,16 +296,16 @@ void Engine3D::update()
         //for (Model3D* model : models)
         //{
         //    vertexOnScreen += (int)model->isOnScreen();
-        //    vertexOnRAM += (int)model->isOnRAM();
-        //    vertexOnVRAM += (int)model->isOnVRAM();
+        //    vertexOnRAM += (int)model->isOnRAM() * model->getVertexNumber();
+        //    vertexOnVRAM += (int)model->isOnVRAM() * model->getVertexNumber();
         //    Octree* octree = dynamic_cast<Octree*>(model);
         //    if (octree)
         //    {
         //        for (Model3D* child : octree->getAllChildren())
         //        {
         //            vertexOnScreen += (int)child->isOnScreen();
-        //            vertexOnRAM += (int)child->isOnRAM();
-        //            vertexOnVRAM += (int)child->isOnVRAM();
+        //            vertexOnRAM += (int)child->isOnRAM() * child->getVertexNumber();
+        //            vertexOnVRAM += (int)child->isOnVRAM() * child->getVertexNumber();
         //            if (child->isOnScreen())
         //                if (!child->isOnRAM())
         //                    problems++;
@@ -311,6 +317,7 @@ void Engine3D::update()
         //qDebug() << "On screen : " << vertexOnScreen;
         //qDebug() << "On RAM : " << vertexOnRAM;
         //qDebug() << "On VRAM : " << vertexOnVRAM;
+        //qDebug() << "Problems : " << problems;
 
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
@@ -394,15 +401,15 @@ void Engine3D::setWaitLoading(bool enabled)
     emit askUpdate();
 }
 
-void Engine3D::setLimitMaxVertexEnabled(bool enabled)
+void Engine3D::setMaxVertexLimitEnabled(bool enabled)
 {
-    limitMaxVertex = enabled;
+    maxVertexLimitEnabled = enabled;
     emit askUpdate();
 }
 
-void Engine3D::setLimitMaxVertex(int _vertexMaxLimit)
+void Engine3D::setMaxVertexLimit(int _maxVertexLimit)
 {
-    vertexMaxLimit = _vertexMaxLimit * 1000000;
+    maxVertexLimit = _maxVertexLimit * 1000000;
     emit askUpdate();
 }
 
@@ -434,17 +441,18 @@ void Engine3D::updateModels()
             if (QThread::currentThread()->isInterruptionRequested()) break;
         }
 
-        unsigned long long currentTotalVertex = 0;
+        unsigned long long currentVertexNumber = 0;
         for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
         {
             for (Model3D* model : modelsByDepthDistance[i])
             {
-                if (currentTotalVertex + model->getVertexNumber() <= vertexMaxLimit || !limitMaxVertex)
+                if (currentVertexNumber + model->getVertexNumber() <= maxVertexLimit || !maxVertexLimitEnabled)
                 {
                     model->setOnScreen(isOnScreen(model), waitLoading);
-                    if (model->isOnScreen()) currentTotalVertex += model->getVertexNumber();
+                    if (model->isOnScreen()) currentVertexNumber += model->getVertexNumber();
                 }
                 else model->setOnScreen(false, waitLoading);
+
                 if (QThread::currentThread()->isInterruptionRequested()) break;
             }
             if (QThread::currentThread()->isInterruptionRequested()) break;

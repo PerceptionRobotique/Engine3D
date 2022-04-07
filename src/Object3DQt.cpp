@@ -49,6 +49,21 @@ void Object3DQt::setRoll(const float &_roll)
     emit objectChanged();
 }
 
+void Object3DQt::setYaw(const double& _yaw)
+{
+    setYaw((float)_yaw);
+}
+
+void Object3DQt::setPitch(const double& _pitch)
+{
+    setPitch((float)_pitch);
+}
+
+void Object3DQt::setRoll(const double& _roll)
+{
+    setRoll((float)_roll);
+}
+
 void Object3DQt::yaw(const float& _yaw)
 {
     Object3D::yaw(_yaw);

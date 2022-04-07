@@ -13,8 +13,9 @@
 #include <QColor>
 #include <QSettings>
 #include <QVariant>
-#include <QFuture>
 #include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -59,6 +60,18 @@ public:
                 && point.x <= max.x
                 && point.y <= max.y
                 && point.z <= max.z;
+        }
+
+        QVector<float> toVector()
+        {
+            QVector<float> vector;
+            vector.append(min.x);
+            vector.append(min.y);
+            vector.append(min.z);
+            vector.append(max.x);
+            vector.append(max.y);
+            vector.append(max.z);
+            return vector;
         }
     };
 
@@ -122,8 +135,8 @@ public:
     bool isOnVRAM() const;
     void waitRAMloading();
 
-    bool isGlobalColorEnabled() const;
-    QColor getGlobalColor() const;
+    virtual bool isGlobalColorEnabled() const;
+    virtual QColor getGlobalColor() const;
 
 public slots:
     //visibility
@@ -140,10 +153,11 @@ public slots:
     //RAM
     void loadRAM(bool force = false);
     void unloadRAM(bool force = false);
+    void ramLoadingFinished();
 
     //VRAM
-    void loadVRAM();
-    void unloadVRAM();
+    void loadVRAM(bool force = false);
+    void unloadVRAM(bool force = false);
 
     //Box RAM
     void loadBoxRAM();
@@ -157,12 +171,17 @@ public slots:
     virtual bool drawBox(QOpenGLShaderProgram* shader);
 
     void setwMo(mat4 wMo);
+    void setGlobalColorEnabled(bool enabled);
+    void setGlobalColor(QColor color);
 
 private:
     static QMutex vertexNumberMutex;
     static unsigned long long vertexOnRAM;
     static unsigned long long vertexOnVRAM;
-    void setVertexOnVRAM(unsigned long long value);
+    static QVector<unsigned long long> vertexAddedToRAM;
+    static QVector<unsigned long long> vertexAddedToVRAM;
+    void addVertexOnVRAM();
+    void removeVertexOnVRAM();
 
     QString fileName;
     QString name;
@@ -188,7 +207,8 @@ private:
     QOpenGLBuffer intensityBuffer;
 
 protected:
-    void setVertexOnRAM(unsigned long long value);
+    void addVertexOnRAM();
+    void removeVertexOnRAM();
 
     QFile* file;
     QFileInfo fileInfo;
@@ -201,9 +221,11 @@ protected:
 
     QMutex vertexLoader; //avoids load and unload at the same time
     QFuture<void> ramLoader;
+    QFuture<void> ramUnloader;
+    QFutureWatcher<void> ramLoaderWatcher;
     bool onRAM;
     virtual void loadRAMthread() = 0;
-    void endRAMloading();
+    void unloadRAMthread();
 
     unsigned long long vertexNumber;
     QVector<glm::vec3> pos;
@@ -216,8 +238,8 @@ signals:
     void modelLoadingDelayed();
     void modelLoadingUpdate(Model3D* model, unsigned int value);
     void modelLoaded();
-    void vertexOnRAMChanged(unsigned long long vertexOnRAM);
-    void vertexOnVRAMChanged(unsigned long long vertexOnVRAM);
+    void vertexOnRAMChanged();
+    void vertexOnVRAMChanged();
     void modelDestroyed();
 };
 

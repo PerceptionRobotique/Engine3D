@@ -6,6 +6,8 @@ QVector<unsigned int> Model3D::boxIndex{ 0, 1, 1, 2, 2, 3, 3, 0, 0, 4, 1, 5, 2, 
 QMutex Model3D::vertexNumberMutex;
 unsigned long long Model3D::vertexOnRAM(0);
 unsigned long long Model3D::vertexOnVRAM(0);
+QVector<unsigned long long> Model3D::vertexAddedToRAM;
+QVector<unsigned long long> Model3D::vertexAddedToVRAM;
 
 Model3D::Model3D(QString _fileName)
     : vertexNumber(0)
@@ -45,6 +47,7 @@ Model3D::Model3D(QString _fileName)
     model3DCreateMutex.unlock();
 
     connect(this, SIGNAL(objectChanged()), this, SIGNAL(modelChanged()));
+    connect(&ramLoaderWatcher, SIGNAL(finished()), this, SLOT(ramLoadingFinished()));
 
     if (!fileName.isEmpty())
     {
@@ -87,13 +90,13 @@ Model3D::~Model3D()
     }
 
     if (onRAM) unloadRAM(true);
-    if (onVRAM) unloadVRAM();
+    if (onVRAM) unloadVRAM(true);
     if (boxOnRAM) unloadBoxRAM();
     if (boxOnVRAM) unloadBoxVRAM();
+    ramUnloader.waitForFinished();
 
     model3DNumber--;
-    if (model3DNumber == 0)
-        boxIndexBuffer.destroy();
+    if (model3DNumber == 0) boxIndexBuffer.destroy();
 
     if (settings)
     {
@@ -130,20 +133,36 @@ unsigned long long Model3D::getVertexOnVRAM()
     return value;
 }
 
-void Model3D::setVertexOnRAM(unsigned long long value)
+void Model3D::addVertexOnRAM()
 {
     vertexNumberMutex.lock();
-    vertexOnRAM = value;
-    emit vertexOnRAMChanged(vertexOnRAM);
+    vertexOnRAM += vertexNumber;
     vertexNumberMutex.unlock();
+    emit vertexOnRAMChanged();
 }
 
-void Model3D::setVertexOnVRAM(unsigned long long value)
+void Model3D::removeVertexOnRAM()
 {
     vertexNumberMutex.lock();
-    vertexOnVRAM = value;
-    emit vertexOnVRAMChanged(vertexOnVRAM);
+    vertexOnRAM -= vertexNumber;
     vertexNumberMutex.unlock();
+    emit vertexOnRAMChanged();
+}
+
+void Model3D::addVertexOnVRAM()
+{
+    vertexNumberMutex.lock();
+    vertexOnVRAM += vertexNumber;
+    vertexNumberMutex.unlock();
+    emit vertexOnVRAMChanged();
+}
+
+void Model3D::removeVertexOnVRAM()
+{
+    vertexNumberMutex.lock();
+    vertexOnVRAM -= vertexNumber;
+    vertexNumberMutex.unlock();
+    emit vertexOnVRAMChanged();
 }
 
 QString Model3D::getName() const
@@ -288,38 +307,31 @@ void Model3D::loadRAM(bool force)
     if (prepared && !onRAM && !ramLoader.isRunning())
     {
         if (force) vertexLoader.lock();
-        if(force ? true : vertexLoader.tryLock()) ramLoader = QtConcurrent::run(&Model3D::loadRAMthread, this);
+        if (force ? true : vertexLoader.tryLock())
+        {
+            ramLoader = QtConcurrent::run(&Model3D::loadRAMthread, this);
+            ramLoaderWatcher.setFuture(ramLoader);
+        }
         else emit modelLoadingDelayed();
     }
 }
 
 void Model3D::unloadRAM(bool force)
 {
-    if (onRAM)
+    if (onRAM && !ramUnloader.isRunning())
     {
         if (force) vertexLoader.lock();
-        if (vertexLoader.tryLock() || force)
-        {
-            pos.clear();
-            pos.squeeze();
-            color.clear();
-            color.squeeze();
-            intensity.clear();
-            intensity.squeeze();
-
-            setVertexOnRAM(getVertexOnRAM() - vertexNumber);
-            onRAM = false;
-            vertexLoader.unlock();
-        }
+        if (vertexLoader.tryLock() || force) ramUnloader = QtConcurrent::run(&Model3D::unloadRAMthread, this);
         else emit modelLoadingDelayed();
     }
 }
 
-void Model3D::loadVRAM()
+void Model3D::loadVRAM(bool force)
 {
     if (onRAM && !onVRAM)
     {
-        if (vertexLoader.tryLock())
+        if (force) vertexLoader.lock();
+        if (vertexLoader.tryLock() || force)
         {
             if (!posBuffer.isCreated()) posBuffer.create();
             posBuffer.bind();
@@ -338,7 +350,7 @@ void Model3D::loadVRAM()
                 QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(unsigned char), intensity.constData(), GL_STATIC_DRAW);
                 intensityBuffer.release();
             }
-            setVertexOnVRAM(getVertexOnVRAM() + vertexNumber);
+            addVertexOnVRAM();
             onVRAM = true;
             vertexLoader.unlock();
         }
@@ -346,28 +358,32 @@ void Model3D::loadVRAM()
     }
 }
 
-void Model3D::unloadVRAM()
+void Model3D::unloadVRAM(bool force)
 {
     if (onVRAM)
     {
-        vertexLoader.lock();
-        posBuffer.bind();
-        posBuffer.allocate(0);
-        posBuffer.release();
-
-        colorBuffer.bind();
-        colorBuffer.allocate(0);
-        colorBuffer.release();
-
-        if (hasIntensity())
+        if (force) vertexLoader.lock();
+        if (vertexLoader.tryLock() || force)
         {
-            intensityBuffer.bind();
-            intensityBuffer.allocate(0);
-            intensityBuffer.release();
+            posBuffer.bind();
+            posBuffer.allocate(0);
+            posBuffer.release();
+
+            colorBuffer.bind();
+            colorBuffer.allocate(0);
+            colorBuffer.release();
+
+            if (hasIntensity())
+            {
+                intensityBuffer.bind();
+                intensityBuffer.allocate(0);
+                intensityBuffer.release();
+            }
+            removeVertexOnVRAM();
+            onVRAM = false;
+            vertexLoader.unlock();
         }
-        setVertexOnVRAM(getVertexOnVRAM() - vertexNumber);
-        onVRAM = false;
-        vertexLoader.unlock();
+        else emit modelLoadingDelayed();
     }
 }
 
@@ -478,10 +494,10 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
                 mat4 wMo = getwMo();
                 f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
 
-                shader->setUniformValue("customColor", globalColorEnabled);
-                shader->setUniformValue("R", globalColor.redF());
-                shader->setUniformValue("G", globalColor.greenF());
-                shader->setUniformValue("B", globalColor.blueF());
+                shader->setUniformValue("customColor", isGlobalColorEnabled());
+                shader->setUniformValue("R", getGlobalColor().redF());
+                shader->setUniformValue("G", getGlobalColor().greenF());
+                shader->setUniformValue("B", getGlobalColor().blueF());
                 shader->setUniformValue("showIntensity", getShowIntensity());
 
                 posBuffer.bind();
@@ -559,10 +575,36 @@ void Model3D::setwMo(mat4 wMo)
     setPose(wMo);
 }
 
-void Model3D::endRAMloading()
+void Model3D::setGlobalColorEnabled(bool enabled)
 {
-    onRAM = true;
+    globalColorEnabled = enabled;
+    emit modelChanged();
+}
+
+void Model3D::setGlobalColor(QColor color)
+{
+    globalColor = color;
+    emit modelChanged();
+}
+
+void Model3D::unloadRAMthread()
+{
+    pos.clear();
+    pos.squeeze();
+    color.clear();
+    color.squeeze();
+    intensity.clear();
+    intensity.squeeze();
+
+    removeVertexOnRAM();
+    onRAM = false;
     vertexLoader.unlock();
-    setVertexOnRAM(getVertexOnRAM() + vertexNumber);
+}
+
+void Model3D::ramLoadingFinished()
+{
+    addVertexOnRAM();
+    onRAM = true;
     emit modelLoaded();
+    vertexLoader.unlock();
 }

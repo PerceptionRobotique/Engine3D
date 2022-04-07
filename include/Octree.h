@@ -27,6 +27,8 @@ public:
 	bool getShowIntensity() const override;
 	bool isVisible() const override;
 	bool isBoxVisible() const override;
+	bool isGlobalColorEnabled() const override;
+	QColor getGlobalColor() const override;
 
 	Octree* operator[](std::size_t index);
 
@@ -36,6 +38,7 @@ public slots:
 	void setMaxVisibleDepth(int value);
 
 private:
+	QString name;
 	Octree* main;
 	Octree* parent;
 	QVector<Octree*> children;

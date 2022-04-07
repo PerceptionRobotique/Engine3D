@@ -35,11 +35,11 @@ Octree::Octree(Octree* _parent, QString _fileName)
 		);
 		*totalVertexNumber += vertexNumber;
 
-		connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
-		connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
-		connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
-		connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
-		connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
+		//connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
+		//connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
+		//connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
+		//connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
+		//connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
 	}
 	else
 	{
@@ -74,6 +74,14 @@ Octree::Octree(Octree* _parent, QString _fileName)
 				if (current != this)
 				{
 					current = new Octree(currentParent);
+
+					connect(current, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
+					connect(current, SIGNAL(modelLoadingDelayed()), this, SIGNAL(modelLoadingDelayed()));
+					connect(current, SIGNAL(modelLoaded()), this, SIGNAL(modelLoaded()));
+					connect(current, SIGNAL(vertexOnRAMChanged()), this, SIGNAL(vertexOnRAMChanged()));
+					connect(current, SIGNAL(vertexOnVRAMChanged()), this, SIGNAL(vertexOnVRAMChanged()));
+
+					current->name = nodeName;
 					currentParent->children[childIndex] = current;
 					if (childrenByDepth.count() < current->depth) childrenByDepth.append(QVector<Octree*>(0));
 					childrenByDepth[current->depth-1].append(current);
@@ -90,6 +98,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 Octree::~Octree()
 {
 	for (Octree* child : children) delete child;
+	if (file != main->file) file->close();
 	if (main == this)
 	{
 		delete fileMutex;
@@ -165,6 +174,16 @@ bool Octree::isVisible() const
 bool Octree::isBoxVisible() const
 {
 	return main->Model3D::isBoxVisible();
+}
+
+bool Octree::isGlobalColorEnabled() const
+{
+	return main->Model3D::isGlobalColorEnabled();
+}
+
+QColor Octree::getGlobalColor() const
+{
+	return main->Model3D::getGlobalColor();
 }
 
 Octree* Octree::operator[](std::size_t index)

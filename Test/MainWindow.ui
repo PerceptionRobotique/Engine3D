@@ -79,15 +79,12 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QDoubleSpinBox" name="limitMaxVertexDoubleSpinBox">
-        <property name="decimals">
-         <number>0</number>
-        </property>
+       <widget class="QSpinBox" name="limitMaxVertexSpinBox">
         <property name="maximum">
-         <double>1000000.000000000000000</double>
+         <number>100000000</number>
         </property>
         <property name="value">
-         <double>100.000000000000000</double>
+         <number>100</number>
         </property>
        </widget>
       </item>
@@ -170,22 +167,6 @@
     <hint type="destinationlabel">
      <x>270</x>
      <y>96</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>limitMaxVertexCheckBox</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>limitMaxVertexDoubleSpinBox</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>92</x>
-     <y>107</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>195</x>
-     <y>115</y>
     </hint>
    </hints>
   </connection>

@@ -218,107 +218,110 @@ void Camera::lookAt(Model3D* model)
 
 void Camera::setView(Model3D* model, Camera::View view)
 {
-    switch(view)
+    if (model)
     {
-    case FRONT:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(center);
-        setRotation(vec3(0, 0, 0));
-        translate(vec3(0, 0, distance));
-        setViewCenter(center);
-        break;
-    }
-
-    case BACK:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(center);
-        setRotation(vec3(0, 180, 0));
-        translate(vec3(0, 0, distance));
-        setViewCenter(center);
-        break;
-    }
-
-    case TOP:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(vec3(center.x, center.y+distance, center.z));
-        setRotation(vec3(-90, 0, 0));
-        setViewCenter(center);
-        break;
-    }
-
-    case BOTTOM:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(vec3(center.x, center.y-distance, center.z));
-        setRotation(vec3(90, 0, 0));
-        setViewCenter(center);
-        break;
-    }
-
-    case LEFT:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(center);
-        setRotation(vec3(0, -90, 0));
-        translate(vec3(0, 0, distance));
-        setViewCenter(center);
-        break;
-    }
-
-    case RIGHT:
-    {
-        vec3 center = (model->getwMo() * model->getAABB()).center;
-        float distance = glm::distance(center, getPosition());
-        setPosition(center);
-        setRotation(vec3(0, 90, 0));
-        translate(vec3(0, 0, distance));
-        setViewCenter(center);
-        break;
-    }
-
-    case CENTER:
-    {
-        lookAt(model);
-        if(getProjectionType() != Camera::EQUIRECTANGULAR)
+        switch (view)
         {
-            QVector<glm::vec3> box = model->getBox();
-            vec4 point(0, 0, 0, 1.0f);
-            vec3 point2D(0, 0, 0);
-            float currentMax = 0;
-            for(int i = 0 ; i < box.count() ; i++)
-            {
-                vec3 _point2D = getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
-                if(max(abs(_point2D.x), abs(_point2D.y)) > currentMax || i == 0)
-                {
-                    currentMax = max(abs(_point2D.x), abs(_point2D.y));
-                    point2D = _point2D;
-                    point = getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
-                }
-            }
-            float factor = point.y;
-            float fov = getFOV();
-            if(abs(point2D.x) > abs(point2D.y))
-            {
-                factor = point.x;
-                fov = getHFOV();
-            }
-            if(getProjectionType() == Camera::ORTHOGRAPHIC)
-            {
-                fov = 180;
-            }
-            float d = factor / sin(radians(fov/2.0f)) * cos(radians(fov/2.0f));
-            translate(vec3(0, 0, point.z+abs(d)));
+        case FRONT:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(center);
+            setRotation(vec3(0, 0, 0));
+            translate(vec3(0, 0, distance));
+            setViewCenter(center);
+            break;
         }
-        break;
-    }
+
+        case BACK:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(center);
+            setRotation(vec3(0, 180, 0));
+            translate(vec3(0, 0, distance));
+            setViewCenter(center);
+            break;
+        }
+
+        case TOP:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(vec3(center.x, center.y + distance, center.z));
+            setRotation(vec3(-90, 0, 0));
+            setViewCenter(center);
+            break;
+        }
+
+        case BOTTOM:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(vec3(center.x, center.y - distance, center.z));
+            setRotation(vec3(90, 0, 0));
+            setViewCenter(center);
+            break;
+        }
+
+        case LEFT:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(center);
+            setRotation(vec3(0, -90, 0));
+            translate(vec3(0, 0, distance));
+            setViewCenter(center);
+            break;
+        }
+
+        case RIGHT:
+        {
+            vec3 center = (model->getwMo() * model->getAABB()).center;
+            float distance = glm::distance(center, getPosition());
+            setPosition(center);
+            setRotation(vec3(0, 90, 0));
+            translate(vec3(0, 0, distance));
+            setViewCenter(center);
+            break;
+        }
+
+        case CENTER:
+        {
+            lookAt(model);
+            if (getProjectionType() != Camera::EQUIRECTANGULAR)
+            {
+                QVector<glm::vec3> box = model->getBox();
+                vec4 point(0, 0, 0, 1.0f);
+                vec3 point2D(0, 0, 0);
+                float currentMax = 0;
+                for (int i = 0; i < box.count(); i++)
+                {
+                    vec3 _point2D = getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                    if (max(abs(_point2D.x), abs(_point2D.y)) > currentMax || i == 0)
+                    {
+                        currentMax = max(abs(_point2D.x), abs(_point2D.y));
+                        point2D = _point2D;
+                        point = getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                    }
+                }
+                float factor = point.y;
+                float fov = getFOV();
+                if (abs(point2D.x) > abs(point2D.y))
+                {
+                    factor = point.x;
+                    fov = getHFOV();
+                }
+                if (getProjectionType() == Camera::ORTHOGRAPHIC)
+                {
+                    fov = 180;
+                }
+                float d = factor / sin(radians(fov / 2.0f)) * cos(radians(fov / 2.0f));
+                translate(vec3(0, 0, point.z + abs(d)));
+            }
+            break;
+        }
+        }
     }
 }
 

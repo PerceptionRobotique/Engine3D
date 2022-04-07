@@ -52,6 +52,7 @@ public:
 public slots:
     void openModel(QString fileName);
     void closeModel(unsigned int index);
+    void closeModel(Model3D* model);
     void update();
 
     void setPointSizeEnabled(bool enabled);
@@ -65,10 +66,12 @@ public slots:
     void setViewDistance(double _viewDistance);
     void setViewDistanceEnabled(bool enabled);
     void setWaitLoading(bool enabled);
-    void setLimitMaxVertexEnabled(bool enabled);
-    void setLimitMaxVertex(int _vertexMaxLimit);
+    void setMaxVertexLimitEnabled(bool enabled);
+    void setMaxVertexLimit(int _maxVertexLimit);
 
 private:
+    mat4 offset;
+
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
     QOpenGLShaderProgram* boxShader;
     QVector<Camera*> cameras;
@@ -87,8 +90,8 @@ private:
     bool waitLoading; //wait models loading
     int maxDepth;
     int maxMovingDepth;
-    bool limitMaxVertex;
-    unsigned long long vertexMaxLimit;
+    bool maxVertexLimitEnabled;
+    unsigned long long maxVertexLimit;
     unsigned long long maxVertexToVRAM;
 
     QMutex drawMutex;

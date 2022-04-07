@@ -8,8 +8,10 @@
 #include <QRandomGenerator>
 #include <QTime>
 #include <QVector>
-#include <QThread>
 #include <QMessageBox>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 #include "Model3D.h"
 #include "ModelPTS.h"
@@ -47,7 +49,8 @@ public:
 	static void writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode);
 
 private:
-	QThread* writer;
+	QFuture<void> writer;
+	QFutureWatcher<void> watcher;
 	QFile file;
 	QVector<glm::vec3> pos;
 	QVector<unsigned char> color;

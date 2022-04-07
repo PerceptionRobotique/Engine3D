@@ -2,19 +2,12 @@
 
 Model3DWriter::Model3DWriter(QObject* parent)
 	: QObject(parent)
-	, writer(nullptr)
+	, watcher(this)
 {
-
 }
 
 Model3DWriter::~Model3DWriter()
 {
-	if (writer)
-	{
-		writer->requestInterruption();
-		writer->wait();
-		writerFinished();
-	}
 }
 
 bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long vertexPerNode)
@@ -54,11 +47,11 @@ bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long v
 			}
 		}
 
-		if (fileInfo.suffix() == "pts")										writer = QThread::create(&Model3DWriter::writePTS, &file, vertexNumber, &pos, &color, &intensity);
-		else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writer = QThread::create(&Model3DWriter::writeBIN, &file, vertexNumber, aabb, &pos, &color, &intensity);
-		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QThread::create(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity, vertexPerNode);
-		connect(writer, SIGNAL(finished()), this, SLOT(writerFinished()));
-		writer->start();
+		if (fileInfo.suffix() == "pts")										writer = QtConcurrent::run(&Model3DWriter::writePTS, &file, vertexNumber, &pos, &color, &intensity);
+		else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writer = QtConcurrent::run(&Model3DWriter::writeBIN, &file, vertexNumber, aabb, &pos, &color, &intensity);
+		else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QtConcurrent::run(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity, vertexPerNode);
+		watcher.setFuture(writer);
+		connect(&watcher, SIGNAL(finished()), this, SLOT(writerFinished()));
 	}
 	else ok = false;
 	return ok;
@@ -337,8 +330,7 @@ void Model3DWriter::deleteIndex(QVector<T>* vector, const U index, unsigned int 
 
 void Model3DWriter::writerFinished()
 {
-	delete writer;
-	writer = nullptr;
+	disconnect(&watcher, SIGNAL(finished()), this, SLOT(writerFinished()));
 	file.close();
 	emit finished();
 }
