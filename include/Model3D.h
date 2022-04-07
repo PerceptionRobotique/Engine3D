@@ -127,6 +127,7 @@ public:
     virtual bool isVisible() const;
     virtual bool isBoxVisible() const;
     bool isPrepared() const;
+    bool isLiveLoading() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
 

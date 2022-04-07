@@ -47,7 +47,6 @@ ModelPTS::ModelPTS(QString _fileName)
     ts.seek(0);
     ts.flush();
 
-    vertexLoader.lock();
     ramLoader = QtConcurrent::run(&ModelPTS::loadRAM, this);
 }
 
@@ -107,13 +106,7 @@ void ModelPTS::loadRamThread()
 
         loaders.append(QtConcurrent::run(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
 
-        if ((int)(100.0f * pos.count() / vertexNumber) > loadingPourcentage)
-        {
-            loadingPourcentage = 100.0f * pos.count() / vertexNumber;
-            emit modelLoadingUpdate(this, loadingPourcentage);
-        }
-
-        if (loaders.first().isFinished())
+        while (loaders.first().isFinished())
         {
             //AABB
             if (!firstBlocComputed)

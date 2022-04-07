@@ -5,6 +5,7 @@ Engine3D::Engine3D(QObject* parent)
     , boxShader(nullptr)
     , cameras(1, new Camera)
     , mainCamera(cameras.first())
+    , frameCounter(false)
     , pointSize(1.0f)
     , lineWidth(3.0f)
     , opacityEnabled(false)
@@ -72,11 +73,16 @@ bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
     return onScreen;
 }
 
-bool Engine3D::isOnScreen(const Model3D* model) const
+bool Engine3D::isOnScreen(const Model3D* model)
 {
-    bool onScreen = false;
-    for (Camera* camera : cameras) onScreen |= isOnCamera(model, camera);
-    return onScreen;
+    if (currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
+    {
+        bool onScreen = false;
+        for (Camera* camera : cameras) onScreen |= isOnCamera(model, camera);
+        if(onScreen) currentVertexNumber += model->getVertexNumber();
+        return onScreen;
+    }
+    else return false;
 }
 
 Camera* Engine3D::getMainCamera()
@@ -296,11 +302,14 @@ void Engine3D::update()
         GLenum err;
         while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
 
-#ifdef FRAME_COUNTER
-        qDebug() << ++frameNumber;
-#endif
+        if(frameCounter) qDebug() << ++frameNumber;
         drawMutex.unlock();
     }
+}
+
+void Engine3D::setFrameCounterEnabled(bool enabled)
+{
+    frameCounter = enabled;
 }
 
 void Engine3D::setPointSizeEnabled(bool enabled)
@@ -389,14 +398,12 @@ void Engine3D::setMaxVertexLimit(int _maxVertexLimit)
 
 void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, Model3D*>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
 {
-    QElapsedTimer elapsed;
-    elapsed.start();
     for (Model3D* model : models)
     {
         float minDist = cameras[0]->distanceWith(model);
         for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
         if (isOnScreen(model)) modelsByDepthAndDistance[0][minDist] = model;
-        else modelsToUnload.append(model);
+        else if(model->isLiveLoading()) modelsToUnload.append(model);
 
         Octree* octree = dynamic_cast<Octree*>(model);
         if (octree)
@@ -408,25 +415,42 @@ void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, Mode
                     minDist = cameras[0]->distanceWith(child);
                     for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
                     if (isOnScreen(child)) modelsByDepthAndDistance[child->getDepth()][minDist] = child;
-                    else modelsToUnload.append(child);
+                    else if(child->isLiveLoading()) modelsToUnload.append(child);
                 }
             }
         }
     }
-    qDebug() << elapsed.elapsed();
 }
 
 void Engine3D::updateModels()
 {
     if (modelsUpdaterMutex.tryLock())
     {
+        currentVertexNumber = 0;
         QList<Model3D*> modelsToUnload;
         QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthAndDistance;
         sortModelsByDepthAndDistance(modelsByDepthAndDistance, modelsToUnload);
 
-        QFuture<void> modelsUnloader = QtConcurrent::map(modelsToUnload, &Model3D::unloadRAM);
+        //if (maxVertexLimitEnabled)
+        //{
+        //    unsigned long long currentVertexNumber = 0;
+        //    for (unsigned int i = 0; i < modelsByDepthAndDistance.keys().count(); i++)
+        //    {
+        //        QVector<float> keys = modelsByDepthAndDistance[i].keys().toVector();
+        //        for (unsigned int j = 0; j < modelsByDepthAndDistance[i].keys().count(); j++)
+        //        {
+        //            if (currentVertexNumber + modelsByDepthAndDistance[i][keys[j]]->getVertexNumber() > maxVertexLimit)
+        //            {
+        //                modelsToUnload.append(modelsByDepthAndDistance[i][keys[j]]);
+        //                modelsByDepthAndDistance[i].remove(keys[j]);
+        //                keys.remove(j);
+        //            }
+        //            else currentVertexNumber += modelsByDepthAndDistance[i][keys[j]]->getVertexNumber();
+        //        }
+        //    }
+        //}
 
-        unsigned long long currentVertexNumber = 0;
+        QFuture<void> modelsUnloader = QtConcurrent::map(modelsToUnload, &Model3D::unloadRAM);
         for (unsigned int i = 0; i < modelsByDepthAndDistance.keys().count(); i++) QtConcurrent::blockingMap(modelsByDepthAndDistance[i], &Model3D::loadRAM);
         modelsUnloader.waitForFinished();
         modelsUpdaterMutex.unlock();

@@ -230,6 +230,11 @@ bool Model3D::isPrepared() const
     return prepared;
 }
 
+bool Model3D::isLiveLoading() const
+{
+    return liveLoading;
+}
+
 bool Model3D::isOnRAM() const
 {
     return onRAM;

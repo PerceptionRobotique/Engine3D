@@ -19,8 +19,6 @@
 #include "ModelBIN.h"
 #include "Octree.h"
 
-//#define FRAME_COUNTER
-
 class ENGINE3D_EXPORT Engine3D : public QObject, public QOpenGLFunctions
 {
     Q_OBJECT
@@ -37,7 +35,7 @@ public:
     void initialize();
 
     bool isOnCamera(const Model3D* model, const Camera* camera) const;
-    bool isOnScreen(const Model3D* model) const;
+    bool isOnScreen(const Model3D* model);
 
     Camera* getMainCamera();
     QVector<Camera*>& getCameras();
@@ -57,6 +55,9 @@ public slots:
     void closeModel(unsigned int index);
     void closeModel(Model3D* model);
     void update();
+
+    //Debug
+    void setFrameCounterEnabled(bool enabled);
 
     void setPointSizeEnabled(bool enabled);
     void setPointSize(double _pointSize);
@@ -81,6 +82,9 @@ private:
     Camera* mainCamera;
     QVector<Model3D*> models;
 
+    //Debug
+    bool frameCounter;
+
     float pointSize;
     float lineWidth;
     bool opacityEnabled;
@@ -95,6 +99,7 @@ private:
     int maxMovingDepth;
     bool maxVertexLimitEnabled;
     unsigned long long maxVertexLimit;
+    unsigned long long currentVertexNumber;
     unsigned long long maxVertexToVRAM;
 
     QMutex drawMutex;

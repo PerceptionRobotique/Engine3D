@@ -5,7 +5,8 @@
 
 #include <QFile>
 #include <QFileInfo>
-#include <functional>
+#include <QFuture>
+#include <QtConcurrent/QtConcurrent>
 
 #define BYTES_PER_READ 1000000
 
