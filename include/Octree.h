@@ -32,7 +32,7 @@ public:
 
 	Octree* operator[](std::size_t index);
 
-	void loadRAMthread() override;
+	void loadRamThread() override;
 
 public slots:
 	void setMaxVisibleDepth(int value);

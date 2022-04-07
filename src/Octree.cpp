@@ -191,12 +191,12 @@ Octree* Octree::operator[](std::size_t index)
 	return children[index];
 }
 
-void Octree::loadRAMthread()
+void Octree::loadRamThread()
 {
 #ifdef ONE_FILE_READER
 	fileMutex->lock();
 #endif
-	ModelBIN::loadRAMthread();
+	ModelBIN::loadRamThread();
 #ifdef ONE_FILE_READER
 	fileMutex->unlock();
 #endif

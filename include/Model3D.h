@@ -2,7 +2,6 @@
 #define MODEL3D_H
 
 #include <QMutex>
-#include <QThread>
 #include <QVector>
 #include <QOpenGLBuffer>
 #include <QOpenGLContext>
@@ -14,8 +13,6 @@
 #include <QSettings>
 #include <QVariant>
 #include <QtConcurrent/QtConcurrent>
-#include <QFuture>
-#include <QFutureWatcher>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -130,10 +127,8 @@ public:
     virtual bool isVisible() const;
     virtual bool isBoxVisible() const;
     bool isPrepared() const;
-    bool isOnScreen() const;
     bool isOnRAM() const;
     bool isOnVRAM() const;
-    void waitRAMloading();
 
     virtual bool isGlobalColorEnabled() const;
     virtual QColor getGlobalColor() const;
@@ -144,20 +139,16 @@ public slots:
     void setBoxVisible(bool _boxVisible);
     void setShowIntensity(bool _showIntensity);
 
-    //on screen
-    void setOnScreen(bool _onScreen, bool force = false);
-
     //AABB
     void setAABB(AABB _aabb);
 
     //RAM
-    void loadRAM(bool force = false);
-    void unloadRAM(bool force = false);
-    void ramLoadingFinished();
+    void loadRAM();
+    void unloadRAM();
 
     //VRAM
-    void loadVRAM(bool force = false);
-    void unloadVRAM(bool force = false);
+    void loadVRAM();
+    void unloadVRAM();
 
     //Box RAM
     void loadBoxRAM();
@@ -189,7 +180,6 @@ private:
     bool showIntensity;
     bool visible;
     bool boxVisible;
-    bool onScreen;
     QMutex boxLoaderMutex;
     bool boxOnRAM;
     bool boxOnVRAM;
@@ -220,11 +210,8 @@ protected:
     bool m_hasIntensity;
 
     QMutex vertexLoader; //avoids load and unload at the same time
-    QFuture<void> ramLoader;
-    QFuture<void> ramUnloader;
-    QFutureWatcher<void> ramLoaderWatcher;
     bool onRAM;
-    virtual void loadRAMthread() = 0;
+    virtual void loadRamThread() = 0;
     void unloadRAMthread();
 
     unsigned long long vertexNumber;

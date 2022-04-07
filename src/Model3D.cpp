@@ -15,7 +15,6 @@ Model3D::Model3D(QString _fileName)
     , showIntensity(false)
     , visible(true)
     , boxVisible(false)
-    , onScreen(false)
     , boxOnRAM(false)
     , boxOnVRAM(false)
     , onVRAM(false)
@@ -47,7 +46,6 @@ Model3D::Model3D(QString _fileName)
     model3DCreateMutex.unlock();
 
     connect(this, SIGNAL(objectChanged()), this, SIGNAL(modelChanged()));
-    connect(&ramLoaderWatcher, SIGNAL(finished()), this, SLOT(ramLoadingFinished()));
 
     if (!fileName.isEmpty())
     {
@@ -80,8 +78,6 @@ Model3D::Model3D(QString _fileName)
 
 Model3D::~Model3D()
 {
-    ramLoader.cancel();
-
     if (file != nullptr)
     {
         file->close();
@@ -89,11 +85,10 @@ Model3D::~Model3D()
         file = nullptr;
     }
 
-    if (onRAM) unloadRAM(true);
-    if (onVRAM) unloadVRAM(true);
+    if (onRAM) unloadRAM();
+    if (onVRAM) unloadVRAM();
     if (boxOnRAM) unloadBoxRAM();
     if (boxOnVRAM) unloadBoxVRAM();
-    ramUnloader.waitForFinished();
 
     model3DNumber--;
     if (model3DNumber == 0) boxIndexBuffer.destroy();
@@ -235,11 +230,6 @@ bool Model3D::isPrepared() const
     return prepared;
 }
 
-bool Model3D::isOnScreen() const
-{
-    return onScreen;
-}
-
 bool Model3D::isOnRAM() const
 {
     return onRAM;
@@ -248,11 +238,6 @@ bool Model3D::isOnRAM() const
 bool Model3D::isOnVRAM() const
 {
     return onVRAM;
-}
-
-void Model3D::waitRAMloading()
-{
-    ramLoader.waitForFinished();
 }
 
 bool Model3D::isGlobalColorEnabled() const
@@ -283,17 +268,6 @@ void Model3D::setShowIntensity(bool _showIntensity)
     emit modelChanged();
 }
 
-void Model3D::setOnScreen(bool _onScreen, bool force)
-{
-    if (onScreen != _onScreen)
-    {
-        onScreen = _onScreen;
-        emit modelChanged();
-    }
-    if (onScreen) loadRAM(force);
-    else if (liveLoading) unloadRAM(force);
-}
-
 void Model3D::setAABB(AABB _aabb)
 {
     aabb = _aabb;
@@ -302,36 +276,46 @@ void Model3D::setAABB(AABB _aabb)
     emit modelChanged();
 }
 
-void Model3D::loadRAM(bool force)
+void Model3D::loadRAM()
 {
-    if (prepared && !onRAM && !ramLoader.isRunning())
+    if (vertexLoader.tryLock())
     {
-        if (force) vertexLoader.lock();
-        if (force ? true : vertexLoader.tryLock())
+        if (!onRAM)
         {
-            ramLoader = QtConcurrent::run(&Model3D::loadRAMthread, this);
-            ramLoaderWatcher.setFuture(ramLoader);
+            loadRamThread();
+            addVertexOnRAM();
+            onRAM = true;
+            emit modelLoaded();
         }
-        else emit modelLoadingDelayed();
+        vertexLoader.unlock();
     }
 }
 
-void Model3D::unloadRAM(bool force)
+void Model3D::unloadRAM()
 {
-    if (onRAM && !ramUnloader.isRunning())
+    if (vertexLoader.tryLock())
     {
-        if (force) vertexLoader.lock();
-        if (vertexLoader.tryLock() || force) ramUnloader = QtConcurrent::run(&Model3D::unloadRAMthread, this);
-        else emit modelLoadingDelayed();
+        if (onRAM)
+        {
+            pos.clear();
+            pos.squeeze();
+            color.clear();
+            color.squeeze();
+            intensity.clear();
+            intensity.squeeze();
+
+            removeVertexOnRAM();
+            onRAM = false;
+        }
+        vertexLoader.unlock();
     }
 }
 
-void Model3D::loadVRAM(bool force)
+void Model3D::loadVRAM()
 {
-    if (onRAM && !onVRAM)
+    if (vertexLoader.tryLock())
     {
-        if (force) vertexLoader.lock();
-        if (vertexLoader.tryLock() || force)
+        if (onRAM && !onVRAM)
         {
             if (!posBuffer.isCreated()) posBuffer.create();
             posBuffer.bind();
@@ -352,18 +336,16 @@ void Model3D::loadVRAM(bool force)
             }
             addVertexOnVRAM();
             onVRAM = true;
-            vertexLoader.unlock();
         }
-        else emit modelLoadingDelayed();
+        vertexLoader.unlock();
     }
 }
 
-void Model3D::unloadVRAM(bool force)
+void Model3D::unloadVRAM()
 {
-    if (onVRAM)
+    if (vertexLoader.tryLock())
     {
-        if (force) vertexLoader.lock();
-        if (vertexLoader.tryLock() || force)
+        if (onVRAM)
         {
             posBuffer.bind();
             posBuffer.allocate(0);
@@ -381,9 +363,8 @@ void Model3D::unloadVRAM(bool force)
             }
             removeVertexOnVRAM();
             onVRAM = false;
-            vertexLoader.unlock();
         }
-        else emit modelLoadingDelayed();
+        vertexLoader.unlock();
     }
 }
 
@@ -487,7 +468,7 @@ bool Model3D::draw(QOpenGLShaderProgram* shader)
     bool drawn = false;
     if (isPrepared())
     {
-        if (isOnScreen() && isVisible())
+        if (isVisible())
         {
             if (isOnVRAM())
             {
@@ -537,9 +518,9 @@ bool Model3D::drawBox(QOpenGLShaderProgram* shader)
 {
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
     bool drawn = false;
-    if (prepared && onScreen)
+    if (isPrepared())
     {
-        if (boxVisible)
+        if (isBoxVisible())
         {
             QColor boxColor = Qt::green;
 
@@ -566,7 +547,6 @@ bool Model3D::drawBox(QOpenGLShaderProgram* shader)
             }
         }
     }
-    if (!onScreen) unloadBoxVRAM();
     return drawn;
 }
 
@@ -598,13 +578,5 @@ void Model3D::unloadRAMthread()
 
     removeVertexOnRAM();
     onRAM = false;
-    vertexLoader.unlock();
-}
-
-void Model3D::ramLoadingFinished()
-{
-    addVertexOnRAM();
-    onRAM = true;
-    emit modelLoaded();
     vertexLoader.unlock();
 }

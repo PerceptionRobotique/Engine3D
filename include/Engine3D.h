@@ -9,6 +9,9 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QMap>
+#include <QtConcurrent/QtConcurrent>
+#include <QFuture>
+#include <QFutureWatcher>
 
 #include "Camera.h"
 #include "CameraController.h"
@@ -96,11 +99,9 @@ private:
 
     QMutex drawMutex;
     QMutex modelsUpdaterMutex;
-    QThread* modelsUpdater;
+    QFuture<void> modelsUpdater;
+    void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, Model3D*>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
     void updateModels();
-
-private slots:
-    void modelsUpdaterFinished();
 
 signals:
     void askUpdate();

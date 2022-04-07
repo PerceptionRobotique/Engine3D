@@ -8,7 +8,7 @@ class ENGINE3D_EXPORT ModelBIN : public Model3D
 public:
 	ModelBIN(QString _fileName = "");
 
-	virtual void loadRAMthread() override;
+	virtual void loadRamThread() override;
 
 protected:
 	void prepare();

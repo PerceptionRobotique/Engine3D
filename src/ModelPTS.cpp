@@ -48,7 +48,7 @@ ModelPTS::ModelPTS(QString _fileName)
     ts.flush();
 
     vertexLoader.lock();
-    ramLoader = QtConcurrent::run(&ModelPTS::loadRAMthread, this);
+    ramLoader = QtConcurrent::run(&ModelPTS::loadRAM, this);
 }
 
 ModelPTS::~ModelPTS()
@@ -65,7 +65,7 @@ ModelPTS::~ModelPTS()
     }
 }
 
-void ModelPTS::loadRAMthread()
+void ModelPTS::loadRamThread()
 {
     int loadingPourcentage = 0;
     bool firstBlocComputed = false;

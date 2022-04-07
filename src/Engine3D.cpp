@@ -17,17 +17,17 @@ Engine3D::Engine3D(QObject* parent)
     , maxVertexLimitEnabled(true)
     , maxVertexLimit(100000000)
     , maxVertexToVRAM(1000000)
-    , modelsUpdater(nullptr)
 {
 }
 
 Engine3D::~Engine3D()
 {
-    if (modelsUpdater) modelsUpdater->wait();
+    modelsUpdaterMutex.lock();
     for (Camera* camera : cameras) delete camera;
     for (QOpenGLShaderProgram* shader : shaders) delete shader;
     delete boxShader;
     for (Model3D* model : models) delete model;
+    modelsUpdaterMutex.unlock();
 }
 
 void Engine3D::initialize()
@@ -156,9 +156,10 @@ void Engine3D::openModel(QString fileName)
 
 void Engine3D::closeModel(unsigned int index)
 {
-    if (modelsUpdater) modelsUpdater->wait();
+    modelsUpdaterMutex.lock();
     delete models[index];
     models.removeAt(index);
+    modelsUpdaterMutex.unlock();
 }
 
 void Engine3D::closeModel(Model3D* model)
@@ -171,34 +172,7 @@ void Engine3D::update()
 {
     if (drawMutex.tryLock())
     {
-        if (!waitLoading)
-        {
-            if (!modelsUpdater)
-            {
-                modelsUpdater = QThread::create(&Engine3D::updateModels, this);
-                connect(modelsUpdater, SIGNAL(finished()), this, SLOT(modelsUpdaterFinished()));
-                modelsUpdater->start();
-            }
-            else emit askUpdate();
-        }
-        else
-        {
-            if (modelsUpdater) modelsUpdater->wait();
-            updateModels();
-
-            for (Model3D* model : models)
-            {
-                model->waitRAMloading();
-                Octree* octree = dynamic_cast<Octree*>(model);
-                if (octree)
-                {
-                    for (Octree* child : octree->getAllChildren())
-                    {
-                        child->waitRAMloading();
-                    }
-                }
-            }
-        }
+        if (!modelsUpdater.isRunning()) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
 
         static unsigned long long frameNumber = 0;
         unsigned long long vertexToVRAM = 0;
@@ -413,75 +387,48 @@ void Engine3D::setMaxVertexLimit(int _maxVertexLimit)
     emit askUpdate();
 }
 
+void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, Model3D*>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
+{
+    QElapsedTimer elapsed;
+    elapsed.start();
+    for (Model3D* model : models)
+    {
+        float minDist = cameras[0]->distanceWith(model);
+        for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
+        if (isOnScreen(model)) modelsByDepthAndDistance[0][minDist] = model;
+        else modelsToUnload.append(model);
+
+        Octree* octree = dynamic_cast<Octree*>(model);
+        if (octree)
+        {
+            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+            {
+                for (Octree* child : octree->getDepthChildren(i))
+                {
+                    minDist = cameras[0]->distanceWith(child);
+                    for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
+                    if (isOnScreen(child)) modelsByDepthAndDistance[child->getDepth()][minDist] = child;
+                    else modelsToUnload.append(child);
+                }
+            }
+        }
+    }
+    qDebug() << elapsed.elapsed();
+}
+
 void Engine3D::updateModels()
 {
     if (modelsUpdaterMutex.tryLock())
     {
-        QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthDistance;
-        for (Model3D* model : models)
-        {
-            float minDist = cameras[0]->distanceWith(model);
-            for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
-            modelsByDepthDistance[0][minDist] = model;
-            Octree* octree = dynamic_cast<Octree*>(model);
-            if (octree)
-            {
-                for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-                {
-                    for (Octree* child : octree->getDepthChildren(i))
-                    {
-                        minDist = cameras[0]->distanceWith(child);
-                        for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
-                        modelsByDepthDistance[child->getDepth()][minDist] = child;
-                    }
-                    if (QThread::currentThread()->isInterruptionRequested()) break;
-                }
-                if (QThread::currentThread()->isInterruptionRequested()) break;
-            }
-            if (QThread::currentThread()->isInterruptionRequested()) break;
-        }
+        QList<Model3D*> modelsToUnload;
+        QHash<unsigned int, QMap<float, Model3D*>> modelsByDepthAndDistance;
+        sortModelsByDepthAndDistance(modelsByDepthAndDistance, modelsToUnload);
+
+        QFuture<void> modelsUnloader = QtConcurrent::map(modelsToUnload, &Model3D::unloadRAM);
 
         unsigned long long currentVertexNumber = 0;
-        for (unsigned int i = 0; i < modelsByDepthDistance.keys().count(); i++)
-        {
-            for (Model3D* model : modelsByDepthDistance[i])
-            {
-                if (currentVertexNumber + model->getVertexNumber() <= maxVertexLimit || !maxVertexLimitEnabled)
-                {
-                    model->setOnScreen(isOnScreen(model), waitLoading);
-                    if (model->isOnScreen()) currentVertexNumber += model->getVertexNumber();
-                }
-                else model->setOnScreen(false, waitLoading);
-
-                if (QThread::currentThread()->isInterruptionRequested()) break;
-            }
-            if (QThread::currentThread()->isInterruptionRequested()) break;
-        }
-
-        //for (Model3D* model : models)
-        //{
-        //    model->setOnScreen(isOnScreen(model), waitLoading);
-        //    Octree* octree = dynamic_cast<Octree*>(model);
-        //    if (octree)
-        //    {
-        //        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-        //        {
-        //            for (Octree* child : octree->getDepthChildren(i))
-        //            {
-        //                child->setOnScreen(isOnScreen(child), waitLoading);
-        //                if (QThread::currentThread()->isInterruptionRequested()) break;
-        //            }
-        //            if (QThread::currentThread()->isInterruptionRequested()) break;
-        //        }
-        //    }
-        //    if (QThread::currentThread()->isInterruptionRequested()) break;
-        //}
+        for (unsigned int i = 0; i < modelsByDepthAndDistance.keys().count(); i++) QtConcurrent::blockingMap(modelsByDepthAndDistance[i], &Model3D::loadRAM);
+        modelsUnloader.waitForFinished();
         modelsUpdaterMutex.unlock();
     }
-}
-
-void Engine3D::modelsUpdaterFinished()
-{
-    delete modelsUpdater;
-    modelsUpdater = nullptr;
 }

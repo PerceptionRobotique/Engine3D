@@ -27,23 +27,21 @@ bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long v
 		for (unsigned int i = 0; i < 3; i++) aabb[3 + i] = model->getAABB().max[i];
 
 		bool isOnRAM = model->isOnRAM();
-		model->loadRAM(true);
-		model->waitRAMloading();
+		model->loadRAM();
 		pos.append(model->getPos());
 		color.append(model->getColor());
 		intensity.append(model->getIntensity());
-		if (!isOnRAM) model->unloadRAM(true);
+		if (!isOnRAM) model->unloadRAM();
 		if (octree)
 		{
 			for (Octree* child : octree->getAllChildren())
 			{
 				isOnRAM = child->isOnRAM();
-				child->loadRAM(true);
-				child->waitRAMloading();
+				child->loadRAM();
 				pos.append(child->getPos());
 				color.append(child->getColor());
 				intensity.append(child->getIntensity());
-				if (!isOnRAM) child->unloadRAM(true);
+				if (!isOnRAM) child->unloadRAM();
 			}
 		}
 

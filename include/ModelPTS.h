@@ -15,10 +15,11 @@ public:
 	ModelPTS(QString _fileName);
 	~ModelPTS();
 
-	void loadRAMthread() override;
+	void loadRamThread() override;
 
 private:
 	bool stop;
+	QFuture<void> ramLoader;
 	QList<QFuture<void>> loaders;
 	void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
 };

@@ -46,8 +46,8 @@ set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
 set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
 set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
 
-find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL REQUIRED)
+find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL Concurrent REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL Concurrent REQUIRED)
 
 if(WIN32)
     find_package(GLM REQUIRED)
@@ -169,6 +169,7 @@ target_include_directories(Engine3D PRIVATE
 target_link_libraries(Engine3D PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::OpenGL
+    Qt${QT_VERSION_MAJOR}::Concurrent
 
     ${OPENVR_LIBRARIES}
 )
