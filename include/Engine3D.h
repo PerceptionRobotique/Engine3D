@@ -33,6 +33,7 @@ public:
     ~Engine3D();
 
     void initialize();
+    bool isInitialized() const;
 
     bool isOnCamera(const Model3D* model, const Camera* camera) const;
     bool isOnScreen(const Model3D* model);
@@ -74,6 +75,7 @@ public slots:
     void setMaxVertexLimit(int _maxVertexLimit);
 
 private:
+    bool initialized;
     mat4 offset;
 
     QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
@@ -104,12 +106,19 @@ private:
 
     QMutex drawMutex;
     QMutex modelsUpdaterMutex;
+    bool breakModelsUpdater;
     QFuture<void> modelsUpdater;
-    void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, Model3D*>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
+    QFuture<void> nextModelsUpdater;
+    void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
     void updateModels();
+    void nextModelsUpdateThread();
+
+private slots:
+    void nextModelsUpdate();
 
 signals:
     void askUpdate();
+    void engineUpdated();
 };
 
 #endif // ENGINE3D_H

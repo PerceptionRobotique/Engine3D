@@ -281,9 +281,10 @@ void Model3D::setAABB(AABB _aabb)
     emit modelChanged();
 }
 
-void Model3D::loadRAM()
+void Model3D::loadRAM(bool force)
 {
-    if (vertexLoader.tryLock())
+    if (force) vertexLoader.lock();
+    if (vertexLoader.tryLock() || force)
     {
         if (!onRAM)
         {
@@ -294,11 +295,13 @@ void Model3D::loadRAM()
         }
         vertexLoader.unlock();
     }
+    else emit modelLoadingDelayed();
 }
 
-void Model3D::unloadRAM()
+void Model3D::unloadRAM(bool force)
 {
-    if (vertexLoader.tryLock())
+    if (force) vertexLoader.lock();
+    if (vertexLoader.tryLock() || force)
     {
         if (onRAM)
         {
@@ -311,14 +314,17 @@ void Model3D::unloadRAM()
 
             removeVertexOnRAM();
             onRAM = false;
+            emit modelUnloaded();
         }
         vertexLoader.unlock();
     }
+    else emit modelLoadingDelayed();
 }
 
-void Model3D::loadVRAM()
+void Model3D::loadVRAM(bool force)
 {
-    if (vertexLoader.tryLock())
+    if (force) vertexLoader.lock();
+    if (vertexLoader.tryLock() || force)
     {
         if (onRAM && !onVRAM)
         {
@@ -344,11 +350,13 @@ void Model3D::loadVRAM()
         }
         vertexLoader.unlock();
     }
+    else emit modelLoadingDelayed();
 }
 
-void Model3D::unloadVRAM()
+void Model3D::unloadVRAM(bool force)
 {
-    if (vertexLoader.tryLock())
+    if (force) vertexLoader.lock();
+    if (vertexLoader.tryLock() || force)
     {
         if (onVRAM)
         {
@@ -371,6 +379,7 @@ void Model3D::unloadVRAM()
         }
         vertexLoader.unlock();
     }
+    else emit modelLoadingDelayed();
 }
 
 void Model3D::loadBoxRAM()

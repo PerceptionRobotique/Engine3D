@@ -140,6 +140,7 @@ public slots:
     void setView(Model3D* model, Camera::View view);
 
 signals:
+    void cameraChanged();
     void sizeChanged();
     void fovChanged(float);
 

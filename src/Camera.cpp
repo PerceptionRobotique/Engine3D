@@ -19,6 +19,7 @@ Camera::Camera()
     , u0(size.width()/2.0f)
     , v0(size.height()/2.0f)
 {
+    connect(this, SIGNAL(objectChanged()), this, SIGNAL(cameraChanged()));
 }
 
 Camera::~Camera()

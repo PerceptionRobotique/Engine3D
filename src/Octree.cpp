@@ -78,6 +78,7 @@ Octree::Octree(Octree* _parent, QString _fileName)
 					connect(current, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
 					connect(current, SIGNAL(modelLoadingDelayed()), this, SIGNAL(modelLoadingDelayed()));
 					connect(current, SIGNAL(modelLoaded()), this, SIGNAL(modelLoaded()));
+					connect(current, SIGNAL(modelUnloaded()), this, SIGNAL(modelUnloaded()));
 					connect(current, SIGNAL(vertexOnRAMChanged()), this, SIGNAL(vertexOnRAMChanged()));
 					connect(current, SIGNAL(vertexOnVRAMChanged()), this, SIGNAL(vertexOnVRAMChanged()));
 

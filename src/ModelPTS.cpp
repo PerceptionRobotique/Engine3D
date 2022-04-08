@@ -47,7 +47,7 @@ ModelPTS::ModelPTS(QString _fileName)
     ts.seek(0);
     ts.flush();
 
-    ramLoader = QtConcurrent::run(&ModelPTS::loadRAM, this);
+    ramLoader = QtConcurrent::run(&ModelPTS::loadRAM, this, true);
 }
 
 ModelPTS::~ModelPTS()

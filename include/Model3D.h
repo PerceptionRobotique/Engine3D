@@ -144,12 +144,12 @@ public slots:
     void setAABB(AABB _aabb);
 
     //RAM
-    void loadRAM();
-    void unloadRAM();
+    void loadRAM(bool force = false);
+    void unloadRAM(bool force = false);
 
     //VRAM
-    void loadVRAM();
-    void unloadVRAM();
+    void loadVRAM(bool force = false);
+    void unloadVRAM(bool force = false);
 
     //Box RAM
     void loadBoxRAM();
@@ -226,6 +226,7 @@ signals:
     void modelLoadingDelayed();
     void modelLoadingUpdate(Model3D* model, unsigned int value);
     void modelLoaded();
+    void modelUnloaded();
     void vertexOnRAMChanged();
     void vertexOnVRAMChanged();
     void modelDestroyed();
