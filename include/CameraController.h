@@ -52,9 +52,6 @@ public:
         K_DOWN,
         K_LEFT,
         K_RIGHT,
-        K_SHIFT,
-        K_SPACE,
-        K_CTRL,
         K_Z,
         K_Q,
         K_S,
@@ -65,9 +62,7 @@ public:
 
     CameraController(Camera* _camera, QWidget *_parent = nullptr);
 
-    void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
     bool isVerticalAxisEnabled() const;
-    void setOnGroundEnabled(const bool& _onGroundEnabled);
     bool isOnGroundEnabled() const;
 
     void setMouseCaptureEnabled(bool enabled);
@@ -99,11 +94,13 @@ public:
 #endif
 
 signals:
-    void movementFinished();
+    void moving(bool moving);
 
 public slots:
     void setTranslationSensitivity(int _translationSensitivity);
     void setRotationSensitivity(int _rotationSensitivity);
+    void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
+    void setOnGroundEnabled(const bool& _onGroundEnabled);
 #ifdef WITH_CONTROLLER
     void setCurrentControllerProfile(QString newProfile);
 #endif
@@ -132,8 +129,10 @@ private:
     QVector<QPoint> touchPoints;
 
     QHash<KeyButton, bool> keysDown;
+    int keyboardKeysDown;
 
 #ifdef WITH_CONTROLLER
+    bool controllerIsMoving;
     QTimer controllerUpdater;
     QString currentControllerProfile;
     QHash<QString, QHash<Action, Controller::Input>> controllerProfiles;

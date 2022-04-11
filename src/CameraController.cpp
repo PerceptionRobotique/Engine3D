@@ -8,7 +8,9 @@ CameraController::CameraController(Camera* _camera, QWidget *_parent)
     , onGroundEnabled(false)
     , mouseCaptureEnabled(false)
     , mouseMoveToSkip(0)
+    , keyboardKeysDown(0)
 #ifdef WITH_CONTROLLER
+    , controllerIsMoving(false)
     , currentControllerProfile("Standard")
 #endif
     , translationSensitivity(1.0f)
@@ -38,19 +40,9 @@ CameraController::CameraController(Camera* _camera, QWidget *_parent)
 #endif
 }
 
-void CameraController::setVerticalAxisEnabled(const bool &_verticalAxisEnabled)
-{
-    verticalAxisEnabled = _verticalAxisEnabled;
-}
-
 bool CameraController::isVerticalAxisEnabled() const
 {
     return verticalAxisEnabled;
-}
-
-void CameraController::setOnGroundEnabled(const bool& _onGroundEnabled)
-{
-    onGroundEnabled = _onGroundEnabled;
 }
 
 bool CameraController::isOnGroundEnabled() const
@@ -87,6 +79,7 @@ void CameraController::mousePressed(MouseButton mouseButton, int x, int y)
         mousePreviousPos[mouseButton].setX(x);
         mousePreviousPos[mouseButton].setY(y);
     }
+    emit moving(true);
 }
 
 void CameraController::mouseMoved(MouseButton mouseButton, int x, int y)
@@ -157,6 +150,7 @@ void CameraController::mouseMoved(MouseButton mouseButton, int x, int y)
 void CameraController::mouseWheelMoved(int rx, int ry)
 {
     camera->translate(vec3(-translationSensitivity * rx / 500.0f, 0.0f, -translationSensitivity * ry / 500.0f), onGroundEnabled);
+    if(!mouseWheelTimer.isActive()) emit moving(true);
     mouseWheelTimer.start(MOUSE_WHEEL_TIMEOUT);
 }
 
@@ -169,11 +163,12 @@ void CameraController::mouseReleased(MouseButton mouseButton)
     }
     mouseButtonPressed[mouseButton] = false;
     if(!isMoving())
-        emit movementFinished();
+        emit moving(false);
 }
 
 void CameraController::touchBegin()
 {
+    emit moving(true);
 }
 
 void CameraController::touchUpdate(const QVector<QPoint>& points)
@@ -221,8 +216,7 @@ void CameraController::touchUpdate(const QVector<QPoint>& points)
 void CameraController::touchEnd()
 {
     touchPoints.clear();
-    if(!isMoving())
-        emit movementFinished();
+    if(!isMoving()) emit moving(false);
 }
 
 void CameraController::keyPressed(CameraController::KeyButton key)
@@ -247,18 +241,6 @@ void CameraController::keyPressed(CameraController::KeyButton key)
     case K_RIGHT:
         keysDown[K_RIGHT] = true;
         camera->translate(vec3(translationSensitivity, 0, 0), onGroundEnabled);
-        break;
-
-    case K_SHIFT:
-        keysDown[K_SHIFT] = true;
-        break;
-
-    case K_SPACE:
-        keysDown[K_SPACE] = true;
-        break;
-
-    case K_CTRL:
-        keysDown[K_CTRL] = true;
         break;
 
     case K_Z:
@@ -290,7 +272,16 @@ void CameraController::keyPressed(CameraController::KeyButton key)
         keysDown[K_E] = true;
         camera->translate(vec3(0, -translationSensitivity, 0), onGroundEnabled);
         break;
+
+    default:
+        break;
     }
+
+    keyboardKeysDown = 0;
+    for (KeyButton button : keysDown.keys())
+        if (keysDown[button]) keyboardKeysDown++;
+
+    if (isMoving()) emit moving(true);
 }
 
 void CameraController::keyReleased(KeyButton key)
@@ -311,18 +302,6 @@ void CameraController::keyReleased(KeyButton key)
 
     case K_RIGHT:
         keysDown[K_RIGHT] = false;
-        break;
-
-    case K_SHIFT:
-        keysDown[K_SHIFT] = false;
-        break;
-
-    case K_SPACE:
-        keysDown[K_SPACE] = false;
-        break;
-
-    case K_CTRL:
-        keysDown[K_CTRL] = false;
         break;
 
     case K_Z:
@@ -348,7 +327,16 @@ void CameraController::keyReleased(KeyButton key)
     case K_E:
         keysDown[K_E] = false;
         break;
+
+    default:
+        break;
     }
+
+    keyboardKeysDown = 0;
+    for (KeyButton button : keysDown.keys())
+        if (keysDown[button]) keyboardKeysDown++;
+
+    if (!isMoving()) emit moving(false);
 }
 
 #ifdef WITH_VR
@@ -392,6 +380,10 @@ bool CameraController::isMoving() const
 
     moving |= mouseWheelTimer.isActive();
     moving |= touchPoints.count() > 0;
+    moving |= keyboardKeysDown > 0;
+#ifdef WITH_CONTROLLER
+    moving |= controllerIsMoving;
+#endif
 
     return moving;
 }
@@ -418,6 +410,16 @@ void CameraController::setRotationSensitivity(int _rotationSensitivity)
     rotationSensitivity = _rotationSensitivity;
 }
 
+void CameraController::setVerticalAxisEnabled(const bool& _verticalAxisEnabled)
+{
+    verticalAxisEnabled = _verticalAxisEnabled;
+}
+
+void CameraController::setOnGroundEnabled(const bool& _onGroundEnabled)
+{
+    onGroundEnabled = _onGroundEnabled;
+}
+
 #ifdef WITH_CONTROLLER
 void CameraController::setCurrentControllerProfile(QString newProfile)
 {
@@ -428,18 +430,20 @@ void CameraController::setCurrentControllerProfile(QString newProfile)
 void CameraController::mouseWheelFinished()
 {
     mouseWheelTimer.stop();
-    emit movementFinished();
+    emit moving(isMoving());
 }
 
 #ifdef WITH_CONTROLLER
 void CameraController::updateController()
 {
     Controller::update();
+    bool controllerMoving = false;
 
     for (Action action : controllerProfiles[currentControllerProfile].keys())
     {
         if (Controller::getInput(controllerProfiles[currentControllerProfile][action]))
         {
+            controllerMoving = true;
             switch (action)
             {
             case TRANSLATE_X:
@@ -475,6 +479,12 @@ void CameraController::updateController()
                 break;
             }
         }
+    }
+
+    if (controllerMoving != controllerIsMoving)
+    {
+        controllerIsMoving = controllerMoving;
+        emit moving(isMoving());
     }
 }
 #endif

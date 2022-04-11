@@ -31,6 +31,7 @@ private:
     void mouseDoubleClickEvent(QMouseEvent* e) override;
     void wheelEvent(QWheelEvent* e) override;
     void keyPressEvent(QKeyEvent* e) override;
+    void keyReleaseEvent(QKeyEvent* e) override;
     bool event(QEvent* e) override;
 
     QOpenGLShaderProgram shader;

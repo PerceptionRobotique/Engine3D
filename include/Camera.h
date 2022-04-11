@@ -62,7 +62,7 @@ public:
     int getWidth() const;
     int getHeight() const;
     QColor getBackgroundColor() const;
-    vec3 getViewCenter() const;
+    vec3 getTarget() const;
     float getAspectRatio() const;
     float getNearPlane() const;
     float getFarPlane() const;
@@ -117,7 +117,10 @@ public slots:
     void setBackgroundColor(QColor _backgroundColor);
     void setBackgroundColor(float red, float green, float blue, float alpha = 1.0f);
     void setSamples(int _samples);
-    void setViewCenter(vec3 _viewCenter);
+    void setTarget(vec3 _target);
+    void setTargetX(double x);
+    void setTargetY(double y);
+    void setTargetZ(double z);
     void setNearPlane(float _nearPlane);
     void setFarPlane(float _farPlane);
     void setAu(double _au);
@@ -130,6 +133,8 @@ public slots:
     void setFarPlane(double _farPlane);
     void setFOV(float _fov);
     void setFOV(double _fov);
+    void setHFOV(float _fov);
+    void setHFOV(double _fov);
     void setProjectionType(Camera::ProjectionType _projectionType);
     void setCustomProjection(mat4 _customProjection);
     void setViewPoint(Camera::ViewPoint _viewPoint);
@@ -142,11 +147,10 @@ public slots:
 signals:
     void cameraChanged();
     void sizeChanged();
-    void fovChanged(float);
 
 private:
     bool active;
-    vec3 viewCenter;
+    vec3 target;
 
     QSize size;
     QOpenGLFramebufferObject* FBO;

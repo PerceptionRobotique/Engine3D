@@ -16,9 +16,12 @@ Engine3D::Engine3D(QObject* parent)
     , viewDistanceEnabled(true)
     , waitLoading(false)
     , maxDepth(-1)
+    , maxMovingDepth(-1)
+    , isMoving(false)
     , maxVertexLimitEnabled(true)
     , maxVertexLimit(100000000)
     , maxVertexToVRAM(1000000)
+    , updateNextAsked(false)
     , breakModelsUpdater(false)
 {
     connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
@@ -192,7 +195,7 @@ void Engine3D::closeModel(Model3D* model)
     if (index >= 0) closeModel(index);
 }
 
-void Engine3D::update()
+void Engine3D::render()
 {
     if (drawMutex.tryLock())
     {
@@ -232,13 +235,13 @@ void Engine3D::update()
                                 model->loadVRAM(waitLoading);
                                 model->draw(shaders[Model3D::POINTS]);
                             }
-                            else emit askUpdate();
+                            else update();
                         }
                         else model->unloadVRAM(waitLoading);
                         Octree* octree = dynamic_cast<Octree*>(model);
                         if (octree)
                         {
-                            for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                            for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
                             {
                                 for (Octree* child : octree->getDepthChildren(i))
                                 {
@@ -251,7 +254,7 @@ void Engine3D::update()
                                             child->loadVRAM(waitLoading);
                                             child->draw(shaders[Model3D::POINTS]);
                                         }
-                                        else emit askUpdate();
+                                        else update();
                                     }
                                     else child->unloadVRAM(waitLoading);
                                 }
@@ -314,7 +317,23 @@ void Engine3D::update()
         if(frameCounter) qDebug() << ++frameNumber;
         drawMutex.unlock();
         emit engineUpdated();
+        if (updateNextAsked)
+        {
+            updateNextAsked = false;
+            emit askUpdate();
+        }
     }
+    else updateNextAsked = true;
+}
+
+void Engine3D::update()
+{
+    if (drawMutex.tryLock())
+    {
+        drawMutex.unlock();
+        emit askUpdate();
+    }
+    else updateNextAsked = true;
 }
 
 void Engine3D::setFrameCounterEnabled(bool enabled)
@@ -326,7 +345,7 @@ void Engine3D::setPointSizeEnabled(bool enabled)
 {
     if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
     else glDisable(GL_PROGRAM_POINT_SIZE);
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setPointSize(double _pointSize)
@@ -335,7 +354,7 @@ void Engine3D::setPointSize(double _pointSize)
     shaders[Model3D::POINTS]->bind();
     shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
     shaders[Model3D::POINTS]->release();
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setLineWidth(float _lineWidth)
@@ -357,7 +376,7 @@ void Engine3D::setOpacityEnabled(bool enabled)
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
     }
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setOpacity(float _opacity)
@@ -366,14 +385,14 @@ void Engine3D::setOpacity(float _opacity)
     shaders[Model3D::POINTS]->bind();
     shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
     shaders[Model3D::POINTS]->release();
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setBlendFunction(BlendFunction _blendFunction)
 {
     blendFunction = _blendFunction;
     glBlendFunc(GL_SRC_ALPHA, blendFunction);
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setViewDistance(double _viewDistance)
@@ -391,7 +410,7 @@ void Engine3D::setViewDistanceEnabled(bool enabled)
 void Engine3D::setWaitLoading(bool enabled)
 {
     waitLoading = enabled;
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::setMaxVertexLimitEnabled(bool enabled)
@@ -404,6 +423,23 @@ void Engine3D::setMaxVertexLimit(int _maxVertexLimit)
 {
     maxVertexLimit = _maxVertexLimit * 1000000;
     nextModelsUpdate();
+}
+
+void Engine3D::setMaxVertexToVRAM(double _maxVertexToVRAM)
+{
+    maxVertexToVRAM = _maxVertexToVRAM * 1000000;
+}
+
+void Engine3D::setMaxMovingDepth(int _maxMovingDepth)
+{
+    maxMovingDepth = _maxMovingDepth;
+    nextModelsUpdate();
+}
+
+void Engine3D::setMoving(bool _isMoving)
+{
+    isMoving = _isMoving;
+    update();
 }
 
 void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
@@ -479,11 +515,11 @@ void Engine3D::updateModels()
 void Engine3D::nextModelsUpdateThread()
 {
     modelsUpdater.waitForFinished();
-    emit askUpdate();
+    update();
 }
 
 void Engine3D::nextModelsUpdate()
 {
     if (!nextModelsUpdater.isRunning()) nextModelsUpdater = QtConcurrent::run(&Engine3D::nextModelsUpdateThread, this);
-    else emit askUpdate();
+    else update();
 }

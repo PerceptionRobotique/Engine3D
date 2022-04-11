@@ -55,6 +55,7 @@ public slots:
     void openModel(QString fileName);
     void closeModel(unsigned int index);
     void closeModel(Model3D* model);
+    void render();
     void update();
 
     //Debug
@@ -73,6 +74,9 @@ public slots:
     void setWaitLoading(bool enabled);
     void setMaxVertexLimitEnabled(bool enabled);
     void setMaxVertexLimit(int _maxVertexLimit);
+    void setMaxVertexToVRAM(double _maxVertexToVRAM);
+    void setMaxMovingDepth(int _maxMovingDepth);
+    void setMoving(bool _isMoving);
 
 private:
     bool initialized;
@@ -99,12 +103,14 @@ private:
     bool waitLoading; //wait models loading
     int maxDepth;
     int maxMovingDepth;
+    int isMoving;
     bool maxVertexLimitEnabled;
     unsigned long long maxVertexLimit;
     unsigned long long currentVertexNumber;
     unsigned long long maxVertexToVRAM;
 
     QMutex drawMutex;
+    bool updateNextAsked;
     QMutex modelsUpdaterMutex;
     bool breakModelsUpdater;
     QFuture<void> modelsUpdater;
