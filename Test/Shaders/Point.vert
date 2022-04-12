@@ -55,15 +55,10 @@ void main()
         gl_Position = projection * view * model * vec4(in_vertex, 1.0);
     }
 
-    if (customColor)
-    {
-        color = vec4(R,G,B, opacity);
-    }
+    if (customColor) color = vec4(R,G,B, opacity);
     else
     {
-        if(showIntensity)
-            color = vec4(in_intensity, in_intensity, in_intensity, opacity);
-        else
-            color = vec4(in_color, opacity);
+        if(showIntensity) color = vec4(in_intensity, in_intensity, in_intensity, opacity);
+        else color = vec4(in_color, opacity);
     }
 }

@@ -16,7 +16,11 @@ if(WIN32)
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared library")
+if(WIN32)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared library")
+elseif(UNIX)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared library")
+endif()
 
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 if(MSVC)
@@ -25,26 +29,35 @@ endif()
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
-set(QT_VERSION "6.2.3" CACHE STRING "Currently installed Qt version")
+set(QT_VERSION "6.3.0" CACHE STRING "Currently installed Qt version")
 if(WIN32)
     set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
 
-    set(WITH_CONTROLLER OFF CACHE BOOL "Include controller functions")
+    set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
     set(WITH_VR OFF CACHE BOOL "Include VR functions")
-
-    set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
 elseif(UNIX)
-    set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
+    if(IS_DIRECTORY "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
+        set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
+    elseif(IS_DIRECTORY "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6")
+        set(QT_DIR "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6" CACHE PATH "Qt directory")
+    else()
+        set(QT_DIR "QT_DIR-NOTFOUND" CACHE PATH "Qt directory")
+    endif()
     set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
+    set(Qt6BundledPcre2_DIR "${QT_DIR}BundledPcre2")
+    set(Qt6BundledHarfbuzz_DIR "${QT_DIR}BundledHarfbuzz")
+    set(Qt6BundledLibjpeg_DIR "${QT_DIR}BundledLibjpeg")
 
     set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
-    set(WITH_VR ON CACHE BOOL "Include VR functions")
+    set(WITH_VR OFF CACHE BOOL "Include VR functions")
 endif()
 
 set(Qt6_DIR "${QT_DIR}")
 set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
 set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
 set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
+
+set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
 
 find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL Concurrent REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL Concurrent REQUIRED)
@@ -129,11 +142,7 @@ set(SHADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.frag
 )
 
-if(${QT_VERSION_MAJOR} EQUAL 5)
-    qt5_add_resources(${QRC} ${RESOURCES})
-elseif(${QT_VERSION_MAJOR} EQUAL 6)
-    qt6_add_resources(${QRC} ${RESOURCES})
-endif()
+qt6_add_resources(${QRC} ${RESOURCES})
 
 if(BUILD_SHARED_LIBS)
     add_library(Engine3D SHARED
@@ -154,6 +163,8 @@ else()
 
         ${RESOURCES}
         ${QRC}
+
+        ${SHADERS}
 
         ${EXTRA_SOURCES}
     )
@@ -182,18 +193,21 @@ endif()
 
 target_compile_definitions(Engine3D PRIVATE ENGINE3D_LIBRARY)
 
-install(TARGETS Engine3D)
 if(WIN32)
+    install(TARGETS Engine3D)
     install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
         DESTINATION ${CMAKE_INSTALL_PREFIX}
         FILES_MATCHING PATTERN "*.h*"
     )
 elseif(UNIX)
+    install(TARGETS Engine3D
+        DESTINATION Engine3D/lib
+    )
     install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/Engine3D
-        FILES_MATCHING PATTERN "include/*.h*"
+        DESTINATION Engine3D
+        FILES_MATCHING PATTERN "*.h*"
     )
 endif()
 
@@ -205,18 +219,20 @@ set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
 if(BUILD_EXAMPLE)
     add_subdirectory(Test)
     if(BUILD_SHARED_LIBS)
-        if(WIN32)
-            add_custom_command(TARGET Engine3D POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                $<TARGET_FILE_DIR:Example>
-            )
-        elseif(UNIX)
-            add_custom_command(TARGET Engine3D POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
-                $<TARGET_FILE_DIR:Example>
-            )
+        if(IS_DIRECTORY $<TARGET_FILE_DIR:Example>)
+            if(WIN32)
+                add_custom_command(TARGET Engine3D POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+                    $<TARGET_FILE_DIR:Example>
+                )
+            elseif(UNIX)
+                add_custom_command(TARGET Engine3D POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
+                    $<TARGET_FILE_DIR:Example>
+                )
+            endif()
         endif()
     endif()
 endif()

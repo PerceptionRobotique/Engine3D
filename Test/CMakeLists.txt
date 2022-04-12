@@ -17,7 +17,7 @@ if(MSVC)
     set_property(DIRECTORY ${CMAKE_BINARY_DIR} PROPERTY VS_STARTUP_PROJECT Example)
 endif()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
@@ -86,11 +86,7 @@ set(UI
     MainWindow.ui
 )
 
-if(${QT_VERSION_MAJOR} EQUAL 5)
-    qt5_add_resources(${QRC} ${RESOURCES})
-elseif(${QT_VERSION_MAJOR} EQUAL 6)
-    qt6_add_resources(${QRC} ${RESOURCES})
-endif()
+qt6_add_resources(${QRC} ${RESOURCES})
 
 set(PROJECT_SOURCES
     ${SOURCES}
