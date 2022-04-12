@@ -444,7 +444,7 @@ void Engine3D::setMoving(bool _isMoving)
 
 void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
 {
-    QHash<unsigned int, QMap<float, QList<Model3D*>>> totlaModelsByDepthAndDistance;
+    QMap<unsigned int, QMap<float, QList<Model3D*>>> totlaModelsByDepthAndDistance;
     for (Model3D* model : models)
     {
         float minDist = cameras[0]->distanceWith(model);
@@ -478,6 +478,22 @@ void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QLis
             {
                 if (isOnScreen(model)) modelsByDepthAndDistance[depth][dist].append(model);
                 else if (model->isLiveLoading()) modelsToUnload.append(model);
+                //if (depth == 0)
+                //{
+                //    if (!onScreen)
+                //    {
+                //        qDebug() << "currentVertexNumber = " << currentVertexNumber;
+                //        qDebug() << "culling test = " << mainCamera->cullingTest(model);
+                //        Octree* octree = dynamic_cast<Octree*>(model);
+                //        if (octree)
+                //        {
+                //            qDebug() << "depthTest = " << octree->getDepth() << " <= " << octree->getMaxVisibleDepth();
+                //            qDebug() << "maxDepth = " << octree->getDepth() << " <= " << maxDepth;
+                //            qDebug() << "viewDistance = " << octree->getDepth() << " > " << ceil((float)octree->getMaxDepth() * (1 - mainCamera->distanceWith(octree) / viewDistance));
+                //            qDebug() << Qt::endl;
+                //        }
+                //    }
+                //}
                 if (breakModelsUpdater) break;
             }
             if (breakModelsUpdater) break;
