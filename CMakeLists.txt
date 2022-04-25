@@ -29,12 +29,10 @@ endif()
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
+### QT ###
 set(QT_VERSION "6.3.0" CACHE STRING "Currently installed Qt version")
 if(WIN32)
     set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
-
-    set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
-    set(WITH_VR OFF CACHE BOOL "Include VR functions")
 elseif(UNIX)
     if(IS_DIRECTORY "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
         set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
@@ -43,34 +41,55 @@ elseif(UNIX)
     else()
         set(QT_DIR "QT_DIR-NOTFOUND" CACHE PATH "Qt directory")
     endif()
-    set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
-    set(Qt6BundledPcre2_DIR "${QT_DIR}BundledPcre2")
-    set(Qt6BundledHarfbuzz_DIR "${QT_DIR}BundledHarfbuzz")
-    set(Qt6BundledLibjpeg_DIR "${QT_DIR}BundledLibjpeg")
 
-    set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
-    set(WITH_VR OFF CACHE BOOL "Include VR functions")
+    if(IS_DIRECTORY ${QT_DIR})
+        set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
+        set(Qt6BundledPcre2_DIR "${QT_DIR}BundledPcre2")
+        set(Qt6BundledHarfbuzz_DIR "${QT_DIR}BundledHarfbuzz")
+        set(Qt6BundledLibjpeg_DIR "${QT_DIR}BundledLibjpeg")
+    endif()
 endif()
 
-set(Qt6_DIR "${QT_DIR}")
-set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
-set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
-set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
-
-set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
-
-find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL Concurrent REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL Concurrent REQUIRED)
-
-if(WIN32)
-    find_package(GLM REQUIRED)
-    if(GLM_FOUND)
-            set(GLM_INCLUDE_DIRS ${GLM_DIR}/../../../include)
-    endif(GLM_FOUND)
-elseif(UNIX)
-    find_package(glm REQUIRED)
+if(IS_DIRECTORY ${QT_DIR})
+    set(Qt6_DIR "${QT_DIR}")
+    set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
+    set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
+    set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
 endif()
 
+list(APPEND QT_COMPONENTS Core Gui Widgets OpenGL Concurrent)
+foreach (qt_component ${QT_COMPONENTS})
+    list(APPEND QT_LINKS
+        Qt${QT_VERSION_MAJOR}::${qt_component}
+    )
+endforeach()
+
+find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
+
+### GLM ###
+find_package(glm REQUIRED)
+# if(WIN32)
+#     find_package(GLM REQUIRED)
+#     if(GLM_FOUND)
+#             set(GLM_INCLUDE_DIRS ${GLM_DIR}/../../../include)
+#     endif(GLM_FOUND)
+# elseif(UNIX)
+#     find_package(glm REQUIRED)
+# endif()
+
+### CONTROLLER ###
+set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
+if(WITH_CONTROLLER)
+    list(APPEND EXTRA_SOURCES
+        include/Controller.h
+        src/Controller.cpp
+    )
+    add_compile_definitions(WITH_CONTROLLER)
+endif()
+
+### VR ###
+set(WITH_VR OFF CACHE BOOL "Include VR functions")
 if(WITH_VR)
     if(WIN32)
         set(OPENVR_DIR "OPENVR_DIR-NOTFOUND" CACHE PATH "Install directory of OpenVR")
@@ -90,19 +109,7 @@ if(WITH_VR)
     )
 endif()
 
-if(WITH_CONTROLLER)
-    list(APPEND EXTRA_SOURCES
-        include/Controller.h
-        src/Controller.cpp
-    )
-    add_compile_definitions(WITH_CONTROLLER)
-endif()
-
-# include_directories(
-#     ${CMAKE_CURRENT_SOURCE_DIR}/include
-#     ${CMAKE_CURRENT_SOURCE_DIR}/src
-# )
-
+### SOURCES ###
 set(HEADERS
     include/Object3D.h
     include/Object3DQt.h
@@ -130,8 +137,8 @@ set(SOURCES
     src/Engine3D.cpp
 )
 
-set(RESOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Resources.qrc
+set(ENGINE3D_RESOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc
 )
 
 set(SHADERS
@@ -142,18 +149,12 @@ set(SHADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.frag
 )
 
-qt6_add_resources(${QRC} ${RESOURCES})
-
 if(BUILD_SHARED_LIBS)
     add_library(Engine3D SHARED
         ${HEADERS}
         ${SOURCES}
-
-        ${RESOURCES}
-        ${QRC}
-
+        ${ENGINE3D_RESOURCES}
         ${SHADERS}
-
         ${EXTRA_SOURCES}
     )
 else()
@@ -161,7 +162,7 @@ else()
         ${HEADERS}
         ${SOURCES}
 
-        ${RESOURCES}
+        ${ENGINE3D_RESOURCES}
         ${QRC}
 
         ${SHADERS}
@@ -178,10 +179,7 @@ target_include_directories(Engine3D PRIVATE
 )
 
 target_link_libraries(Engine3D PRIVATE
-    Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::OpenGL
-    Qt${QT_VERSION_MAJOR}::Concurrent
-
+    ${QT_LINKS}
     ${OPENVR_LIBRARIES}
 )
 
@@ -216,6 +214,7 @@ set(Engine3D_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
 
+set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
 if(BUILD_EXAMPLE)
     add_subdirectory(Test)
     if(BUILD_SHARED_LIBS)

@@ -24,6 +24,9 @@ Engine3D::Engine3D(QObject* parent)
     , updateNextAsked(false)
     , breakModelsUpdater(false)
 {
+#ifdef __linux__
+    Q_INIT_RESOURCE(Engine3D);
+#endif
     connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
 }
 

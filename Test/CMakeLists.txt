@@ -25,39 +25,20 @@ if(FRAME_COUNTER)
     add_compile_definitions(FRAME_COUNTER)
 endif()
 
-set(QT_VERSION "6.2.3" CACHE STRING "Currently installed Qt version")
-if(WIN32)
-    set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
-elseif(UNIX)
-    set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
-    set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
-endif()
+### QT ###
+list(APPEND QT_COMPONENTS OpenGLWidgets)
+foreach (qt_component ${QT_COMPONENTS})
+    list(APPEND QT_LINKS
+        Qt${QT_VERSION_MAJOR}::${qt_component}
+    )
+endforeach()
 
-set(Qt6_DIR "${QT_DIR}")
-set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
-set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
-set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
-
-# set(WITH_OPENCV OFF CACHE BOOL "Include OpenCV functions")
-# set(WITH_VISP OFF CACHE BOOL "Include visp functions")
-# set(WITH_PER OFF CACHE BOOL "Include PER functions")
-# set(WITH_CONTROLLER OFF CACHE BOOL "Include controller functions")
-# set(WITH_VR OFF CACHE BOOL "Include VR functions")
-
-find_package(QT NAMES Qt6 COMPONENTS Widgets OpenGL OpenGLWidgets Concurrent REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets OpenGL OpenGLWidgets Concurrent REQUIRED)
-
-if(WIN32)
-    find_package(GLM REQUIRED)
-    if(GLM_FOUND)
-        set(GLM_INCLUDE_DIRS ${GLM_DIR}/../../../include)
-    endif()
-elseif(UNIX)
-    find_package(glm REQUIRED)
-endif()
+find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
 if(NOT Engine3D_FOUND)
     set(Engine3D_DIR "Engine3D-NOTFOUND" CACHE PATH "Engine3D directory")
+    message(${Engine3D_DIR})
     if(IS_DIRECTORY ${Engine3D_DIR})
         set(Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include)
         set(Engine3D_LIBRARIES_DIR ${Engine3D_DIR}/lib)
@@ -86,13 +67,10 @@ set(UI
     MainWindow.ui
 )
 
-qt6_add_resources(${QRC} ${RESOURCES})
-
 set(PROJECT_SOURCES
     ${SOURCES}
     ${HEADERS}
     ${RESOURCES}
-    ${QRC}
     ${UI}
 )
 
@@ -129,21 +107,19 @@ target_link_directories(Example PRIVATE ${Engine3D_LIBRARIES_DIR})
 
 target_link_libraries(Example
     PRIVATE
-    Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::OpenGL
-    Qt${QT_VERSION_MAJOR}::OpenGLWidgets
-    Qt${QT_VERSION_MAJOR}::Concurrent
-
+    ${QT_LINKS}
     ${Engine3D_LIBRARIES}
 )
 
-set_target_properties(Example PROPERTIES
-    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
+### TERMINAL OUTPUT ###
+if(WIN32)
+    set(USE_TERMINAL_OUTPUT OFF CACHE BOOL "Launch with a terminal")
+    if(NOT ${USE_TERMINAL_OUTPUT})
+        set_target_properties(Example PROPERTIES
+            WIN32_EXECUTABLE TRUE
+        )
+    endif()
+endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(Example)
