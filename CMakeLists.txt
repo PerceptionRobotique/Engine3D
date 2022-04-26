@@ -16,11 +16,7 @@ if(WIN32)
 endif()
 set(CMAKE_DEBUG_POSTFIX d)
 
-if(WIN32)
-    set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared library")
-elseif(UNIX)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared library")
-endif()
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared library")
 
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 if(MSVC)
@@ -214,8 +210,8 @@ set(Engine3D_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
 set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
 
-set(BUILD_EXAMPLE OFF CACHE BOOL "Build example program")
-if(BUILD_EXAMPLE)
+set(BUILD_TEST OFF CACHE BOOL "Build test program")
+if(BUILD_TEST)
     add_subdirectory(Test)
     if(BUILD_SHARED_LIBS)
         if(IS_DIRECTORY $<TARGET_FILE_DIR:Example>)
@@ -225,11 +221,27 @@ if(BUILD_EXAMPLE)
                     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
                     $<TARGET_FILE_DIR:Example>
                 )
-            elseif(UNIX)
+            # elseif(UNIX)
+                # add_custom_command(TARGET Engine3D POST_BUILD
+                #     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                #     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
+                #     $<TARGET_FILE_DIR:Example>
+                # )
+            endif()
+        endif()
+    endif()
+endif()
+
+set(BUILD_OFFSCREEN_TEST OFF CACHE BOOL "Build test program")
+if(BUILD_OFFSCREEN_TEST)
+    add_subdirectory(OffscreenTest)
+    if(BUILD_SHARED_LIBS)
+        if(IS_DIRECTORY $<TARGET_FILE_DIR:OffscreenTest>)
+            if(WIN32)
                 add_custom_command(TARGET Engine3D POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
-                    $<TARGET_FILE_DIR:Example>
+                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+                    $<TARGET_FILE_DIR:Test>
                 )
             endif()
         endif()

@@ -20,7 +20,7 @@ public:
 	unsigned int getDepth() const;
 	unsigned int getMaxDepth() const;
 	unsigned int getMaxVisibleDepth() const;
-	unsigned long long getTotaleVertexNumber() const;
+	unsigned long long getTotalVertexNumber() const;
 
 	mat4 getwMo() const override;
 	bool hasIntensity() const override	;

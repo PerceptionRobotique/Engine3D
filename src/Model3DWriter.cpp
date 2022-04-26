@@ -21,7 +21,7 @@ bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long v
 		QVector<float> aabb(6);
 
 		Octree* octree = dynamic_cast<Octree*>(model);
-		if (octree) vertexNumber = octree->getTotaleVertexNumber();
+		if (octree) vertexNumber = octree->getTotalVertexNumber();
 
 		for (unsigned int i = 0; i < 3; i++) aabb[i] = model->getAABB().min[i];
 		for (unsigned int i = 0; i < 3; i++) aabb[3 + i] = model->getAABB().max[i];

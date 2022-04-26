@@ -147,7 +147,7 @@ unsigned int Octree::getMaxVisibleDepth() const
 	return *maxVisibleDepth;
 }
 
-unsigned long long Octree::getTotaleVertexNumber() const
+unsigned long long Octree::getTotalVertexNumber() const
 {
 	return *totalVertexNumber;
 }

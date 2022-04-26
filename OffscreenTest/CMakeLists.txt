@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Test VERSION 1.0)
+project(OffscreenTest VERSION 1.0)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -14,7 +14,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 if(MSVC)
     add_definitions(/MP /bigobj)
-    set_property(DIRECTORY ${CMAKE_BINARY_DIR} PROPERTY VS_STARTUP_PROJECT Test)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
@@ -26,7 +25,7 @@ if(FRAME_COUNTER)
 endif()
 
 ### QT ###
-list(APPEND QT_COMPONENTS OpenGLWidgets)
+list(APPEND QT_COMPONENTS Gui)
 foreach (qt_component ${QT_COMPONENTS})
     list(APPEND QT_LINKS
         Qt${QT_VERSION_MAJOR}::${qt_component}
@@ -50,21 +49,15 @@ endif()
 
 set(SOURCES
     main.cpp
-    MainWindow.cpp
-    OpenGLWidget.cpp
 )
 
 set(HEADERS
-    MainWindow.h
-    OpenGLWidget.h
 )
 
 set(RESOURCES
-    Resources.qrc
 )
 
 set(UI
-    MainWindow.ui
 )
 
 set(PROJECT_SOURCES
@@ -75,104 +68,94 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
-    qt_add_executable(Test
+    qt_add_executable(OffscreenTest
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
 # Define target properties for Android with Qt 6 as:
-#    set_property(TARGET Test APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
+#    set_property(TARGET OffscreenTest APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
 #                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
 # For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
     if(ANDROID)
-        add_library(Test SHARED
+        add_library(OffscreenTest SHARED
             ${PROJECT_SOURCES}
         )
 # Define properties for Android with Qt 5 after find_package() calls as:
 #    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
     else()
-        add_executable(Test
+        add_executable(OffscreenTest
             ${PROJECT_SOURCES}
         )
     endif()
 endif()
 
-target_include_directories(Test
+target_include_directories(OffscreenTest
     PRIVATE
     ${GLM_INCLUDE_DIRS}
     ${Engine3D_INCLUDE_DIRS}
 )
 
-target_link_directories(Test PRIVATE ${Engine3D_LIBRARIES_DIR})
+target_link_directories(OffscreenTest PRIVATE ${Engine3D_LIBRARIES_DIR})
 
-target_link_libraries(Test
+target_link_libraries(OffscreenTest
     PRIVATE
     ${QT_LINKS}
     ${Engine3D_LIBRARIES}
-)
-
-### TERMINAL OUTPUT ###
-if(WIN32)
-    set(USE_TERMINAL_OUTPUT OFF CACHE BOOL "Launch with a terminal")
-    if(NOT ${USE_TERMINAL_OUTPUT})
-        set_target_properties(Test PROPERTIES
-            WIN32_EXECUTABLE TRUE
-        )
-    endif()
-endif()
+)   
 
 if(QT_VERSION_MAJOR EQUAL 6)
-    qt_finalize_executable(Test)
+    qt_finalize_executable(OffscreenTest)
 endif()
 
 if(WIN32)
-    add_custom_command(TARGET Test POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:Test>/platforms"
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:Test>/styles"
+    add_custom_command(TARGET OffscreenTest POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:OffscreenTest>/platforms"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:OffscreenTest>/styles"
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/platforms/qminimal$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>/platforms
+        $<TARGET_FILE_DIR:OffscreenTest>/platforms
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/platforms/qoffscreen$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>/platforms
+        $<TARGET_FILE_DIR:OffscreenTest>/platforms
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/platforms/qwindows$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>/platforms
+        $<TARGET_FILE_DIR:OffscreenTest>/platforms
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>/styles
+        $<TARGET_FILE_DIR:OffscreenTest>/styles
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Core$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Gui$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Widgets$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGL$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGLWidgets$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Concurrent$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-        $<TARGET_FILE_DIR:Test>
+        $<TARGET_FILE_DIR:OffscreenTest>
     )
 endif()
 
