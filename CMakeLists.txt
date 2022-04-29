@@ -118,6 +118,9 @@ set(HEADERS
     include/Model3DWriter.h
     include/Engine3D_global.h
     include/Engine3D.h
+
+    include/TrajectoryManager.h
+    include/VideoWriter.h
 )
 
 set(SOURCES
@@ -131,11 +134,16 @@ set(SOURCES
     src/Octree.cpp
     src/Model3DWriter.cpp
     src/Engine3D.cpp
+
+    src/TrajectoryManager.cpp
+    src/VideoWriter.cpp
 )
 
-set(ENGINE3D_RESOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc
-)
+set(ENGINE3D_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc)
+
+if(WIN32)
+    set(Engine3D_FFmpeg_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/FFmpeg.qrc)
+endif()
 
 set(SHADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Point.vert
@@ -150,6 +158,7 @@ if(BUILD_SHARED_LIBS)
         ${HEADERS}
         ${SOURCES}
         ${ENGINE3D_RESOURCES}
+        ${Engine3D_FFmpeg_RESOURCES}
         ${SHADERS}
         ${EXTRA_SOURCES}
     )
@@ -159,10 +168,8 @@ else()
         ${SOURCES}
 
         ${ENGINE3D_RESOURCES}
-        ${QRC}
-
+        ${Engine3D_FFmpeg_RESOURCES}
         ${SHADERS}
-
         ${EXTRA_SOURCES}
     )
 endif()
@@ -214,12 +221,12 @@ set(BUILD_TEST OFF CACHE BOOL "Build test program")
 if(BUILD_TEST)
     add_subdirectory(Test)
     if(BUILD_SHARED_LIBS)
-        if(IS_DIRECTORY $<TARGET_FILE_DIR:Example>)
+        if(IS_DIRECTORY $<TARGET_FILE_DIR:Test>)
             if(WIN32)
                 add_custom_command(TARGET Engine3D POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                    $<TARGET_FILE_DIR:Example>
+                    $<TARGET_FILE_DIR:Test>
                 )
             # elseif(UNIX)
                 # add_custom_command(TARGET Engine3D POST_BUILD
@@ -241,7 +248,7 @@ if(BUILD_OFFSCREEN_TEST)
                 add_custom_command(TARGET Engine3D POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                    $<TARGET_FILE_DIR:Test>
+                    $<TARGET_FILE_DIR:OffscreenTest>
                 )
             endif()
         endif()

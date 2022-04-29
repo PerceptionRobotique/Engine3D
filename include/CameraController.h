@@ -21,125 +21,133 @@
 
 #define MOUSE_WHEEL_TIMEOUT 100
 
-class ENGINE3D_EXPORT CameraController : public QObject
+namespace MIS
 {
-    Q_OBJECT
-public:
+
+    class ENGINE3D_EXPORT CameraController : public QObject
+    {
+        Q_OBJECT
+    public:
 #ifdef WITH_CONTROLLER
-    enum Action {
-        TRANSLATE_X,
-        TRANSLATE_Y_PLUS,
-        TRANSLATE_Y_MINUS,
-        TRANSLATE_Z,
-        ROTATE_X,
-        ROTATE_Y,
-        ROTATE_Z,
-        YAW,
-        PITCH,
-        ROLL_PLUS,
-        ROLL_MINUS
-    };
+        enum Action {
+            TRANSLATE_X,
+            TRANSLATE_Y_PLUS,
+            TRANSLATE_Y_MINUS,
+            TRANSLATE_Z,
+            ROTATE_X,
+            ROTATE_Y,
+            ROTATE_Z,
+            YAW,
+            PITCH,
+            ROLL_PLUS,
+            ROLL_MINUS
+        };
 #endif
 
-    enum MouseButton{
-        LEFT,
-        MIDDLE,
-        RIGHT
-    };
+        enum MouseButton {
+            LEFT,
+            MIDDLE,
+            RIGHT
+        };
 
-    enum KeyButton{
-        K_UP,
-        K_DOWN,
-        K_LEFT,
-        K_RIGHT,
-        K_Z,
-        K_Q,
-        K_S,
-        K_D,
-        K_A,
-        K_E
-    };
+        enum KeyButton {
+            K_UP,
+            K_DOWN,
+            K_LEFT,
+            K_RIGHT,
+            K_Z,
+            K_Q,
+            K_S,
+            K_D,
+            K_A,
+            K_E
+        };
 
-    CameraController(Camera* _camera, QWidget *_parent = nullptr);
+        CameraController(Camera* _camera, QWidget* _parent = nullptr);
 
-    bool isVerticalAxisEnabled() const;
-    bool isOnGroundEnabled() const;
+        bool isActive() const;
+        bool isVerticalAxisEnabled() const;
+        bool isOnGroundEnabled() const;
 
-    void setMouseCaptureEnabled(bool enabled);
-    bool isMouseCaptureEnabled() const;
-    void mousePressed(MouseButton mouseButton, int x, int y);
-    void mouseMoved(MouseButton mouseButton, int x, int y);
-    void mouseWheelMoved(int rx, int ry);
-    void mouseReleased(MouseButton mouseButton);
+        void setMouseCaptureEnabled(bool enabled);
+        bool isMouseCaptureEnabled() const;
+        void mousePressed(MouseButton mouseButton, int x, int y);
+        void mouseMoved(MouseButton mouseButton, int x, int y);
+        void mouseWheelMoved(int rx, int ry);
+        void mouseReleased(MouseButton mouseButton);
 
-    void touchBegin();
-    void touchUpdate(const QVector<QPoint> &points);
-    void touchEnd();
+        void touchBegin();
+        void touchUpdate(const QVector<QPoint>& points);
+        void touchEnd();
 
-    void keyPressed(KeyButton key);
-    void keyReleased(KeyButton key);
+        void keyPressed(KeyButton key);
+        void keyReleased(KeyButton key);
 
 #ifdef WITH_VR
-    void updateVRInputs(VRheadset* vrHeadset);
+        void updateVRInputs(VRheadset* vrHeadset);
 #endif
 
-    float getTranslationSensitivity() const;
-    float getRotationSensitivity() const;
+        float getTranslationSensitivity() const;
+        float getRotationSensitivity() const;
 
-    bool isMoving() const;
+        bool isMoving() const;
 
 #ifdef WITH_CONTROLLER
-    QHash<QString, QHash<Action, Controller::Input>>& getControllerProfiles();
-    QString getCurrentControllerProfile() const;
+        QHash<QString, QHash<Action, Controller::Input>>& getControllerProfiles();
+        QString getCurrentControllerProfile() const;
 #endif
 
-signals:
-    void moving(bool moving);
+    signals:
+        void moving(bool moving);
 
-public slots:
-    void setTranslationSensitivity(int _translationSensitivity);
-    void setRotationSensitivity(int _rotationSensitivity);
-    void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
-    void setOnGroundEnabled(const bool& _onGroundEnabled);
+    public slots:
+        void setActive(bool _active);
+        void setTranslationSensitivity(int _translationSensitivity);
+        void setRotationSensitivity(int _rotationSensitivity);
+        void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
+        void setOnGroundEnabled(const bool& _onGroundEnabled);
 #ifdef WITH_CONTROLLER
-    void setCurrentControllerProfile(QString newProfile);
+        void setCurrentControllerProfile(QString newProfile);
 #endif
 
-private slots:
-    void mouseWheelFinished();
+    private slots:
+        void mouseWheelFinished();
 #ifdef WITH_CONTROLLER
-    void updateController();
+        void updateController();
 #endif
 
-private:
-    Camera* camera;
-    QWidget* parent;
+    private:
+        Camera* camera;
+        QWidget* parent;
 
-    bool verticalAxisEnabled;
-    bool onGroundEnabled;
+        bool active;
+        bool verticalAxisEnabled;
+        bool onGroundEnabled;
 
-    QCursor cursor;
-    bool mouseCaptureEnabled;
-    int mouseMoveToSkip;
-    QPoint savedCursorPosition;
-    QHash<MouseButton, bool> mouseButtonPressed;
-    QHash<MouseButton, QPoint> mousePreviousPos;
-    QTimer mouseWheelTimer;
+        QCursor cursor;
+        bool mouseCaptureEnabled;
+        int mouseMoveToSkip;
+        QPoint savedCursorPosition;
+        QHash<MouseButton, bool> mouseButtonPressed;
+        QHash<MouseButton, QPoint> mousePreviousPos;
+        QTimer mouseWheelTimer;
 
-    QVector<QPoint> touchPoints;
+        QVector<QPoint> touchPoints;
 
-    QHash<KeyButton, bool> keysDown;
-    int keyboardKeysDown;
+        QHash<KeyButton, bool> keysDown;
+        int keyboardKeysDown;
 
 #ifdef WITH_CONTROLLER
-    bool controllerIsMoving;
-    QTimer controllerUpdater;
-    QString currentControllerProfile;
-    QHash<QString, QHash<Action, Controller::Input>> controllerProfiles;
+        bool controllerIsMoving;
+        QTimer controllerUpdater;
+        QString currentControllerProfile;
+        QHash<QString, QHash<Action, Controller::Input>> controllerProfiles;
 #endif
 
-    float translationSensitivity;
-    float rotationSensitivity;
-};
+        float translationSensitivity;
+        float rotationSensitivity;
+    };
+
+}
 
 #endif // CAMERACONTROLLER_H

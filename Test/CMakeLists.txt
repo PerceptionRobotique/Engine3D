@@ -21,10 +21,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
-if(FRAME_COUNTER)
-    add_compile_definitions(FRAME_COUNTER)
-endif()
-
 ### QT ###
 list(APPEND QT_COMPONENTS OpenGLWidgets)
 foreach (qt_component ${QT_COMPONENTS})

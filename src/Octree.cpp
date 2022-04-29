@@ -1,210 +1,215 @@
 #include "Octree.h"
 
-Octree::Octree(Octree* _parent, QString _fileName)
-	: ModelBIN(_fileName)
-	, main(this)
-	, parent(_parent)
-	, children(8, nullptr)
-	, depth(0)
+namespace MIS
 {
-	primitives = POINTS;
-	liveLoading = true;
 
-	if (parent)
+	Octree::Octree(Octree* _parent, QString _fileName)
+		: ModelBIN(_fileName)
+		, main(this)
+		, parent(_parent)
+		, children(8, nullptr)
+		, depth(0)
 	{
-		main = parent->main;
-		depth = parent->depth + 1;
-		maxDepth = main->maxDepth;
-		maxVisibleDepth = main->maxVisibleDepth;
-		if (*maxDepth < depth) *maxDepth = depth;
-		m_hasIntensity = parent->hasIntensity();
-#ifdef ONE_FILE_READER
-		file = main->file;
-#else
-		file = new QFile(main->file->fileName());
-		file->open(QFile::ReadOnly);
-#endif
-		fileMutex = main->fileMutex;
-		file->seek(main->file->pos());
-		totalVertexNumber = main->totalVertexNumber;
-		ModelBIN::prepare();
-		main->file->seek(filePos
-			+ 3 * vertexNumber * sizeof(float)
-			+ 3 * vertexNumber * sizeof(unsigned char)
-			+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
-		);
-		*totalVertexNumber += vertexNumber;
+		primitives = POINTS;
+		liveLoading = true;
 
-		//connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
-		//connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
-		//connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
-		//connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
-		//connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
-	}
-	else
-	{
-		file->seek(filePos
-			+ 3 * vertexNumber * sizeof(float)
-			+ 3 * vertexNumber * sizeof(unsigned char)
-			+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
-		);
-		//file->seek(0);
-		//ModelBIN::prepare();
-		fileMutex = new QMutex;
-		maxDepth = new unsigned int(0);
-		maxVisibleDepth = new unsigned int;
-		totalVertexNumber = new unsigned long long(vertexNumber);
-		listOctree.setFileName(fileInfo.path() + "/listOctree.txt");
-		if (listOctree.open(QFile::ReadOnly))
+		if (parent)
 		{
-			QString nodeName;
-			while(!listOctree.atEnd())
+			main = parent->main;
+			depth = parent->depth + 1;
+			maxDepth = main->maxDepth;
+			maxVisibleDepth = main->maxVisibleDepth;
+			if (*maxDepth < depth) *maxDepth = depth;
+			m_hasIntensity = parent->hasIntensity();
+#ifdef ONE_FILE_READER
+			file = main->file;
+#else
+			file = new QFile(main->file->fileName());
+			file->open(QFile::ReadOnly);
+#endif
+			fileMutex = main->fileMutex;
+			file->seek(main->file->pos());
+			totalVertexNumber = main->totalVertexNumber;
+			ModelBIN::prepare();
+			main->file->seek(filePos
+				+ 3 * vertexNumber * sizeof(float)
+				+ 3 * vertexNumber * sizeof(unsigned char)
+				+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
+			);
+			*totalVertexNumber += vertexNumber;
+
+			//connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
+			//connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
+			//connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
+			//connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
+			//connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
+		}
+		else
+		{
+			file->seek(filePos
+				+ 3 * vertexNumber * sizeof(float)
+				+ 3 * vertexNumber * sizeof(unsigned char)
+				+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
+			);
+			//file->seek(0);
+			//ModelBIN::prepare();
+			fileMutex = new QMutex;
+			maxDepth = new unsigned int(0);
+			maxVisibleDepth = new unsigned int;
+			totalVertexNumber = new unsigned long long(vertexNumber);
+			listOctree.setFileName(fileInfo.path() + "/listOctree.txt");
+			if (listOctree.open(QFile::ReadOnly))
 			{
-				Octree* currentParent = nullptr;
-				Octree* current = this;
-				unsigned int childIndex;
-				nodeName = listOctree.readLine();
-				nodeName.remove('\r').remove('\n');
-				for (unsigned int c = 1; c < nodeName.length(); c++)
+				QString nodeName;
+				while (!listOctree.atEnd())
 				{
-					childIndex = QString(nodeName[c]).toUInt();
-					currentParent = current;
-					current = (*current)[childIndex];
-				}
-				if (current != this)
-				{
-					current = new Octree(currentParent);
+					Octree* currentParent = nullptr;
+					Octree* current = this;
+					unsigned int childIndex;
+					nodeName = listOctree.readLine();
+					nodeName.remove('\r').remove('\n');
+					for (unsigned int c = 1; c < nodeName.length(); c++)
+					{
+						childIndex = QString(nodeName[c]).toUInt();
+						currentParent = current;
+						current = (*current)[childIndex];
+					}
+					if (current != this)
+					{
+						current = new Octree(currentParent);
 
-					connect(current, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
-					connect(current, SIGNAL(modelLoadingDelayed()), this, SIGNAL(modelLoadingDelayed()));
-					connect(current, SIGNAL(modelLoaded()), this, SIGNAL(modelLoaded()));
-					connect(current, SIGNAL(modelUnloaded()), this, SIGNAL(modelUnloaded()));
-					connect(current, SIGNAL(vertexOnRAMChanged()), this, SIGNAL(vertexOnRAMChanged()));
-					connect(current, SIGNAL(vertexOnVRAMChanged()), this, SIGNAL(vertexOnVRAMChanged()));
+						connect(current, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
+						connect(current, SIGNAL(modelLoadingDelayed()), this, SIGNAL(modelLoadingDelayed()));
+						connect(current, SIGNAL(modelLoaded()), this, SIGNAL(modelLoaded()));
+						connect(current, SIGNAL(modelUnloaded()), this, SIGNAL(modelUnloaded()));
+						connect(current, SIGNAL(vertexOnRAMChanged()), this, SIGNAL(vertexOnRAMChanged()));
+						connect(current, SIGNAL(vertexOnVRAMChanged()), this, SIGNAL(vertexOnVRAMChanged()));
 
-					current->name = nodeName;
-					currentParent->children[childIndex] = current;
-					if (childrenByDepth.count() < current->depth) childrenByDepth.append(QVector<Octree*>(0));
-					childrenByDepth[current->depth-1].append(current);
-					allChildren.append(current);
+						current->name = nodeName;
+						currentParent->children[childIndex] = current;
+						if (childrenByDepth.count() < current->depth) childrenByDepth.append(QVector<Octree*>(0));
+						childrenByDepth[current->depth - 1].append(current);
+						allChildren.append(current);
+					}
 				}
+				listOctree.close();
+
+				*maxVisibleDepth = *maxDepth;
 			}
-			listOctree.close();
-
-			*maxVisibleDepth = *maxDepth;
 		}
 	}
-}
 
-Octree::~Octree()
-{
-	for (Octree* child : children) delete child;
-	if (file != main->file) file->close();
-	if (main == this)
+	Octree::~Octree()
 	{
-		delete fileMutex;
-		delete maxDepth;
-		delete maxVisibleDepth;
-		delete totalVertexNumber;
+		for (Octree* child : children) delete child;
+		if (file != main->file) file->close();
+		if (main == this)
+		{
+			delete fileMutex;
+			delete maxDepth;
+			delete maxVisibleDepth;
+			delete totalVertexNumber;
+		}
+#ifdef ONE_FILE_READER
+		if (main != this) file = nullptr;
+#endif
 	}
+
+	Octree* Octree::getChild(unsigned int index)
+	{
+		return children[index];
+	}
+
+	QVector<Octree*>& Octree::getChildren()
+	{
+		return children;
+	}
+
+	QVector<Octree*>& Octree::getAllChildren()
+	{
+		return main->allChildren;
+	}
+
+	QVector<Octree*>& Octree::getDepthChildren(unsigned int _depth)
+	{
+		return childrenByDepth[_depth - 1];
+	}
+
+	unsigned int Octree::getDepth() const
+	{
+		return depth;
+	}
+
+	unsigned int Octree::getMaxDepth() const
+	{
+		return *maxDepth;
+	}
+
+	unsigned int Octree::getMaxVisibleDepth() const
+	{
+		return *maxVisibleDepth;
+	}
+
+	unsigned long long Octree::getTotalVertexNumber() const
+	{
+		return *totalVertexNumber;
+	}
+
+	mat4 Octree::getwMo() const
+	{
+		return main->Model3D::getwMo();
+	}
+
+	bool Octree::hasIntensity() const
+	{
+		return main->Model3D::hasIntensity();
+	}
+
+	bool Octree::getShowIntensity() const
+	{
+		return main->Model3D::getShowIntensity();
+	}
+
+	bool Octree::isVisible() const
+	{
+		return main->Model3D::isVisible();
+	}
+
+	bool Octree::isBoxVisible() const
+	{
+		return main->Model3D::isBoxVisible();
+	}
+
+	bool Octree::isGlobalColorEnabled() const
+	{
+		return main->Model3D::isGlobalColorEnabled();
+	}
+
+	QColor Octree::getGlobalColor() const
+	{
+		return main->Model3D::getGlobalColor();
+	}
+
+	Octree* Octree::operator[](std::size_t index)
+	{
+		return children[index];
+	}
+
+	void Octree::loadRamThread()
+	{
 #ifdef ONE_FILE_READER
-	if (main != this) file = nullptr;
+		fileMutex->lock();
 #endif
-}
-
-Octree* Octree::getChild(unsigned int index)
-{
-	return children[index];
-}
-
-QVector<Octree*>& Octree::getChildren()
-{
-	return children;
-}
-
-QVector<Octree*>& Octree::getAllChildren()
-{
-	return main->allChildren;
-}
-
-QVector<Octree*>& Octree::getDepthChildren(unsigned int _depth)
-{
-	return childrenByDepth[_depth-1];
-}
-
-unsigned int Octree::getDepth() const
-{
-	return depth;
-}
-
-unsigned int Octree::getMaxDepth() const
-{
-	return *maxDepth;
-}
-
-unsigned int Octree::getMaxVisibleDepth() const
-{
-	return *maxVisibleDepth;
-}
-
-unsigned long long Octree::getTotalVertexNumber() const
-{
-	return *totalVertexNumber;
-}
-
-mat4 Octree::getwMo() const
-{
-	return main->Model3D::getwMo();
-}
-
-bool Octree::hasIntensity() const
-{
-	return main->Model3D::hasIntensity();
-}
-
-bool Octree::getShowIntensity() const
-{
-	return main->Model3D::getShowIntensity();
-}
-
-bool Octree::isVisible() const
-{
-	return main->Model3D::isVisible();
-}
-
-bool Octree::isBoxVisible() const
-{
-	return main->Model3D::isBoxVisible();
-}
-
-bool Octree::isGlobalColorEnabled() const
-{
-	return main->Model3D::isGlobalColorEnabled();
-}
-
-QColor Octree::getGlobalColor() const
-{
-	return main->Model3D::getGlobalColor();
-}
-
-Octree* Octree::operator[](std::size_t index)
-{
-	return children[index];
-}
-
-void Octree::loadRamThread()
-{
+		ModelBIN::loadRamThread();
 #ifdef ONE_FILE_READER
-	fileMutex->lock();
+		fileMutex->unlock();
 #endif
-	ModelBIN::loadRamThread();
-#ifdef ONE_FILE_READER
-	fileMutex->unlock();
-#endif
-}
+	}
 
-void Octree::setMaxVisibleDepth(int value)
-{
-	*maxVisibleDepth = value;
-	emit modelChanged();
+	void Octree::setMaxVisibleDepth(int value)
+	{
+		*maxVisibleDepth = value;
+		emit modelChanged();
+	}
+
 }

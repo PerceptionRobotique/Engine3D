@@ -3,18 +3,23 @@
 
 #include "Model3D.h"
 
-class ENGINE3D_EXPORT ModelBIN : public Model3D
+namespace MIS
 {
-public:
-	ModelBIN(QString _fileName = "");
 
-	virtual void loadRamThread() override;
+	class ENGINE3D_EXPORT ModelBIN : public Model3D
+	{
+	public:
+		ModelBIN(QString _fileName = "");
 
-protected:
-	void prepare();
+		virtual void loadRamThread() override;
 
-protected:
-	long long filePos;
-};
+	protected:
+		void prepare();
+
+	protected:
+		long long filePos;
+	};
+
+}
 
 #endif // MODELBIN_H

@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>FFmpeg/avcodec-59.dll</file>
+        <file>FFmpeg/avdevice-59.dll</file>
+        <file>FFmpeg/avfilter-8.dll</file>
+        <file>FFmpeg/avformat-59.dll</file>
+        <file>FFmpeg/avutil-57.dll</file>
+        <file>FFmpeg/ffmpeg.exe</file>
+        <file>FFmpeg/postproc-56.dll</file>
+        <file>FFmpeg/swresample-4.dll</file>
+        <file>FFmpeg/swscale-6.dll</file>
+    </qresource>
+</RCC>

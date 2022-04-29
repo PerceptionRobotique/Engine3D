@@ -14,15 +14,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 if(MSVC)
     add_definitions(/MP /bigobj)
+    set_property(DIRECTORY ${CMAKE_BINARY_DIR} PROPERTY VS_STARTUP_PROJECT OffscreenTest)
 endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
-
-if(FRAME_COUNTER)
-    add_compile_definitions(FRAME_COUNTER)
-endif()
 
 ### QT ###
 list(APPEND QT_COMPONENTS Gui)
@@ -129,34 +126,40 @@ if(WIN32)
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll"
         $<TARGET_FILE_DIR:OffscreenTest>/styles
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Core$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Gui$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Gui$<$<CONFIG:Debug>:d>.dll"
+        # $<TARGET_FILE_DIR:OffscreenTest>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Widgets$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Widgets$<$<CONFIG:Debug>:d>.dll"
+        # $<TARGET_FILE_DIR:OffscreenTest>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGL$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGL$<$<CONFIG:Debug>:d>.dll"
+        # $<TARGET_FILE_DIR:OffscreenTest>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGLWidgets$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGLWidgets$<$<CONFIG:Debug>:d>.dll"
+        # $<TARGET_FILE_DIR:OffscreenTest>
 
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Concurrent$<$<CONFIG:Debug>:d>.dll"
-        $<TARGET_FILE_DIR:OffscreenTest>
+        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Concurrent$<$<CONFIG:Debug>:d>.dll"
+        # $<TARGET_FILE_DIR:OffscreenTest>
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
         $<TARGET_FILE_DIR:OffscreenTest>
     )
+
+    foreach(qt_component ${QT_COMPONENTS})
+        add_custom_command(TARGET OffscreenTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}${qt_component}$<$<CONFIG:Debug>:d>.dll"
+            $<TARGET_FILE_DIR:OffscreenTest>
+        )
+    endforeach()
 endif()
 
 if(PRINT_CMAKE_VARIABLES)

@@ -10,19 +10,24 @@
 
 #define BYTES_PER_READ 1000000
 
-class ENGINE3D_EXPORT ModelPTS : public Model3D
+namespace MIS
 {
-public:
-	ModelPTS(QString _fileName);
-	~ModelPTS();
 
-	void loadRamThread() override;
+	class ENGINE3D_EXPORT ModelPTS : public Model3D
+	{
+	public:
+		ModelPTS(QString _fileName);
+		~ModelPTS();
 
-private:
-	bool stop;
-	QFuture<void> ramLoader;
-	QList<QFuture<void>> loaders;
-	void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
-};
+		void loadRamThread() override;
+
+	private:
+		bool stop;
+		QFuture<void> ramLoader;
+		QList<QFuture<void>> loaders;
+		void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
+	};
+
+}
 
 #endif // MODELPTS_H
