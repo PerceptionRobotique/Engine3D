@@ -6,7 +6,7 @@ namespace MIS
 #ifdef _WIN32
     unsigned int VideoWriter::instanceNumber(0);
     QMutex VideoWriter::instanceNumberMutex;
-    QString VideoWriter::ffmpeg("./FFmpeg/ffmpeg.exe");
+    QString VideoWriter::ffmpeg(QDir::tempPath() + "/ESILab/FFmpeg/ffmpeg.exe");
 #elif __linux__
     QString VideoWriter::ffmpeg("ffmpeg");
 #endif
@@ -28,11 +28,12 @@ namespace MIS
         {
             if (QFile(":/FFmpeg/ffmpeg.exe").exists())
             {
-                QDir().mkdir("FFmpeg");
+                QDir().mkdir(QDir::tempPath() + "/ESILab");
+                QDir().mkdir(QDir::tempPath() + "/ESILab/FFmpeg");
                 for (QString fileName : QDir(":/FFmpeg").entryList())
                 {
                     QFile file(":/FFmpeg/" + fileName);
-                    file.copy("FFmpeg/" + fileName);
+                    file.copy(QDir::tempPath() + "/ESILab/FFmpeg/" + fileName);
                 }
             }
         }
@@ -46,7 +47,7 @@ namespace MIS
 #ifdef _WIN32
         instanceNumberMutex.lock();
         instanceNumber--;
-        if (instanceNumber == 0) QDir("FFmpeg").removeRecursively();
+        if (instanceNumber == 0) QDir(QDir::tempPath() + "/ESILab").removeRecursively();
         instanceNumberMutex.unlock();
 #endif
     }
