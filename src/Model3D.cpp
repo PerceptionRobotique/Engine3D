@@ -36,17 +36,7 @@ namespace MIS
         , colorBuffer(QOpenGLBuffer::VertexBuffer)
         , intensityBuffer(QOpenGLBuffer::VertexBuffer)
     {
-        static QMutex model3DCreateMutex;
-        model3DCreateMutex.lock();
-        if (model3DNumber == 0)
-        {
-            boxIndexBuffer.create();
-            boxIndexBuffer.bind();
-            boxIndexBuffer.allocate(boxIndex.constData(), boxIndex.count() * (int)sizeof(unsigned int));
-            boxIndexBuffer.release();
-        }
         model3DNumber++;
-        model3DCreateMutex.unlock();
 
         connect(this, SIGNAL(objectChanged()), this, SIGNAL(modelChanged()));
 
@@ -555,6 +545,13 @@ namespace MIS
                     shader->setAttributeBuffer("pos", GL_FLOAT, 0, 3);
                     boxBuffer.release();
 
+                    if (!boxIndexBuffer.isCreated())
+                    {
+                        boxIndexBuffer.create();
+                        boxIndexBuffer.bind();
+                        boxIndexBuffer.allocate(boxIndex.constData(), boxIndex.count() * (int)sizeof(unsigned int));
+                        boxIndexBuffer.release();
+                    }
                     boxIndexBuffer.bind();
                     f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
                     boxIndexBuffer.release();

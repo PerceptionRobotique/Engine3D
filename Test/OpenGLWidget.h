@@ -12,6 +12,8 @@
 #include <Engine3D.h>
 #include <CameraController.h>
 
+using namespace MIS;
+
 class OpenGLWidget : public QOpenGLWidget
 {
     Q_OBJECT

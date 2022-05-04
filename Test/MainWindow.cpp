@@ -5,19 +5,20 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , settings("settings.ini", QSettings::IniFormat, this)
-    , modelWriter(this)
+    
 {
     ui->setupUi(this);
-    connect(ui->openGLWidget->getEngine().getMainCamera(), SIGNAL(objectChanged()), ui->openGLWidget, SLOT(update()));
-    connect(ui->viewDistanceDoubleSpinBox, SIGNAL(valueChanged(double)), &ui->openGLWidget->getEngine(), SLOT(setViewDistance(double)));
-    connect(ui->viewDistanceCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setViewDistanceEnabled(bool)));
-    connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setWaitLoading(bool)));
-    connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), &ui->openGLWidget->getEngine(), SLOT(setMaxVertexLimitEnabled(bool)));
-    connect(ui->limitMaxVertexSpinBox, SIGNAL(valueChanged(int)), &ui->openGLWidget->getEngine(), SLOT(setMaxVertexLimit(int)));
-    connect(&modelWriter, SIGNAL(finished()), this, SLOT(modelWriterFinished()));
+    
+    connect(ui->viewDistanceDoubleSpinBox, SIGNAL(valueChanged(double)), ui->graphicsView->getEngine(), SLOT(setViewDistance(double)));
+    connect(ui->viewDistanceCheckBox, SIGNAL(toggled(bool)), ui->graphicsView->getEngine(), SLOT(setViewDistanceEnabled(bool)));
+    connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), ui->graphicsView->getEngine(), SLOT(setWaitLoading(bool)));
+    connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), ui->graphicsView->getEngine(), SLOT(setMaxVertexLimitEnabled(bool)));
+    connect(ui->limitMaxVertexSpinBox, SIGNAL(valueChanged(int)), ui->graphicsView->getEngine(), SLOT(setMaxVertexLimit(int)));
 
     restoreGeometry(settings.value("WindowGeometry").toByteArray());
     restoreState(settings.value("WindowState").toByteArray());
+
+    
 }
 
 MainWindow::~MainWindow()
@@ -33,68 +34,27 @@ void MainWindow::on_actionOpenFile_triggered()
     if (!fileName.isEmpty())
     {
         settings.setValue("ModelFileOpen", fileName);
-        ui->openGLWidget->getEngine().openModel(fileName);
-        ui->openGLWidget->getEngine().getModels().last()->setRotationX(-90.0f);
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(modelLoadingUpdate(Model3D*, unsigned int)), this, SLOT(updateModelLoading(Model3D*, unsigned int)));
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(vertexOnRAMChanged()), this, SLOT(updateVertexOnRAM()));
-        connect(ui->openGLWidget->getEngine().getModels().last(), SIGNAL(vertexOnVRAMChanged()), this, SLOT(updateVertexOnVRAM()));
+        ui->graphicsView->getEngine()->openModel(fileName);
+        ui->graphicsView->getEngine()->getModels().last()->setRotationX(-90.0f);
+        connect(ui->graphicsView->getEngine()->getModels().last(), SIGNAL(modelLoadingUpdate(Model3D*, unsigned int)), this, SLOT(updateModelLoading(Model3D*, unsigned int)));
+        connect(ui->graphicsView->getEngine()->getModels().last(), SIGNAL(vertexOnRAMChanged()), this, SLOT(updateVertexOnRAM()));
+        connect(ui->graphicsView->getEngine()->getModels().last(), SIGNAL(vertexOnVRAMChanged()), this, SLOT(updateVertexOnVRAM()));
 
-        ui->modelsListWidget->addItem(ui->openGLWidget->getEngine().getModels().last()->getName());
-    }
-}
-
-void MainWindow::on_actionSaveFile_triggered()
-{
-    if (ui->modelsListWidget->currentItem())
-    {
-        QString fileName = settings.value("ModelFileSave", QString()).toString();
-        QStringList filterList = { "Modèle PTS (*.pts)", "Modèle BIN (*.bin)", "Modèle BINI (*.bini)", "Modèle OCT (*.oct)", "Modèle OCTI (*.octi)" };
-        QString selectedFilter;
-        for (QString filter : filterList)
-            if (QFileInfo(fileName).suffix() == filter.split("*.")[1].remove(')')) selectedFilter = filter;
-        
-        QString filters = filterList[0];
-        for (unsigned int i = 1; i < filterList.count(); i++) filters += " ;; " + filterList[i];
-
-        fileName = QFileDialog::getSaveFileName(this, "Ouvrir modèle 3D", fileName, filters, &selectedFilter);
-        if (!fileName.isEmpty())
-        {
-            bool ok;
-            int vertexPerNode = QInputDialog::getInt(this, "Nombre de vertex par noeud", "Vertex par noeud", settings.value("SaveModelVertexPerNode", 10000).toInt(), 1, INT_MAX, 1, &ok);
-            if (ok)
-            {
-                bool yes = true;
-                if (QFileInfo(fileName).suffix().contains("oct") && QFile::exists(QFileInfo(fileName).path() + "/listOctree.txt"))
-                {
-                    if (QMessageBox::question(this, "Fichier listOctree.txt déjà existant", "Voulez-vous écraser listOctree.txt ?") != QMessageBox::Yes)
-                        yes = false;
-                }
-                if (yes)
-                {
-                    settings.setValue("ModelFileSave", fileName);
-                    settings.sync();
-
-                    ui->openGLWidget->getEngine().lockModelsUpdater();
-                    QEventLoop loop(this);
-
-                    QThread* loader = QThread::create(&Model3DWriter::write, &modelWriter, ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName, vertexPerNode);
-                    connect(loader, SIGNAL(finished()), &loop, SLOT(quit()));
-                    loader->start();
-                    loop.exec();
-
-                    delete loader;
-
-                    ui->openGLWidget->getEngine().unlockModelsUpdater();
-                    //Model3DWriter::write(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->currentRow()), fileName);
-                }
-            }
-        }
+        ui->modelsListWidget->addItem(ui->graphicsView->getEngine()->getModels().last()->getName());
     }
 }
 
 void MainWindow::on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item)
 {
-    ui->openGLWidget->getEngine().getMainCamera()->lookAt(ui->openGLWidget->getEngine().getModel(ui->modelsListWidget->row(item)));
+    ui->graphicsView->getEngine()->getMainCamera()->lookAt(ui->graphicsView->getEngine()->getModel(ui->modelsListWidget->row(item)));
+}
+
+void MainWindow::updateModelLoading(Model3D* model, unsigned int progressValue)
+{
+    int index;
+    for (index = 0; index < ui->modelsListWidget->count() && ui->graphicsView->getEngine()->getModel(index) != model; index++);
+
+    ui->modelsListWidget->item(index)->setText(model->getName() + (progressValue < 100 ? " (" + QString::number(progressValue) + "%)" : ""));
 }
 
 void MainWindow::updateVertexOnRAM()
@@ -111,33 +71,20 @@ void MainWindow::updateVertexOnVRAM()
     ui->vertexOnVRAMLabel->setText(value);
 }
 
-void MainWindow::updateModelLoading(Model3D* model, unsigned int progressValue)
-{
-    int index;
-    for (index = 0; index < ui->modelsListWidget->count() && ui->openGLWidget->getEngine().getModel(index) != model; index++);
-
-    ui->modelsListWidget->item(index)->setText(model->getName() + (progressValue < 100 ? " (" + QString::number(progressValue) + "%)" : ""));
-}
-
-void MainWindow::modelWriterFinished()
-{
-    QMessageBox::information(this, "Ecriture du modèle", "L'écriture du modèle est terminée !");
-}
-
 void MainWindow::keyPressEvent(QKeyEvent* e)
 {
     if (e->modifiers().testFlag(Qt::ControlModifier) && e->key() == Qt::Key_W)
     {
         if (ui->modelsListWidget->currentItem() != nullptr)
         {
-            ui->openGLWidget->getEngine().closeModel(ui->modelsListWidget->currentRow());
+            ui->graphicsView->getEngine()->closeModel(ui->modelsListWidget->currentRow());
             ui->modelsListWidget->takeItem(ui->modelsListWidget->currentRow());
         }
         e->accept();
     }
     else if (e->modifiers().testFlag(Qt::ControlModifier) && e->key() == Qt::Key_U)
     {
-        ui->openGLWidget->update();
+
         e->accept();
     }
     else

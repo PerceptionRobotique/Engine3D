@@ -221,20 +221,18 @@ set(BUILD_TEST OFF CACHE BOOL "Build test program")
 if(BUILD_TEST)
     add_subdirectory(Test)
     if(BUILD_SHARED_LIBS)
-        if(IS_DIRECTORY $<TARGET_FILE_DIR:Test>)
-            if(WIN32)
-                add_custom_command(TARGET Engine3D POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                    $<TARGET_FILE_DIR:Test>
-                )
-            # elseif(UNIX)
-                # add_custom_command(TARGET Engine3D POST_BUILD
-                #     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                #     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
-                #     $<TARGET_FILE_DIR:Example>
-                # )
-            endif()
+        if(WIN32)
+            add_custom_command(TARGET Engine3D POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+                $<TARGET_FILE_DIR:Test>
+            )
+        # elseif(UNIX)
+            # add_custom_command(TARGET Engine3D POST_BUILD
+            #     COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            #     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
+            #     $<TARGET_FILE_DIR:Example>
+            # )
         endif()
     endif()
 endif()
@@ -243,14 +241,12 @@ set(BUILD_OFFSCREEN_TEST OFF CACHE BOOL "Build test program")
 if(BUILD_OFFSCREEN_TEST)
     add_subdirectory(OffscreenTest)
     if(BUILD_SHARED_LIBS)
-        if(IS_DIRECTORY $<TARGET_FILE_DIR:OffscreenTest>)
-            if(WIN32)
-                add_custom_command(TARGET Engine3D POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                    $<TARGET_FILE_DIR:OffscreenTest>
-                )
-            endif()
+        if(WIN32)
+            add_custom_command(TARGET Engine3D POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
+                $<TARGET_FILE_DIR:OffscreenTest>
+        )
         endif()
     endif()
 endif()

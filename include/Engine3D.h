@@ -3,18 +3,19 @@
 
 #include "Engine3D_global.h"
 
-#include <QVector>
+#include <QOffscreenSurface>
+#include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
 #include <QFileInfo>
 #include <QMessageBox>
+#include <QVector>
 #include <QMap>
 #include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 #include <QFutureWatcher>
 
 #include "Camera.h"
-#include "CameraController.h"
 #include "ModelPTS.h"
 #include "ModelBIN.h"
 #include "Octree.h"
@@ -27,20 +28,25 @@ namespace MIS
         Q_OBJECT
 
     public:
+        enum RenderMode {
+            NORMAL,
+            THREADED
+        };
+
         enum BlendFunction {
             BLEND_1 = GL_ONE,
             BLEND_2 = GL_ONE_MINUS_SRC_ALPHA
         };
 
-        Engine3D(QObject* parent = nullptr);
+        Engine3D(RenderMode renderMode = NORMAL, QObject* parent = nullptr);
         ~Engine3D();
 
-        void initialize();
         bool isInitialized() const;
 
         bool isOnCamera(const Model3D* model, const Camera* camera) const;
         bool isOnScreen(const Model3D* model);
 
+        QImage getFrame();
         Camera* getMainCamera();
         QVector<Camera*>& getCameras();
         int getMaxSamples();
@@ -56,11 +62,12 @@ namespace MIS
         void unlockModelsUpdater();
 
     public slots:
+        void initialize();
         void openModel(QString fileName);
         void closeModel(unsigned int index);
         void closeModel(Model3D* model);
-        void render();
         void update();
+        void destroy();
 
         //Debug
         void setFrameCounterEnabled(bool enabled);
@@ -84,7 +91,11 @@ namespace MIS
 
     private:
         bool initialized;
-        mat4 offset;
+
+        QOffscreenSurface surface;
+        QOpenGLContext* context;
+        QMutex contextMutex;
+        QThread workingThread;
 
         QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
         QOpenGLShaderProgram* boxShader;
@@ -100,6 +111,10 @@ namespace MIS
         bool opacityEnabled;
         float opacity;
         BlendFunction blendFunction;
+        bool renderAsked;
+        QMutex renderAskedMutex;
+        QImage frame;
+        QMutex frameMutex;
 
         //Optimization
         float viewDistance;
@@ -122,13 +137,24 @@ namespace MIS
         void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
         void updateModels();
         void nextModelsUpdateThread();
+        void makeCurrent();
+        void doneCurrent();
+        void setRenderAsked(bool value);
+        bool getRenderAsked();
 
     private slots:
+        void render();
         void nextModelsUpdate();
+        void setFrame();
 
     signals:
+        void askInitialization();
+        void askClose(unsigned int);
+        void askRender();
         void askUpdate();
-        void engineUpdated();
+        void frameReady(QImage);
+        void askDestroy();
+        void destructionFinished();
     };
 
 }

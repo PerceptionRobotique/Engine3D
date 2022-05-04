@@ -44,6 +44,12 @@ namespace MIS
 #endif
     }
 
+    CameraController::CameraController(Engine3D* _engine, QWidget* _parent)
+        : CameraController(_engine->getMainCamera(), _parent)
+    {
+        connect(this, SIGNAL(moving(bool)), _engine, SLOT(setMoving(bool)));
+    }
+
     bool CameraController::isActive() const
     {
         return active;

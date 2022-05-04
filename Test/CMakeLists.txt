@@ -48,11 +48,13 @@ set(SOURCES
     main.cpp
     MainWindow.cpp
     OpenGLWidget.cpp
+    GraphicsView.cpp
 )
 
 set(HEADERS
     MainWindow.h
     OpenGLWidget.h
+    GraphicsView.h
 )
 
 set(RESOURCES

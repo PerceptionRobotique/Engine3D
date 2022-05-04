@@ -5,8 +5,6 @@
 #include <QFileDialog>
 #include <QInputDialog>
 #include <QGraphicsView>
-#include <QGraphicsScene>
-#include <QGraphicsPixmapItem>
 #include <QPixmap>
 #include <QImage>
 #include <QKeyEvent>
@@ -18,12 +16,15 @@
 
 #include <glm/gtx/string_cast.hpp>
 
+#include <Engine3D.h>
+#include <CameraController.h>
 #include <Model3D.h>
-#include <Model3DWriter.h>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+using namespace MIS;
 
 class MainWindow : public QMainWindow
 {
@@ -35,20 +36,15 @@ public:
 
 private slots:
     void on_actionOpenFile_triggered();
-    void on_actionSaveFile_triggered();
     void on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item);
+    void updateModelLoading(Model3D* model, unsigned int progressValue);
 
     void updateVertexOnRAM();
     void updateVertexOnVRAM();
-    void updateModelLoading(Model3D* model, unsigned int progressValue);
-
-    void modelWriterFinished();
 
 private:
     Ui::MainWindow* ui;
     QSettings settings;
-
-    Model3DWriter modelWriter;
 
     void keyPressEvent(QKeyEvent* e) override;
 };

@@ -1,8 +1,6 @@
 #ifndef CAMERACONTROLLER_H
 #define CAMERACONTROLLER_H
 
-#include "Camera.h"
-
 #include <QObject>
 #include <QPoint>
 #include <QTimer>
@@ -10,6 +8,9 @@
 #include <QGuiApplication>
 #include <QWidget>
 #include <QScreen>
+
+#include "Camera.h"
+#include "Engine3D.h"
 
 #ifdef WITH_VR
 #include "VRheadset.h"
@@ -64,6 +65,7 @@ namespace MIS
         };
 
         CameraController(Camera* _camera, QWidget* _parent = nullptr);
+        CameraController(Engine3D* _engine, QWidget* _parent = nullptr);
 
         bool isActive() const;
         bool isVerticalAxisEnabled() const;
