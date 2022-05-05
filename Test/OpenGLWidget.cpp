@@ -2,7 +2,7 @@
 
 OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
 	: QOpenGLWidget(parent, f)
-    , engine(Engine3D::DIRECT)
+    , engine(Engine3D::THREADED)
     , cameraController(&engine, this)
     , backgroundColor(0, 0, 0, 255)
     , quad{
@@ -27,7 +27,6 @@ OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
     cameraController.setRotationSensitivity(7);
 
     //engine.setFrameCounterEnabled(true);
-    engine.setMaxVertexToVRAM(1);
     
     switch (engine.getRenderMode())
     {
@@ -74,7 +73,6 @@ void OpenGLWidget::initializeGL()
     eboQuad.release();
 
     texture.create();
-    //texture.setFormat(QOpenGLTexture::RGBA16F);
 }
 
 void OpenGLWidget::paintGL()

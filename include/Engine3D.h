@@ -34,8 +34,8 @@ namespace MIS
         };
 
         enum BlendFunction {
-            BLEND_1 = GL_ONE,
-            BLEND_2 = GL_ONE_MINUS_SRC_ALPHA
+            BLEND_1 = GL_ONE_MINUS_SRC_ALPHA,
+            BLEND_2 = GL_ONE
         };
 
         Engine3D(RenderMode _renderMode = DIRECT, QObject* parent = nullptr);
@@ -161,6 +161,12 @@ namespace MIS
         void frameReady(QImage);
         void askDestroy();
         void destructionFinished();
+        void askPointSizeEnabled(bool);
+        void askPointSize(double);
+        void askLineWidth(float);
+        void askOpacityEnabled(bool);
+        void askOpacity(float);
+        void askBlendFunction(BlendFunction);
     };
 
 }

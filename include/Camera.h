@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QColor>
 #include <QDebug>
+#include <QMutex>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -55,9 +56,9 @@ namespace MIS
 
         QOpenGLFramebufferObject* getFBO() const;
         bool bind();
-        void release() const;
+        void release();
         GLuint texture();
-        QImage toImage() const;
+        QImage toImage();
 
         bool isActive() const;
         QSize getSize() const;
@@ -155,6 +156,7 @@ namespace MIS
         vec3 target;
 
         QSize size;
+        QMutex FBOMutex;
         QOpenGLFramebufferObject* FBO;
         QOpenGLFramebufferObject* textureFBO;
         QColor backgroundColor;

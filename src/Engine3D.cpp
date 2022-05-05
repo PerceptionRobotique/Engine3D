@@ -58,8 +58,15 @@ namespace MIS
         connect(this, SIGNAL(askInitialization()), this, SLOT(initialize()));
         connect(this, SIGNAL(askClose(unsigned int)), this, SLOT(closeModel(unsigned int)));
         connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
+        connect(mainCamera, SIGNAL(cameraChanged()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
+        connect(this, SIGNAL(askPointSizeEnabled(bool)), this, SLOT(setPointSizeEnabled(bool)));
+        connect(this, SIGNAL(askPointSize(double)), this, SLOT(setPointSize(double)));
+        connect(this, SIGNAL(askLineWidth(float)), this, SLOT(setLineWidth(float)));
+        connect(this, SIGNAL(askOpacityEnabled(bool)), this, SLOT(setOpacityEnabled(bool)));
+        connect(this, SIGNAL(askOpacity(float)), this, SLOT(setOpacity(float)));
+        connect(this, SIGNAL(askBlendFunction(BlendFunction)), this, SLOT(setBlendFunction(BlendFunction)));
     }
 
     Engine3D::~Engine3D()
@@ -243,6 +250,8 @@ namespace MIS
         connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelDestroyed()), this, SLOT(nextModelsUpdate()));
+
+        nextModelsUpdate();
     }
 
     void Engine3D::closeModel(unsigned int index)
@@ -278,76 +287,120 @@ namespace MIS
 
     void Engine3D::setFrameCounterEnabled(bool enabled)
     {
-        makeCurrent();
         frameCounter = enabled;
-        doneCurrent();
     }
 
     void Engine3D::setPointSizeEnabled(bool enabled)
     {
-        makeCurrent();
-        if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
-        else glDisable(GL_PROGRAM_POINT_SIZE);
-        doneCurrent();
-        emit askUpdate();
+        if (QThread::currentThread() != thread())
+            emit askPointSizeEnabled(enabled);
+        else
+        {
+            makeCurrent();
+            if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
+            else glDisable(GL_PROGRAM_POINT_SIZE);
+            doneCurrent();
+            emit askUpdate();
+        }
     }
 
     void Engine3D::setPointSize(double _pointSize)
     {
-        makeCurrent();
-        pointSize = _pointSize;
-        shaders[Model3D::POINTS]->bind();
-        shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
-        shaders[Model3D::POINTS]->release();
-        doneCurrent();
-        emit askUpdate();
+        if (QThread::currentThread() != thread())
+            emit askPointSize(_pointSize);
+        else
+        {
+            makeCurrent();
+            pointSize = _pointSize;
+            shaders[Model3D::POINTS]->bind();
+            shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
+            shaders[Model3D::POINTS]->release();
+            doneCurrent();
+            emit askUpdate();
+        }
     }
 
     void Engine3D::setLineWidth(float _lineWidth)
     {
-        makeCurrent();
-        lineWidth = _lineWidth;
-        glLineWidth(lineWidth);
-        doneCurrent();
-        emit askUpdate();
+        if (QThread::currentThread() != thread())
+            emit askLineWidth(_lineWidth);
+        else
+        {
+            makeCurrent();
+            lineWidth = _lineWidth;
+            glLineWidth(lineWidth);
+            doneCurrent();
+            emit askUpdate();
+        }
     }
 
     void Engine3D::setOpacityEnabled(bool enabled)
     {
-        makeCurrent();
-        opacityEnabled = enabled;
-        if (opacityEnabled)
-        {
-            glDisable(GL_DEPTH_TEST);
-            glEnable(GL_BLEND);
-        }
+        if (QThread::currentThread() != thread())
+            emit askOpacityEnabled(enabled);
         else
         {
-            glEnable(GL_DEPTH_TEST);
-            glDisable(GL_BLEND);
+            opacityEnabled = enabled;
+            if (opacityEnabled)
+            {
+                makeCurrent();
+                glDisable(GL_DEPTH_TEST);
+                glEnable(GL_BLEND);
+                doneCurrent();
+                setOpacity(opacity);
+                setBlendFunction(blendFunction);
+            }
+            else
+            {
+                makeCurrent();
+                glEnable(GL_DEPTH_TEST);
+                glDisable(GL_BLEND);
+                doneCurrent();
+                setOpacity(opacity);
+                setBlendFunction(blendFunction);
+            }
+            emit askUpdate();
         }
-        doneCurrent();
-        emit askUpdate();
     }
 
     void Engine3D::setOpacity(float _opacity)
     {
-        makeCurrent();
-        opacity = _opacity;
-        shaders[Model3D::POINTS]->bind();
-        shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
-        shaders[Model3D::POINTS]->release();
-        doneCurrent();
-        emit askUpdate();
+        if (QThread::currentThread() != thread())
+            emit askOpacity(_opacity);
+        else
+        {
+            opacity = _opacity;
+            makeCurrent();
+            if (opacityEnabled)
+            {
+                shaders[Model3D::POINTS]->bind();
+                shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
+                shaders[Model3D::POINTS]->release();
+            }
+            else
+            {
+                shaders[Model3D::POINTS]->bind();
+                shaders[Model3D::POINTS]->setUniformValue("opacity", 1.0f);
+                shaders[Model3D::POINTS]->release();
+            }
+            doneCurrent();
+            emit askUpdate();
+        }
     }
 
     void Engine3D::setBlendFunction(BlendFunction _blendFunction)
     {
-        makeCurrent();
-        blendFunction = _blendFunction;
-        glBlendFunc(GL_SRC_ALPHA, blendFunction);
-        doneCurrent();
-        emit askUpdate();
+        if (QThread::currentThread() != thread())
+            emit askBlendFunction(_blendFunction);
+        else
+        {
+            blendFunction = _blendFunction;
+            makeCurrent();
+            if (opacityEnabled) glBlendFunc(GL_SRC_ALPHA, blendFunction);
+            else glBlendFunc(GL_ONE, GL_ZERO);
+            doneCurrent();
+            emit askUpdate();
+        }
     }
 
     void Engine3D::setViewDistance(double _viewDistance)
@@ -489,7 +542,7 @@ namespace MIS
     void Engine3D::nextModelsUpdateThread()
     {
         modelsUpdater.waitForFinished();
-        emit askUpdate();
+        modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
     }
 
     void Engine3D::makeCurrent()
@@ -532,9 +585,9 @@ namespace MIS
             if (drawMutex.tryLock())
             {
                 makeCurrent();
-                if (waitLoading) modelsUpdater.waitForFinished();
-                if (!modelsUpdater.isRunning()) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
-                if (waitLoading) modelsUpdater.waitForFinished();
+                //if (waitLoading) modelsUpdater.waitForFinished();
+                //if (!modelsUpdater.isRunning()) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
+                //if (waitLoading) modelsUpdater.waitForFinished();
 
                 static unsigned long long frameNumber = 0;
                 unsigned long long vertexToVRAM = 0;
@@ -661,6 +714,7 @@ namespace MIS
             }
             else updateNextAsked = true;
         }
+        setRenderAsked(false);
     }
 
     void Engine3D::nextModelsUpdate()
@@ -670,11 +724,13 @@ namespace MIS
 
     void Engine3D::setFrame()
     {
-        frameMutex.lock();
-        frame = mainCamera->toImage();
-        frameMutex.unlock();
-        setRenderAsked(false);
-        emit frameReady(frame);
+        if (mainCamera)
+        {
+            frameMutex.lock();
+            frame = mainCamera->toImage();
+            frameMutex.unlock();
+            emit frameReady(frame);
+        }
     }
 
     void Engine3D::destroy()

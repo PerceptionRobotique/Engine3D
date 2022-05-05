@@ -28,7 +28,9 @@ namespace MIS
     Camera::~Camera()
     {
         if (textureFBO) delete textureFBO;
+        FBOMutex.lock();
         if (FBO) delete FBO;
+        FBOMutex.unlock();
     }
 
     QOpenGLFramebufferObject* Camera::getFBO() const
@@ -40,6 +42,7 @@ namespace MIS
     {
         if (active)
         {
+            FBOMutex.lock();
             if (FBO)
             {
                 if (FBO->size() != getSize())
@@ -62,35 +65,45 @@ namespace MIS
         else return false;
     }
 
-    void Camera::release() const
+    void Camera::release()
     {
         FBO->release();
+        FBOMutex.unlock();
     }
 
     GLuint Camera::texture()
     {
-        if (textureFBO)
+        if (samples > 0)
         {
-            if (textureFBO->size() != FBO->size())
+            if (textureFBO)
             {
-                delete textureFBO;
-                textureFBO = nullptr;
+                if (textureFBO->size() != FBO->size())
+                {
+                    delete textureFBO;
+                    textureFBO = nullptr;
+                }
             }
-        }
 
-        if (!textureFBO)
-        {
-            textureFBO = new QOpenGLFramebufferObject(size);
-            textureFBO->release();
-        }
+            if (!textureFBO)
+            {
+                textureFBO = new QOpenGLFramebufferObject(size);
+                textureFBO->release();
+            }
 
-        QOpenGLFramebufferObject::blitFramebuffer(textureFBO, FBO, GL_COLOR_BUFFER_BIT);
-        return textureFBO->texture();
+            FBOMutex.lock();
+            QOpenGLFramebufferObject::blitFramebuffer(textureFBO, FBO, GL_COLOR_BUFFER_BIT);
+            FBOMutex.unlock();
+            return textureFBO->texture();
+        }
+        else return FBO->texture();
     }
 
-    QImage Camera::toImage() const
+    QImage Camera::toImage()
     {
-        QImage image = FBO->toImage();
+        QImage image;
+        FBOMutex.lock();
+        if (FBO) image = FBO->toImage();
+        FBOMutex.unlock();
         return image;
     }
 
@@ -157,11 +170,13 @@ namespace MIS
     void Camera::setSamples(int _samples)
     {
         samples = _samples;
+        FBOMutex.lock();
         if (FBO)
         {
             delete FBO;
             FBO = nullptr;
         }
+        FBOMutex.unlock();
         emit cameraChanged();
     }
 
