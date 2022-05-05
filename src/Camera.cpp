@@ -40,12 +40,22 @@ namespace MIS
     {
         if (active)
         {
-            if (FBO == nullptr)
+            if (FBO)
+            {
+                if (FBO->size() != getSize())
+                {
+                    delete FBO;
+                    FBO = nullptr;
+                }
+            }
+
+            if (!FBO)
             {
                 QOpenGLFramebufferObjectFormat FBO_Format;
                 FBO_Format.setAttachment(QOpenGLFramebufferObject::Depth);
                 FBO_Format.setSamples(samples);
                 FBO = new QOpenGLFramebufferObject(size, FBO_Format);
+                FBO->release();
             }
             return FBO->bind();
         }
@@ -59,6 +69,15 @@ namespace MIS
 
     GLuint Camera::texture()
     {
+        if (textureFBO)
+        {
+            if (textureFBO->size() != FBO->size())
+            {
+                delete textureFBO;
+                textureFBO = nullptr;
+            }
+        }
+
         if (!textureFBO)
         {
             textureFBO = new QOpenGLFramebufferObject(size);
@@ -105,18 +124,6 @@ namespace MIS
         size = _size;
         u0 = size.width() / 2.0f;
         v0 = size.height() / 2.0f;
-
-        if (FBO)
-        {
-            delete FBO;
-            FBO = nullptr;
-        }
-
-        if (textureFBO)
-        {
-            delete textureFBO;
-            textureFBO = nullptr;
-        }
 
         emit sizeChanged();
         emit cameraChanged();

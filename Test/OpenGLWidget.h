@@ -4,6 +4,7 @@
 #include <QOpenGLWidget>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
+#include <QOpenGLTexture>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QTouchEvent>
@@ -19,8 +20,9 @@ class OpenGLWidget : public QOpenGLWidget
     Q_OBJECT
 public:
     OpenGLWidget(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags());
+    ~OpenGLWidget();
 
-    Engine3D& getEngine();
+    Engine3D* getEngine();
 
 private:
     void initializeGL() override;
@@ -41,13 +43,14 @@ private:
     QVector<unsigned int> quadIndices;
     QOpenGLBuffer vboQuad;
     QOpenGLBuffer eboQuad;
+    QOpenGLTexture texture;
     Engine3D engine;
     CameraController cameraController;
 
     QColor backgroundColor;
 
 private slots:
-    void updateAsked();
+    void updateEngine();
 };
 
 #endif // OPENGLWIDGET_H

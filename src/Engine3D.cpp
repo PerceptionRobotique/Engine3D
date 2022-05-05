@@ -10,8 +10,9 @@ void initEngine3DResources() //needs to be launch outside of any namespace
 namespace MIS
 {
 
-    Engine3D::Engine3D(RenderMode renderMode, QObject* parent)
+    Engine3D::Engine3D(RenderMode _renderMode, QObject* parent)
         : QObject(parent)
+        , renderMode(_renderMode)
         , initialized(false)
         , surface(nullptr, this)
         , context(nullptr)
@@ -33,6 +34,7 @@ namespace MIS
         , isMoving(false)
         , maxVertexLimitEnabled(true)
         , maxVertexLimit(100000000)
+        , maxVertexToVRAMEnabled(true)
         , maxVertexToVRAM(1000000)
         , updateNextAsked(false)
         , breakModelsUpdater(false)
@@ -42,7 +44,7 @@ namespace MIS
 #endif
         switch (renderMode)
         {
-        case NORMAL:
+        case DIRECT:
             break;
 
         case THREADED:
@@ -99,6 +101,16 @@ namespace MIS
         }
         else
             return false;
+    }
+
+    Engine3D::RenderMode Engine3D::getRenderMode() const
+    {
+        return renderMode;
+    }
+
+    QOpenGLContext* Engine3D::getContext()
+    {
+        return context;
     }
 
     QImage Engine3D::getFrame()
@@ -182,7 +194,7 @@ namespace MIS
             emit askInitialization();
         else
         {
-            if(context) context->create();
+            if (context) context->create();
             makeCurrent();
             initializeOpenGLFunctions();
 
@@ -209,6 +221,7 @@ namespace MIS
             setBlendFunction(blendFunction);
 
             initialized = true;
+            emit initializationFinished();
         }
     }
 
@@ -364,6 +377,11 @@ namespace MIS
     {
         maxVertexLimit = _maxVertexLimit * 1000000;
         nextModelsUpdate();
+    }
+
+    void Engine3D::setMaxVertexToVRAMEnabled(bool enabled)
+    {
+        maxVertexToVRAMEnabled = enabled;
     }
 
     void Engine3D::setMaxVertexToVRAM(double _maxVertexToVRAM)
@@ -544,7 +562,7 @@ namespace MIS
                                 if (model->isOnRAM())
                                 {
                                     if (model->isOnVRAM()) model->draw(shaders[Model3D::POINTS]);
-                                    else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || waitLoading)
+                                    else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                     {
                                         vertexToVRAM += model->getVertexNumber();
                                         model->loadVRAM(waitLoading);
@@ -563,7 +581,7 @@ namespace MIS
                                             if (child->isOnRAM())
                                             {
                                                 if (child->isOnVRAM()) child->draw(shaders[Model3D::POINTS]);
-                                                else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || waitLoading)
+                                                else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                                 {
                                                     vertexToVRAM += child->getVertexNumber();
                                                     child->loadVRAM(waitLoading);

@@ -2,7 +2,8 @@
 
 OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
 	: QOpenGLWidget(parent, f)
-    , cameraController(engine.getMainCamera(), this)
+    , engine(Engine3D::DIRECT)
+    , cameraController(&engine, this)
     , backgroundColor(0, 0, 0, 255)
     , quad{
           -1.0f, -1.0f, 0.0f,   0.0f, 0.0f
@@ -18,27 +19,45 @@ OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
     }
     , vboQuad(QOpenGLBuffer::VertexBuffer)
     , eboQuad(QOpenGLBuffer::IndexBuffer)
+    , texture(QOpenGLTexture::Target2D)
 {
     setAttribute(Qt::WA_AcceptTouchEvents);
 
     cameraController.setTranslationSensitivity(7);
     cameraController.setRotationSensitivity(7);
 
-    engine.setFrameCounterEnabled(true);
+    //engine.setFrameCounterEnabled(true);
+    engine.setMaxVertexToVRAM(1);
+    
+    switch (engine.getRenderMode())
+    {
+    case Engine3D::DIRECT:
+        connect(&engine, SIGNAL(askUpdate()), this, SLOT(update()));
+        break;
 
-    connect(&engine, SIGNAL(askUpdate()), this, SLOT(update()));
+    case Engine3D::THREADED:
+        connect(&engine, SIGNAL(askUpdate()), this, SLOT(updateEngine()));
+        connect(&engine, SIGNAL(frameReady(QImage)), this, SLOT(update()));
+        break;
+    }
     connect(&cameraController, SIGNAL(moving(bool)), &engine, SLOT(setMoving(bool)));
 }
 
-Engine3D& OpenGLWidget::getEngine()
+OpenGLWidget::~OpenGLWidget()
 {
-    return engine;
+    engine.destroy();
+    texture.destroy();
+}
+
+Engine3D* OpenGLWidget::getEngine()
+{
+    return &engine;
 }
 
 void OpenGLWidget::initializeGL()
 {
     engine.initialize();
-    
+
     shader.create();
     shader.addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/Viewer.vert");
     shader.addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/Viewer.frag");
@@ -53,40 +72,48 @@ void OpenGLWidget::initializeGL()
     eboQuad.bind();
     eboQuad.allocate(quadIndices.constData(), quadIndices.count() * (int)sizeof(unsigned int));
     eboQuad.release();
+
+    texture.create();
+    //texture.setFormat(QOpenGLTexture::RGBA16F);
 }
 
 void OpenGLWidget::paintGL()
 {
-    engine.render();
+    if(engine.getRenderMode() == Engine3D::DIRECT) engine.update();
 
-    context()->functions()->glViewport(0, 0, width() * screen()->devicePixelRatio(), height() * screen()->devicePixelRatio());
-    context()->functions()->glClearColor(
-        backgroundColor.redF(),
-        backgroundColor.greenF(),
-        backgroundColor.blueF(),
-        backgroundColor.alphaF()
-    );
-    context()->functions()->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    if (shader.bind())
+    QImage image = engine.getFrame();
+    if (!image.isNull())
     {
-        context()->functions()->glActiveTexture(GL_TEXTURE0);
-        context()->functions()->glBindTexture(GL_TEXTURE_2D, engine.getMainCamera()->texture());
-        vboQuad.bind();
-        shader.enableAttributeArray("aPos");
-        shader.setAttributeBuffer("aPos", GL_FLOAT, 0, 3, 5 * sizeof(float));
-        shader.enableAttributeArray("aTexCoords");
-        shader.setAttributeBuffer("aTexCoords", GL_FLOAT, 3 * sizeof(float), 2, 5 * sizeof(float));
-        vboQuad.release();
+        context()->functions()->glViewport(0, 0, width() * screen()->devicePixelRatio(), height() * screen()->devicePixelRatio());
+        context()->functions()->glClearColor(
+            backgroundColor.redF(),
+            backgroundColor.greenF(),
+            backgroundColor.blueF(),
+            backgroundColor.alphaF()
+        );
+        context()->functions()->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        eboQuad.bind();
-        context()->functions()->glDrawElements(GL_TRIANGLES, quadIndices.count(), GL_UNSIGNED_INT, 0);
-        eboQuad.release();
+        if (shader.bind())
+        {
+            texture.destroy();
+            texture.setData(image.mirrored());
+            texture.bind();
+            vboQuad.bind();
+            shader.enableAttributeArray("aPos");
+            shader.setAttributeBuffer("aPos", GL_FLOAT, 0, 3, 5 * sizeof(float));
+            shader.enableAttributeArray("aTexCoords");
+            shader.setAttributeBuffer("aTexCoords", GL_FLOAT, 3 * sizeof(float), 2, 5 * sizeof(float));
+            vboQuad.release();
 
-        shader.disableAttributeArray("aPos");
-        shader.disableAttributeArray("aTexCoords");
-        context()->functions()->glBindTexture(GL_TEXTURE_2D, 0);
-        shader.release();
+            eboQuad.bind();
+            context()->functions()->glDrawElements(GL_TRIANGLES, quadIndices.count(), GL_UNSIGNED_INT, 0);
+            eboQuad.release();
+
+            shader.disableAttributeArray("aPos");
+            shader.disableAttributeArray("aTexCoords");
+            texture.release();
+            shader.release();
+        }
     }
 }
 
@@ -341,7 +368,7 @@ bool OpenGLWidget::event(QEvent* e)
         return QOpenGLWidget::event(e);
 }
 
-void OpenGLWidget::updateAsked()
+void OpenGLWidget::updateEngine()
 {
-    update();
+    engine.update();
 }

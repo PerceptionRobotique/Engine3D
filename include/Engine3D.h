@@ -29,7 +29,7 @@ namespace MIS
 
     public:
         enum RenderMode {
-            NORMAL,
+            DIRECT,
             THREADED
         };
 
@@ -38,7 +38,7 @@ namespace MIS
             BLEND_2 = GL_ONE_MINUS_SRC_ALPHA
         };
 
-        Engine3D(RenderMode renderMode = NORMAL, QObject* parent = nullptr);
+        Engine3D(RenderMode _renderMode = DIRECT, QObject* parent = nullptr);
         ~Engine3D();
 
         bool isInitialized() const;
@@ -46,6 +46,8 @@ namespace MIS
         bool isOnCamera(const Model3D* model, const Camera* camera) const;
         bool isOnScreen(const Model3D* model);
 
+        RenderMode getRenderMode() const;
+        QOpenGLContext* getContext();
         QImage getFrame();
         Camera* getMainCamera();
         QVector<Camera*>& getCameras();
@@ -85,11 +87,13 @@ namespace MIS
         void setWaitLoading(bool enabled);
         void setMaxVertexLimitEnabled(bool enabled);
         void setMaxVertexLimit(int _maxVertexLimit);
+        void setMaxVertexToVRAMEnabled(bool enabled);
         void setMaxVertexToVRAM(double _maxVertexToVRAM);
         void setMaxMovingDepth(int _maxMovingDepth);
         void setMoving(bool _isMoving);
 
     private:
+        RenderMode renderMode;
         bool initialized;
 
         QOffscreenSurface surface;
@@ -126,6 +130,7 @@ namespace MIS
         bool maxVertexLimitEnabled;
         unsigned long long maxVertexLimit;
         unsigned long long currentVertexNumber;
+        bool maxVertexToVRAMEnabled;
         unsigned long long maxVertexToVRAM;
 
         QMutex drawMutex;
@@ -149,6 +154,7 @@ namespace MIS
 
     signals:
         void askInitialization();
+        void initializationFinished();
         void askClose(unsigned int);
         void askRender();
         void askUpdate();

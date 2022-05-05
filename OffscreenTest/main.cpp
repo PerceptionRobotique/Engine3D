@@ -25,7 +25,7 @@ int main(int argc, char* argv[])
     diskRoot = "/mnt/c";
 #endif
 
-    Engine3D engine(Engine3D::NORMAL);
+    Engine3D engine(Engine3D::DIRECT);
     QOpenGLContext context;
     QOffscreenSurface surface;
 

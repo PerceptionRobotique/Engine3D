@@ -227,12 +227,6 @@ if(BUILD_TEST)
                 "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
                 $<TARGET_FILE_DIR:Test>
             )
-        # elseif(UNIX)
-            # add_custom_command(TARGET Engine3D POST_BUILD
-            #     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            #     "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.so"
-            #     $<TARGET_FILE_DIR:Example>
-            # )
         endif()
     endif()
 endif()

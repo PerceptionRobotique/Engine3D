@@ -15,10 +15,14 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), ui->graphicsView->getEngine(), SLOT(setMaxVertexLimitEnabled(bool)));
     connect(ui->limitMaxVertexSpinBox, SIGNAL(valueChanged(int)), ui->graphicsView->getEngine(), SLOT(setMaxVertexLimit(int)));
 
+    //connect(ui->viewDistanceDoubleSpinBox, SIGNAL(valueChanged(double)), ui->openGLWidget->getEngine(), SLOT(setViewDistance(double)));
+    //connect(ui->viewDistanceCheckBox, SIGNAL(toggled(bool)), ui->openGLWidget->getEngine(), SLOT(setViewDistanceEnabled(bool)));
+    //connect(ui->waitLoadingCheckBox, SIGNAL(toggled(bool)), ui->openGLWidget->getEngine(), SLOT(setWaitLoading(bool)));
+    //connect(ui->limitMaxVertexCheckBox, SIGNAL(toggled(bool)), ui->openGLWidget->getEngine(), SLOT(setMaxVertexLimitEnabled(bool)));
+    //connect(ui->limitMaxVertexSpinBox, SIGNAL(valueChanged(int)), ui->openGLWidget->getEngine(), SLOT(setMaxVertexLimit(int)));
+
     restoreGeometry(settings.value("WindowGeometry").toByteArray());
     restoreState(settings.value("WindowState").toByteArray());
-
-    
 }
 
 MainWindow::~MainWindow()
@@ -40,19 +44,29 @@ void MainWindow::on_actionOpenFile_triggered()
         connect(ui->graphicsView->getEngine()->getModels().last(), SIGNAL(vertexOnRAMChanged()), this, SLOT(updateVertexOnRAM()));
         connect(ui->graphicsView->getEngine()->getModels().last(), SIGNAL(vertexOnVRAMChanged()), this, SLOT(updateVertexOnVRAM()));
 
+        //ui->openGLWidget->getEngine()->openModel(fileName);
+        //ui->openGLWidget->getEngine()->getModels().last()->setRotationX(-90.0f);
+        //connect(ui->openGLWidget->getEngine()->getModels().last(), SIGNAL(modelLoadingUpdate(Model3D*, unsigned int)), this, SLOT(updateModelLoading(Model3D*, unsigned int)));
+        //connect(ui->openGLWidget->getEngine()->getModels().last(), SIGNAL(vertexOnRAMChanged()), this, SLOT(updateVertexOnRAM()));
+        //connect(ui->openGLWidget->getEngine()->getModels().last(), SIGNAL(vertexOnVRAMChanged()), this, SLOT(updateVertexOnVRAM()));
+
         ui->modelsListWidget->addItem(ui->graphicsView->getEngine()->getModels().last()->getName());
+        //ui->modelsListWidget->addItem(ui->openGLWidget->getEngine()->getModels().last()->getName());
     }
 }
 
 void MainWindow::on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item)
 {
     ui->graphicsView->getEngine()->getMainCamera()->lookAt(ui->graphicsView->getEngine()->getModel(ui->modelsListWidget->row(item)));
+    //ui->openGLWidget->getEngine()->getMainCamera()->lookAt(ui->openGLWidget->getEngine()->getModel(ui->modelsListWidget->row(item)));
+
 }
 
 void MainWindow::updateModelLoading(Model3D* model, unsigned int progressValue)
 {
     int index;
     for (index = 0; index < ui->modelsListWidget->count() && ui->graphicsView->getEngine()->getModel(index) != model; index++);
+    //for (index = 0; index < ui->modelsListWidget->count() && ui->openGLWidget->getEngine()->getModel(index) != model; index++);
 
     ui->modelsListWidget->item(index)->setText(model->getName() + (progressValue < 100 ? " (" + QString::number(progressValue) + "%)" : ""));
 }
@@ -78,6 +92,7 @@ void MainWindow::keyPressEvent(QKeyEvent* e)
         if (ui->modelsListWidget->currentItem() != nullptr)
         {
             ui->graphicsView->getEngine()->closeModel(ui->modelsListWidget->currentRow());
+            //ui->openGLWidget->getEngine()->closeModel(ui->modelsListWidget->currentRow());
             ui->modelsListWidget->takeItem(ui->modelsListWidget->currentRow());
         }
         e->accept();

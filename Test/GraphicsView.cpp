@@ -15,8 +15,8 @@ GraphicsView::GraphicsView(QWidget* parent)
     scene.addItem(&pixmapItem);
 
     engine.initialize();
-    engine.setFrameCounterEnabled(true);
-    engine.getMainCamera()->setSamples(8);
+    //engine.setFrameCounterEnabled(true);
+    //engine.getMainCamera()->setSamples(8);
 
     cameraController.setTranslationSensitivity(5);
     cameraController.setRotationSensitivity(5);
