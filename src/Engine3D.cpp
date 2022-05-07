@@ -50,11 +50,12 @@ namespace MIS
         case THREADED:
             surface.create();
             context = new QOpenGLContext(this);
-            moveToThread(&workingThread);
-            workingThread.start();
+            moveToThread(&renderThread);
+            renderThread.start();
             break;
         }
 
+        connect(this, SIGNAL(askRenderMode(RenderMode)), this, SLOT(setRenderMode(RenderMode)));
         connect(this, SIGNAL(askInitialization()), this, SLOT(initialize()));
         connect(this, SIGNAL(askClose(unsigned int)), this, SLOT(closeModel(unsigned int)));
         connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
@@ -71,8 +72,8 @@ namespace MIS
 
     Engine3D::~Engine3D()
     {
-        workingThread.exit();
-        workingThread.wait();
+        renderThread.exit();
+        renderThread.wait();
     }
 
     bool Engine3D::isInitialized() const
@@ -122,8 +123,9 @@ namespace MIS
 
     QImage Engine3D::getFrame()
     {
+        QImage output;
         frameMutex.lock();
-        QImage output = frame;
+        output = frame;
         frameMutex.unlock();
         return output;
     }
@@ -193,6 +195,46 @@ namespace MIS
     void Engine3D::unlockModelsUpdater()
     {
         modelsUpdaterMutex.unlock();
+    }
+
+    void Engine3D::setRenderMode(RenderMode _renderMode)
+    {
+        //if (QThread::currentThread() != thread())
+        //{
+        //    QEventLoop loop;
+        //    connect(this, SIGNAL(renderModeChanged()), &loop, SLOT(quit()));
+        //    emit askRenderMode(_renderMode);
+        //    loop.exec();
+        //}
+        //else
+        //{
+        //    renderMode = _renderMode;
+        //    switch (renderMode)
+        //    {
+        //    case DIRECT:
+        //    {
+        //        destroy();
+        //        //surface.deleteLater();
+        //        renderThread.exit();
+        //        moveToThread(QApplication::instance()->thread());
+        //        cameras.append(new Camera);
+        //        initialize();
+        //        //context->setShareContext(QOpenGLContext::currentContext());
+        //        //QOpenGLContext::currentContext()->create();
+        //        //context->deleteLater();
+        //        //context = nullptr;
+        //        //setRenderAsked(false);
+        //        break;
+        //    }
+
+        //    case THREADED:
+        //        moveToThread(&renderThread);
+        //        renderThread.start();
+        //        break;
+        //    }
+
+        //    emit renderModeChanged();
+        //}
     }
 
     void Engine3D::initialize()
@@ -277,12 +319,15 @@ namespace MIS
 
     void Engine3D::update()
     {
-        if (!getRenderAsked())
+        if (initialized)
         {
-            setRenderAsked(true);
-            emit askRender();
+            if (!getRenderAsked())
+            {
+                setRenderAsked(true);
+                emit askRender();
+            }
+            else updateNextAsked = true;
         }
-        else updateNextAsked = true;
     }
 
     void Engine3D::setFrameCounterEnabled(bool enabled)
@@ -585,7 +630,11 @@ namespace MIS
             if (drawMutex.tryLock())
             {
                 makeCurrent();
-                //if (waitLoading) modelsUpdater.waitForFinished();
+                if (waitLoading)
+                {
+                    modelsUpdater.waitForFinished();
+                    updateModels();
+                }
                 //if (!modelsUpdater.isRunning()) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
                 //if (waitLoading) modelsUpdater.waitForFinished();
 
@@ -705,6 +754,7 @@ namespace MIS
                 while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
 
                 doneCurrent();
+                setRenderAsked(false);
                 drawMutex.unlock();
                 if (updateNextAsked)
                 {
@@ -714,7 +764,6 @@ namespace MIS
             }
             else updateNextAsked = true;
         }
-        setRenderAsked(false);
     }
 
     void Engine3D::nextModelsUpdate()
@@ -755,7 +804,11 @@ namespace MIS
             shaders.clear();
             models.clear();
             doneCurrent();
-            if (context) delete context;
+            if (context)
+            {
+                delete context;
+                context = nullptr;
+            }
             modelsUpdaterMutex.unlock();
             emit destructionFinished();
         }

@@ -7,6 +7,7 @@
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
+#include <QApplication>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QVector>
@@ -29,8 +30,8 @@ namespace MIS
 
     public:
         enum RenderMode {
-            DIRECT,
-            THREADED
+            DIRECT = 0,
+            THREADED = 1
         };
 
         enum BlendFunction {
@@ -64,6 +65,7 @@ namespace MIS
         void unlockModelsUpdater();
 
     public slots:
+        void setRenderMode(RenderMode _renderMode);
         void initialize();
         void openModel(QString fileName);
         void closeModel(unsigned int index);
@@ -99,7 +101,7 @@ namespace MIS
         QOffscreenSurface surface;
         QOpenGLContext* context;
         QMutex contextMutex;
-        QThread workingThread;
+        QThread renderThread;
 
         QHash<Model3D::Primitives, QOpenGLShaderProgram*> shaders;
         QOpenGLShaderProgram* boxShader;
@@ -153,6 +155,7 @@ namespace MIS
         void setFrame();
 
     signals:
+        void askRenderMode(RenderMode);
         void askInitialization();
         void initializationFinished();
         void askClose(unsigned int);
@@ -167,6 +170,7 @@ namespace MIS
         void askOpacityEnabled(bool);
         void askOpacity(float);
         void askBlendFunction(BlendFunction);
+        void renderModeChanged();
     };
 
 }

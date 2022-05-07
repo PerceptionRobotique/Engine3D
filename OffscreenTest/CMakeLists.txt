@@ -34,7 +34,6 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
 if(NOT Engine3D_FOUND)
     set(Engine3D_DIR "Engine3D-NOTFOUND" CACHE PATH "Engine3D directory")
-    message(${Engine3D_DIR})
     if(IS_DIRECTORY ${Engine3D_DIR})
         set(Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include)
         set(Engine3D_LIBRARIES_DIR ${Engine3D_DIR}/lib)

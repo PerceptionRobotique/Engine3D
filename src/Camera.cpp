@@ -134,7 +134,10 @@ namespace MIS
 
     void Camera::setSize(QSize _size)
     {
+        float f = getFOV();
         size = _size;
+        setFOV(f);
+        setAu(getAv());
         u0 = size.width() / 2.0f;
         v0 = size.height() / 2.0f;
 

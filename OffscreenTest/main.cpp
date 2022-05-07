@@ -25,51 +25,73 @@ int main(int argc, char* argv[])
     diskRoot = "/mnt/c";
 #endif
 
-    Engine3D engine(Engine3D::DIRECT);
-    QOpenGLContext context;
-    QOffscreenSurface surface;
+    //QOpenGLContext context;
+    //QOffscreenSurface surface;
+    //surface.create();
+    //context.create();
+    //context.makeCurrent(&surface);
 
-    surface.create();
-    context.create();
-    context.makeCurrent(&surface);
+    Engine3D engine(Engine3D::THREADED);
+
+    //QEventLoop loop;
+    //QObject::connect(&engine, SIGNAL(initializationFinished()), &loop, SLOT(quit()));
+
     engine.initialize();
+    //loop.exec();
 
-    engine.setWaitLoading(true);
+    engine.setFrameCounterEnabled(true);
     engine.setViewDistanceEnabled(false);
     engine.setMaxVertexLimitEnabled(false);
     engine.getMainCamera()->setSamples(8);
 
     engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
-    engine.getMainCamera()->translate(vec3(0, 15, 0));
     
-    engine.update();
-    engine.getFrame().save("frame.png");
+    //engine.getMainCamera()->translate(vec3(0, 5, 0));
+    //engine.update();
+    //engine.getFrame().save("frame1.png");
+    //engine.setWaitLoading(true);
+    //engine.getMainCamera()->translate(vec3(0, 5, 0));
+    //engine.update();
+    //engine.getFrame().save("frame2.png");
+    //engine.setWaitLoading(false);
+    //engine.getMainCamera()->translate(vec3(0, 5, 0));
+    //engine.update();
+    //engine.getFrame().save("frame3.png");
+    //engine.setWaitLoading(true);
+    //engine.getMainCamera()->translate(vec3(0, 5, 0));
+    //engine.update();
+    //engine.getFrame().save("frame4.png");
 
     //engine.getMainCamera()->setSize(QSize(1920, 1200));
-    //TrajectoryManager tm;
-    ////tm.setFPS(5);
+    TrajectoryManager tm;
+    tm.setFPS(25);
     //tm.setFPS(120);
-    //tm.addPose(*engine.getMainCamera());
-    //engine.getMainCamera()->translate(vec3(0, 15, 0));
-    //tm.addPose(*engine.getMainCamera());
-    //engine.getMainCamera()->rotate(180, vec3(0, 1, 0));
-    //tm.addPose(*engine.getMainCamera(), 3000);
+    tm.addPose(*engine.getMainCamera());
+    engine.getMainCamera()->translate(vec3(0, 15, 0));
+    tm.addPose(*engine.getMainCamera());
+    engine.getMainCamera()->rotate(180, vec3(0, 1, 0));
+    tm.addPose(*engine.getMainCamera(), 3000);
 
-    //QDir().mkdir("video");
-    //for (unsigned int frameNumber = 0; frameNumber < tm.getTotalFrameNumber(); frameNumber++)
-    //{
-    //    qDebug() << frameNumber + 1 << "/" << tm.getTotalFrameNumber();
-    //    engine.getMainCamera()->setPose(tm.getFrame(frameNumber).pose);
-    //    engine.render();
-    //    engine.getMainCamera()->toImage().save("video/" + QString::number(frameNumber) + ".png");
-    //}
+    engine.update();
+    engine.update();
+    engine.update();
+    engine.setWaitLoading(true);
 
-    //VideoWriter videoWriter;
-    //videoWriter.setFramesPath("video");
-    //videoWriter.setFPS(120);
-    //videoWriter.setVCodec("hevc");
-    //videoWriter.setVideoFileName("test-hevc");
-    //videoWriter.writeVideo();
+    QDir().mkdir("video");
+    for (unsigned int frameNumber = 0; frameNumber < tm.getTotalFrameNumber(); frameNumber++)
+    {
+        qDebug() << frameNumber + 1 << "/" << tm.getTotalFrameNumber();
+        engine.getMainCamera()->setPose(tm.getFrame(frameNumber).pose);
+        engine.update();
+        engine.getFrame().save("video/" + QString::number(frameNumber) + ".png");
+    }
+
+    VideoWriter videoWriter;
+    videoWriter.setFramesPath("video");
+    videoWriter.setFPS(25);
+    videoWriter.setVCodec("hevc");
+    videoWriter.setVideoFileName("test-hevc");
+    videoWriter.writeVideo();
     //while (!videoWriter.waitForFinished(0))
     //{
     //    QByteArray output = videoWriter.readAllStandardOutput();
@@ -78,6 +100,7 @@ int main(int argc, char* argv[])
     //    if (!error.isEmpty()) std::cout << error.constData();
     //}
 
-    context.doneCurrent();
+    //context.doneCurrent();
+    engine.destroy();
     return 0;
 }
