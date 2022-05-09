@@ -19,6 +19,7 @@ public:
 	~GraphicsView() override;
 
 	Engine3D* getEngine();
+	QImage grabImage();
 
 private:
 	QGraphicsScene scene;

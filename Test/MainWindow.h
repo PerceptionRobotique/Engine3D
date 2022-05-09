@@ -37,6 +37,7 @@ public:
 private slots:
     void on_actionOpenFile_triggered();
     void on_modelsListWidget_itemDoubleClicked(QListWidgetItem* item);
+    void on_captureFramePushButton_clicked();
     void updateModelLoading(Model3D* model, unsigned int progressValue);
 
     void updateVertexOnRAM();

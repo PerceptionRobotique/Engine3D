@@ -26,20 +26,26 @@ OpenGLWidget::OpenGLWidget(QWidget* parent, Qt::WindowFlags f)
     cameraController.setTranslationSensitivity(7);
     cameraController.setRotationSensitivity(7);
 
-    //engine.setFrameCounterEnabled(true);
+    engine.setFrameCounterEnabled(true);
     
     switch (engine.getRenderMode())
     {
-    case Engine3D::DIRECT:
+    case Engine3D::NONE:
         connect(&engine, SIGNAL(askUpdate()), this, SLOT(update()));
+        break;
+
+    case Engine3D::DIRECT:
+        QMessageBox::critical(this, "Mauvaise méthode de rendu", "La méthode de rendu sélectionnée ne peut être directe (conflit entre les contextes OpenGL).");
+        exit(-1);
         break;
 
     case Engine3D::THREADED:
         connect(&engine, SIGNAL(askUpdate()), this, SLOT(updateEngine()));
-        connect(&engine, SIGNAL(frameReady(QImage)), this, SLOT(update()));
+        connect(&engine, SIGNAL(frameReady(QImage)), this, SLOT(updateFrame(QImage)));
         break;
     }
     connect(&cameraController, SIGNAL(moving(bool)), &engine, SLOT(setMoving(bool)));
+    connect(this, SIGNAL(askPaint()), this, SLOT(update()));
 }
 
 OpenGLWidget::~OpenGLWidget()
@@ -51,6 +57,14 @@ OpenGLWidget::~OpenGLWidget()
 Engine3D* OpenGLWidget::getEngine()
 {
     return &engine;
+}
+
+QImage OpenGLWidget::grabImage()
+{
+    if (engine.getRenderMode() == Engine3D::NONE) makeCurrent();
+    QImage image = engine.takePicture();
+    if (engine.getRenderMode() == Engine3D::NONE) doneCurrent();
+    return image;
 }
 
 void OpenGLWidget::initializeGL()
@@ -77,10 +91,13 @@ void OpenGLWidget::initializeGL()
 
 void OpenGLWidget::paintGL()
 {
-    if(engine.getRenderMode() == Engine3D::DIRECT) engine.update();
+    if (engine.getRenderMode() == Engine3D::NONE)
+    {
+        engine.update();
+        frame = engine.getFrame();
+    }
 
-    QImage image = engine.getFrame();
-    if (!image.isNull())
+    if (!frame.isNull())
     {
         context()->functions()->glViewport(0, 0, width() * screen()->devicePixelRatio(), height() * screen()->devicePixelRatio());
         context()->functions()->glClearColor(
@@ -94,7 +111,7 @@ void OpenGLWidget::paintGL()
         if (shader.bind())
         {
             texture.destroy();
-            texture.setData(image.mirrored());
+            texture.setData(frame.mirrored());
             texture.bind();
             vboQuad.bind();
             shader.enableAttributeArray("aPos");
@@ -369,4 +386,10 @@ bool OpenGLWidget::event(QEvent* e)
 void OpenGLWidget::updateEngine()
 {
     engine.update();
+}
+
+void OpenGLWidget::updateFrame(QImage frame)
+{
+    this->frame = frame;
+    emit askPaint();
 }

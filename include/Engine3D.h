@@ -30,8 +30,9 @@ namespace MIS
 
     public:
         enum RenderMode {
-            DIRECT = 0,
-            THREADED = 1
+            NONE = 0,
+            DIRECT = 1,
+            THREADED = 2
         };
 
         enum BlendFunction {
@@ -71,6 +72,7 @@ namespace MIS
         void closeModel(unsigned int index);
         void closeModel(Model3D* model);
         void update();
+        QImage takePicture();
         void destroy();
 
         //Debug
@@ -121,6 +123,7 @@ namespace MIS
         QMutex renderAskedMutex;
         QImage frame;
         QMutex frameMutex;
+        QImage pictureAsked;
 
         //Optimization
         float viewDistance;
@@ -161,6 +164,8 @@ namespace MIS
         void askClose(unsigned int);
         void askRender();
         void askUpdate();
+        void askPicture();
+        void pictureTaken();
         void frameReady(QImage);
         void askDestroy();
         void destructionFinished();

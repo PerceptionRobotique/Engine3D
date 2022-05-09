@@ -15,10 +15,10 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout" columnstretch="0,1">
-    <item row="1" column="0">
-     <widget class="QCheckBox" name="waitLoadingCheckBox">
+    <item row="2" column="0">
+     <widget class="QPushButton" name="captureFramePushButton">
       <property name="text">
-       <string>Attendre chargement</string>
+       <string>Capturer frame</string>
       </property>
      </widget>
     </item>
@@ -94,11 +94,18 @@
       </item>
      </layout>
     </item>
-    <item row="2" column="0">
+    <item row="1" column="0">
+     <widget class="QCheckBox" name="waitLoadingCheckBox">
+      <property name="text">
+       <string>Attendre chargement</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
      <widget class="QListWidget" name="modelsListWidget"/>
     </item>
-    <item row="0" column="1" rowspan="3">
-     <widget class="OpenGLWidget" name="openGLWidget"/>
+    <item row="0" column="1" rowspan="4">
+     <widget class="GraphicsView" name="graphicsView"/>
     </item>
    </layout>
   </widget>
@@ -140,9 +147,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>OpenGLWidget</class>
-   <extends>QOpenGLWidget</extends>
-   <header>OpenGLWidget.h</header>
+   <class>GraphicsView</class>
+   <extends>QGraphicsView</extends>
+   <header>GraphicsView.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

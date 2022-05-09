@@ -23,6 +23,7 @@ public:
     ~OpenGLWidget();
 
     Engine3D* getEngine();
+    QImage grabImage();
 
 private:
     void initializeGL() override;
@@ -48,9 +49,14 @@ private:
     CameraController cameraController;
 
     QColor backgroundColor;
+    QImage frame;
 
 private slots:
     void updateEngine();
+    void updateFrame(QImage frame);
+
+signals:
+    void askPaint();
 };
 
 #endif // OPENGLWIDGET_H

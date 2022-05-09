@@ -44,7 +44,12 @@ namespace MIS
 #endif
         switch (renderMode)
         {
+        case NONE:
+            break;
+
         case DIRECT:
+            surface.create();
+            context = new QOpenGLContext(this);
             break;
 
         case THREADED:
@@ -61,6 +66,7 @@ namespace MIS
         connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
         connect(mainCamera, SIGNAL(cameraChanged()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
+        connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
         connect(this, SIGNAL(askPointSizeEnabled(bool)), this, SLOT(setPointSizeEnabled(bool)));
         connect(this, SIGNAL(askPointSize(double)), this, SLOT(setPointSize(double)));
@@ -72,8 +78,11 @@ namespace MIS
 
     Engine3D::~Engine3D()
     {
-        renderThread.exit();
-        renderThread.wait();
+        if (renderMode == THREADED)
+        {
+            renderThread.exit();
+            renderThread.wait();
+        }
     }
 
     bool Engine3D::isInitialized() const
@@ -330,6 +339,29 @@ namespace MIS
         }
     }
 
+    QImage Engine3D::takePicture()
+    {
+        bool wasWaitLoading = getWaitLoading();
+        setWaitLoading(true);
+        if (QThread::currentThread() != thread())
+        {
+            QEventLoop loop;
+            connect(this, SIGNAL(pictureTaken()), &loop, SLOT(quit()));
+            emit askPicture();
+            loop.exec();
+            setWaitLoading(wasWaitLoading);
+            return pictureAsked;
+        }
+        else
+        {
+            render();
+            pictureAsked = getFrame();
+            setWaitLoading(wasWaitLoading);
+            emit pictureTaken();
+            return pictureAsked;
+        }
+    }
+
     void Engine3D::setFrameCounterEnabled(bool enabled)
     {
         frameCounter = enabled;
@@ -495,6 +527,7 @@ namespace MIS
     void Engine3D::setMoving(bool _isMoving)
     {
         isMoving = _isMoving;
+        if (!isMoving) breakModelsUpdater = true;
         emit askUpdate();
     }
 
@@ -632,11 +665,9 @@ namespace MIS
                 makeCurrent();
                 if (waitLoading)
                 {
-                    modelsUpdater.waitForFinished();
+                    if(modelsUpdater.isRunning()) modelsUpdater.waitForFinished();
                     updateModels();
                 }
-                //if (!modelsUpdater.isRunning()) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
-                //if (waitLoading) modelsUpdater.waitForFinished();
 
                 static unsigned long long frameNumber = 0;
                 unsigned long long vertexToVRAM = 0;
@@ -726,26 +757,6 @@ namespace MIS
                     }
                 }
 
-                //ANALYSE
-                //unsigned long long vertexOnRAM = 0;
-                //unsigned long long vertexOnVRAM = 0;
-                //for (Model3D* model : models)
-                //{
-                //    vertexOnRAM += (int)model->isOnRAM() * model->getVertexNumber();
-                //    vertexOnVRAM += (int)model->isOnVRAM() * model->getVertexNumber();
-                //    Octree* octree = dynamic_cast<Octree*>(model);
-                //    if (octree)
-                //    {
-                //        for (Model3D* child : octree->getAllChildren())
-                //        {
-                //            vertexOnRAM += (int)child->isOnRAM() * child->getVertexNumber();
-                //            vertexOnVRAM += (int)child->isOnVRAM() * child->getVertexNumber();
-                //        }
-                //    }
-                //}
-                //qDebug() << "On RAM : " << vertexOnRAM;
-                //qDebug() << "On VRAM : " << vertexOnVRAM;
-
                 setFrame();
 
                 if (frameCounter) qDebug() << ++frameNumber;
@@ -768,7 +779,7 @@ namespace MIS
 
     void Engine3D::nextModelsUpdate()
     {
-        if (!nextModelsUpdater.isRunning()) nextModelsUpdater = QtConcurrent::run(&Engine3D::nextModelsUpdateThread, this);
+        if (!nextModelsUpdater.isRunning() && !waitLoading) nextModelsUpdater = QtConcurrent::run(&Engine3D::nextModelsUpdateThread, this);
     }
 
     void Engine3D::setFrame()

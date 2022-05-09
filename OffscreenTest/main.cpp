@@ -33,13 +33,12 @@ int main(int argc, char* argv[])
 
     Engine3D engine(Engine3D::THREADED);
 
-    //QEventLoop loop;
-    //QObject::connect(&engine, SIGNAL(initializationFinished()), &loop, SLOT(quit()));
-
+    QEventLoop loop;
+    QObject::connect(&engine, SIGNAL(initializationFinished()), &loop, SLOT(quit()));
     engine.initialize();
-    //loop.exec();
+    if(engine.getRenderMode() == Engine3D::THREADED) loop.exec();
 
-    engine.setFrameCounterEnabled(true);
+    //engine.setFrameCounterEnabled(true);
     engine.setViewDistanceEnabled(false);
     engine.setMaxVertexLimitEnabled(false);
     engine.getMainCamera()->setSamples(8);
@@ -80,18 +79,18 @@ int main(int argc, char* argv[])
     QDir().mkdir("video");
     for (unsigned int frameNumber = 0; frameNumber < tm.getTotalFrameNumber(); frameNumber++)
     {
-        qDebug() << frameNumber + 1 << "/" << tm.getTotalFrameNumber();
         engine.getMainCamera()->setPose(tm.getFrame(frameNumber).pose);
-        engine.update();
-        engine.getFrame().save("video/" + QString::number(frameNumber) + ".png");
+        engine.takePicture().save("video/" + QString::number(frameNumber) + ".png");
+        qDebug() << frameNumber + 1 << "/" << tm.getTotalFrameNumber();
     }
 
     VideoWriter videoWriter;
     videoWriter.setFramesPath("video");
     videoWriter.setFPS(25);
     videoWriter.setVCodec("hevc");
-    videoWriter.setVideoFileName("test-hevc");
+    videoWriter.setVideoFileName("video");
     videoWriter.writeVideo();
+    videoWriter.waitForFinished();
     //while (!videoWriter.waitForFinished(0))
     //{
     //    QByteArray output = videoWriter.readAllStandardOutput();

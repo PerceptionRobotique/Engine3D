@@ -1,7 +1,7 @@
 #include "GraphicsView.h"
 
 GraphicsView::GraphicsView(QWidget* parent)
-	: QGraphicsView(parent)
+    : QGraphicsView(parent)
     , engine(Engine3D::THREADED)
     , cameraController(&engine, this)
 {
@@ -30,6 +30,12 @@ GraphicsView::~GraphicsView()
 Engine3D* GraphicsView::getEngine()
 {
     return &engine;
+}
+
+QImage GraphicsView::grabImage()
+{
+    QImage image = engine.takePicture();
+    return image;
 }
 
 void GraphicsView::resizeEvent(QResizeEvent* e)
