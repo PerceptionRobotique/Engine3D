@@ -119,7 +119,7 @@ namespace MIS
             arguments << "-i" << framesPath + "/" + framesPrefix + "%d" + framesSuffix;
             arguments << "-c:v" << vcodec;
             if(crf != -1) arguments << "-crf" << QString::number(crf);
-            if (!pixelFormat.isEmpty()) arguments << "-pix_fmts" << pixelFormat;
+            if (!pixelFormat.isEmpty()) arguments << "-pix_fmt" << pixelFormat;
             arguments << videoFileName + videoSuffix;
 
             start(ffmpeg, arguments);
