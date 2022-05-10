@@ -28,6 +28,7 @@ namespace MIS
 		void setVCodec(const QString& _vcodec);
 		void setFPS(unsigned int _fps);
 		void setCRF(unsigned int _crf);
+		void setPixelFormat(const QString& _pixelFormat);
 
 		void writeVideo();
 
@@ -44,6 +45,7 @@ namespace MIS
 		QString framesPrefix;
 		QString framesSuffix;
 		QString vcodec;
+		QString pixelFormat;
 		unsigned int fps;
 		int crf;
 	};

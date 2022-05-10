@@ -104,6 +104,11 @@ namespace MIS
         crf = _crf;
     }
 
+    void VideoWriter::setPixelFormat(const QString& _pixelFormat)
+    {
+        pixelFormat = _pixelFormat;
+    }
+
     void VideoWriter::writeVideo()
     {
         if (state() == QProcess::NotRunning)
@@ -114,6 +119,7 @@ namespace MIS
             arguments << "-i" << framesPath + "/" + framesPrefix + "%d" + framesSuffix;
             arguments << "-c:v" << vcodec;
             if(crf != -1) arguments << "-crf" << QString::number(crf);
+            if (!pixelFormat.isEmpty()) arguments << "-pix_fmts" << pixelFormat;
             arguments << videoFileName + videoSuffix;
 
             start(ffmpeg, arguments);
