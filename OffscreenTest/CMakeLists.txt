@@ -89,6 +89,7 @@ endif()
 target_include_directories(OffscreenTest
     PRIVATE
     ${GLM_INCLUDE_DIRS}
+    ${VISP_INCLUDE_DIRS}
     ${Engine3D_INCLUDE_DIRS}
 )
 
@@ -97,6 +98,7 @@ target_link_directories(OffscreenTest PRIVATE ${Engine3D_LIBRARIES_DIR})
 target_link_libraries(OffscreenTest
     PRIVATE
     ${QT_LINKS}
+    ${VISP_LIBRARIES}
     ${Engine3D_LIBRARIES}
 )   
 
@@ -108,6 +110,7 @@ if(WIN32)
     add_custom_command(TARGET OffscreenTest POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:OffscreenTest>/platforms"
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:OffscreenTest>/styles"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:OffscreenTest>/imageformats"
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/platforms/qminimal$<$<CONFIG:Debug>:d>.dll"
@@ -125,27 +128,9 @@ if(WIN32)
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll"
         $<TARGET_FILE_DIR:OffscreenTest>/styles
 
-        
-
-        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Gui$<$<CONFIG:Debug>:d>.dll"
-        # $<TARGET_FILE_DIR:OffscreenTest>
-
-        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Widgets$<$<CONFIG:Debug>:d>.dll"
-        # $<TARGET_FILE_DIR:OffscreenTest>
-
-        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGL$<$<CONFIG:Debug>:d>.dll"
-        # $<TARGET_FILE_DIR:OffscreenTest>
-
-        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}OpenGLWidgets$<$<CONFIG:Debug>:d>.dll"
-        # $<TARGET_FILE_DIR:OffscreenTest>
-
-        # COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        # "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Concurrent$<$<CONFIG:Debug>:d>.dll"
-        # $<TARGET_FILE_DIR:OffscreenTest>
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/imageformats/qjpeg$<$<CONFIG:Debug>:d>.dll"
+        $<TARGET_FILE_DIR:OffscreenTest>/imageformats
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
@@ -159,6 +144,34 @@ if(WIN32)
             $<TARGET_FILE_DIR:OffscreenTest>
         )
     endforeach()
+
+    if(WITH_OPENCV)
+        foreach (OpenCV_COMPONENT ${OpenCV_COMPONENTS})
+            add_custom_command(TARGET OffscreenTest POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}.dll"
+                $<TARGET_FILE_DIR:OffscreenTest>
+            )
+        endforeach()
+
+        foreach (OpenCV_EXTRA ${OpenCV_EXTRA_DLL})
+            add_custom_command(TARGET OffscreenTest POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${OpenCV_DIR}/../bin/${OpenCV_EXTRA}.dll"
+                $<TARGET_FILE_DIR:OffscreenTest>
+            )
+        endforeach()
+    endif()
+
+    if(WITH_VISP)
+        foreach (visp_component ${VISP_COMPONENTS})
+            add_custom_command(TARGET OffscreenTest POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}.dll"
+                $<TARGET_FILE_DIR:OffscreenTest>
+            )
+        endforeach()
+    endif()
 endif()
 
 if(PRINT_CMAKE_VARIABLES)

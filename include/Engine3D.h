@@ -16,6 +16,11 @@
 #include <QFuture>
 #include <QFutureWatcher>
 
+#ifdef HAVE_VISP
+#include <visp/vpImage.h>
+#include <visp/vpImageTools.h>
+#endif
+
 #include "Camera.h"
 #include "ModelPTS.h"
 #include "ModelBIN.h"
@@ -73,6 +78,9 @@ namespace MIS
         void closeModel(Model3D* model);
         void update();
         QImage takePicture();
+#ifdef HAVE_VISP
+        vpImage<float> takePFM();
+#endif
         void destroy();
 
         //Debug
@@ -124,6 +132,9 @@ namespace MIS
         QImage frame;
         QMutex frameMutex;
         QImage pictureAsked;
+#ifdef HAVE_VISP
+        vpImage<float> pfmAsked;
+#endif
 
         //Optimization
         float viewDistance;
@@ -165,6 +176,9 @@ namespace MIS
         void askRender();
         void askUpdate();
         void askPicture();
+#ifdef HAVE_VISP
+        void askPFM();
+#endif
         void pictureTaken();
         void frameReady(QImage);
         void askDestroy();

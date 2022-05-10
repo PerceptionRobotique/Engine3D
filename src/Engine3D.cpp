@@ -362,6 +362,80 @@ namespace MIS
         }
     }
 
+    vpImage<float> Engine3D::takePFM()
+    {
+        bool wasWaitLoading = getWaitLoading();
+        setWaitLoading(true);
+        if (QThread::currentThread() != thread())
+        {
+            QEventLoop loop;
+            connect(this, SIGNAL(pictureTaken()), &loop, SLOT(quit()));
+            emit askPFM();
+            loop.exec();
+            setWaitLoading(wasWaitLoading);
+            return pfmAsked;
+        }
+        else
+        {
+            unsigned int samples = mainCamera->getSamples();
+            mainCamera->setSamples(0);
+            render();
+            setWaitLoading(wasWaitLoading);
+
+            makeCurrent();
+            mainCamera->bind();
+
+            QVector<float> buffer;
+            buffer.resize(mainCamera->getWidth() * mainCamera->getHeight());
+
+            glReadPixels(0, 0, mainCamera->getWidth(), mainCamera->getHeight(), GL_DEPTH_COMPONENT, GL_FLOAT, buffer.data());
+
+            float zNear = mainCamera->getNearPlane();
+            float zFar = mainCamera->getFarPlane();
+
+            for (unsigned int h = 0; h < (unsigned int)mainCamera->getHeight(); h++)
+            {
+                for (unsigned int w = 0; w < (unsigned int)mainCamera->getWidth(); w++)
+                {
+                    if (buffer[h * mainCamera->getWidth() + w] > 0 && buffer[h * mainCamera->getWidth() + w] < 1)
+                    {
+                        switch (mainCamera->getProjectionType())
+                        {
+                        case Camera::PERSPECTIVE:
+                            buffer[h * mainCamera->getWidth() + w] = 2.0f * zFar * zNear / ((zFar + zNear) - (buffer[h * mainCamera->getWidth() + w] * (zFar - zNear)));
+                            break;
+
+                        case Camera::ORTHOGRAPHIC:
+                            break;
+
+                        case Camera::EQUIRECTANGULAR:
+                        {
+                            buffer[h * mainCamera->getWidth() + w] = buffer[h * mainCamera->getWidth() + w] * (zFar - zNear) + zNear;
+                            break;
+                        }
+
+                        default:
+                            break;
+                        }
+                    }
+                    else
+                        buffer[h * mainCamera->getWidth() + w] = -1;
+                }
+            }
+
+            pfmAsked = vpImage<float>(buffer.data(), mainCamera->getHeight(), mainCamera->getWidth(), true);
+            vpImageTools::flip(pfmAsked);
+
+            mainCamera->release();
+            doneCurrent();
+
+            mainCamera->setSamples(samples);
+
+            emit pictureTaken();
+            return pfmAsked;
+        }
+    }
+
     void Engine3D::setFrameCounterEnabled(bool enabled)
     {
         frameCounter = enabled;

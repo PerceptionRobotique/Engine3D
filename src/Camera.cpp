@@ -718,6 +718,11 @@ namespace MIS
         return backgroundColor;
     }
 
+    unsigned int Camera::getSamples() const
+    {
+        return samples;
+    }
+
     vec3 Camera::getTarget() const
     {
         return target;

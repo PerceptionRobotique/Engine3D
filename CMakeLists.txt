@@ -105,6 +105,61 @@ if(WITH_VR)
     )
 endif()
 
+## OPENCV ###
+set(WITH_OPENCV OFF CACHE BOOL "Include OpenCV functions")
+if(WITH_OPENCV)
+    list(APPEND OpenCV_COMPONENTS
+        core
+        calib3d
+        dnn
+        features2d
+        flann
+        highgui
+        imgcodecs
+        imgproc
+        video
+        videoio
+    )
+
+    list(APPEND OpenCV_EXTRA_DLL
+        inference_engine
+        inference_engine_transformations
+        ngraph
+        tbb
+    )
+    find_package(OpenCV COMPONENTS ${OpenCV_COMPONENTS} REQUIRED)
+    add_compile_definitions(WITH_OPENCV)
+endif()
+
+### ViSP ###
+set(WITH_VISP OFF CACHE BOOL "ViSP")
+if(WITH_VISP)
+    list(APPEND VISP_COMPONENTS
+        blob
+        core
+        gui
+        io
+        klt
+        mbt
+        me
+        vision
+        visual_features
+        # vs
+    )
+
+    find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
+    if(WIN32)
+        if(VISP_FOUND)
+            add_compile_definitions(HAVE_VISP)
+            # string(REPLACE "/machine:" "" ARCHITECTURE ${CMAKE_MODULE_LINKER_FLAGS})
+            # set(VISP_INCLUDE_DIR ${VISP_DIR}/include)
+            # set(VISP_LIBRARIES_DIR ${VISP_DIR}/${ARCHITECTURE}/*/lib)
+        else()
+            message(FATAL_ERROR Can't find ViSP.)
+        endif()
+    endif()
+endif()
+
 ### SOURCES ###
 set(HEADERS
     include/Object3D.h
@@ -176,6 +231,7 @@ endif()
 
 target_include_directories(Engine3D PRIVATE
     ${GLM_INCLUDE_DIRS}
+    ${VISP_INCLUDE_DIRS}
     ${OPENVR_INCLUDE_DIRS}
     include
     src
@@ -183,6 +239,7 @@ target_include_directories(Engine3D PRIVATE
 
 target_link_libraries(Engine3D PRIVATE
     ${QT_LINKS}
+    ${VISP_LIBRARIES}
     ${OPENVR_LIBRARIES}
 )
 

@@ -98,6 +98,7 @@ endif()
 target_include_directories(Test
     PRIVATE
     ${GLM_INCLUDE_DIRS}
+    ${VISP_INCLUDE_DIRS}
     ${Engine3D_INCLUDE_DIRS}
 )
 
@@ -106,6 +107,7 @@ target_link_directories(Test PRIVATE ${Engine3D_LIBRARIES_DIR})
 target_link_libraries(Test
     PRIVATE
     ${QT_LINKS}
+    ${VISP_LIBRARIES}
     ${Engine3D_LIBRARIES}
 )
 
@@ -127,6 +129,7 @@ if(WIN32)
     add_custom_command(TARGET Test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:Test>/platforms"
         COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:Test>/styles"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:Test>/imageformats"
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/platforms/qminimal$<$<CONFIG:Debug>:d>.dll"
@@ -143,6 +146,10 @@ if(WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/styles/qwindowsvistastyle$<$<CONFIG:Debug>:d>.dll"
         $<TARGET_FILE_DIR:Test>/styles
+
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/imageformats/qjpeg$<$<CONFIG:Debug>:d>.dll"
+        $<TARGET_FILE_DIR:Test>/imageformats
 
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}Core$<$<CONFIG:Debug>:d>.dll"
@@ -172,6 +179,34 @@ if(WIN32)
         "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
         $<TARGET_FILE_DIR:Test>
     )
+
+    if(WITH_OPENCV)
+        foreach (OpenCV_COMPONENT ${OpenCV_COMPONENTS})
+            add_custom_command(TARGET Test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}.dll"
+                $<TARGET_FILE_DIR:Test>
+            )
+        endforeach()
+
+        foreach (OpenCV_EXTRA ${OpenCV_EXTRA_DLL})
+            add_custom_command(TARGET Test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${OpenCV_DIR}/../bin/${OpenCV_EXTRA}.dll"
+                $<TARGET_FILE_DIR:Test>
+            )
+        endforeach()
+    endif()
+
+    if(WITH_VISP)
+        foreach (visp_component ${VISP_COMPONENTS})
+            add_custom_command(TARGET Test POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}.dll"
+                $<TARGET_FILE_DIR:Test>
+            )
+        endforeach()
+    endif()
 endif()
 
 if(PRINT_CMAKE_VARIABLES)

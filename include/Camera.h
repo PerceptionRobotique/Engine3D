@@ -65,6 +65,7 @@ namespace MIS
         int getWidth() const;
         int getHeight() const;
         QColor getBackgroundColor() const;
+        unsigned int getSamples() const;
         vec3 getTarget() const;
         float getAspectRatio() const;
         float getNearPlane() const;
