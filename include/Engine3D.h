@@ -86,6 +86,7 @@ namespace MIS
         //Debug
         void setFrameCounterEnabled(bool enabled);
 
+        //Render
         void setPointSizeEnabled(bool enabled);
         void setPointSize(double _pointSize);
         void setLineWidth(float _lineWidth);
@@ -137,6 +138,7 @@ namespace MIS
 #endif
 
         //Optimization
+        int maxSamples;
         float viewDistance;
         bool viewDistanceEnabled; //limit loading distance
         bool waitLoading; //wait models loading
@@ -153,11 +155,10 @@ namespace MIS
         bool updateNextAsked;
         QMutex modelsUpdaterMutex;
         bool breakModelsUpdater;
+        bool updateModelsNextAsked;
         QFuture<void> modelsUpdater;
-        QFuture<void> nextModelsUpdater;
         void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
         void updateModels();
-        void nextModelsUpdateThread();
         void makeCurrent();
         void doneCurrent();
         void setRenderAsked(bool value);

@@ -26,6 +26,7 @@ namespace MIS
         , opacity(1.0f)
         , blendFunction(BLEND_1)
         , renderAsked(false)
+        , maxSamples(-1)
         , viewDistance(150.0f)
         , viewDistanceEnabled(true)
         , waitLoading(false)
@@ -37,6 +38,7 @@ namespace MIS
         , maxVertexToVRAMEnabled(true)
         , maxVertexToVRAM(1000000)
         , updateNextAsked(false)
+        , updateModelsNextAsked(false)
         , breakModelsUpdater(false)
     {
 #ifdef __linux__
@@ -151,8 +153,6 @@ namespace MIS
 
     int Engine3D::getMaxSamples()
     {
-        int maxSamples;
-        glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
         return maxSamples;
     }
 
@@ -269,6 +269,7 @@ namespace MIS
             if (!boxShader->link()) qDebug() << "Can't link box shader.";
 
             glEnable(GL_DEPTH_TEST);
+            glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
             doneCurrent();
 
             setPointSizeEnabled(true);
@@ -688,13 +689,12 @@ namespace MIS
             modelsUnloader.waitForFinished();
             modelsUpdaterMutex.unlock();
         }
+        if (updateModelsNextAsked)
+        {
+            updateModelsNextAsked = false;
+            if(!waitLoading) modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
+        }
         breakModelsUpdater = false;
-    }
-
-    void Engine3D::nextModelsUpdateThread()
-    {
-        modelsUpdater.waitForFinished();
-        modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
     }
 
     void Engine3D::makeCurrent()
@@ -853,7 +853,10 @@ namespace MIS
 
     void Engine3D::nextModelsUpdate()
     {
-        if (!nextModelsUpdater.isRunning() && !waitLoading) nextModelsUpdater = QtConcurrent::run(&Engine3D::nextModelsUpdateThread, this);
+        if (!modelsUpdater.isRunning())
+            modelsUpdater = QtConcurrent::run(&Engine3D::updateModels, this);
+        else
+            updateModelsNextAsked = true;
     }
 
     void Engine3D::setFrame()

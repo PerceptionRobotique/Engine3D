@@ -65,11 +65,6 @@ namespace MIS
         return onGroundEnabled;
     }
 
-    void CameraController::setMouseCaptureEnabled(bool enabled)
-    {
-        mouseCaptureEnabled = enabled;
-    }
-
     bool CameraController::isMouseCaptureEnabled() const
     {
         return mouseCaptureEnabled;
@@ -489,6 +484,11 @@ namespace MIS
     void CameraController::setOnGroundEnabled(const bool& _onGroundEnabled)
     {
         onGroundEnabled = _onGroundEnabled;
+    }
+
+    void CameraController::setMouseCaptureEnabled(bool enabled)
+    {
+        mouseCaptureEnabled = enabled;
     }
 
 #ifdef WITH_CONTROLLER

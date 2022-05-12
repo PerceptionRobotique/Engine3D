@@ -71,7 +71,6 @@ namespace MIS
         bool isVerticalAxisEnabled() const;
         bool isOnGroundEnabled() const;
 
-        void setMouseCaptureEnabled(bool enabled);
         bool isMouseCaptureEnabled() const;
         void mousePressed(MouseButton mouseButton, int x, int y);
         void mouseMoved(MouseButton mouseButton, int x, int y);
@@ -108,6 +107,7 @@ namespace MIS
         void setRotationSensitivity(int _rotationSensitivity);
         void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
         void setOnGroundEnabled(const bool& _onGroundEnabled);
+        void setMouseCaptureEnabled(bool enabled);
 #ifdef WITH_CONTROLLER
         void setCurrentControllerProfile(QString newProfile);
 #endif
