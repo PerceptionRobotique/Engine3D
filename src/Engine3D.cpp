@@ -364,6 +364,7 @@ namespace MIS
         }
     }
 
+#ifdef HAVE_VISP
     vpImage<float> Engine3D::takePFM()
     {
         bool wasWaitLoading = getWaitLoading();
@@ -437,6 +438,7 @@ namespace MIS
             return pfmAsked;
         }
     }
+#endif
 
     void Engine3D::setFrameCounterEnabled(bool enabled)
     {
