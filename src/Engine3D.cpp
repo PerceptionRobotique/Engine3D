@@ -69,6 +69,7 @@ namespace MIS
         connect(mainCamera, SIGNAL(cameraChanged()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
         connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
+        connect(this, SIGNAL(askPFM()), this, SLOT(takePFM()));
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
         connect(this, SIGNAL(askPointSizeEnabled(bool)), this, SLOT(setPointSizeEnabled(bool)));
         connect(this, SIGNAL(askPointSize(double)), this, SLOT(setPointSize(double)));

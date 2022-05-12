@@ -163,6 +163,7 @@ namespace MIS
     void Camera::setBackgroundColor(QColor _backgroundColor)
     {
         backgroundColor = _backgroundColor;
+        emit cameraChanged();
     }
 
     void Camera::setBackgroundColor(float red, float green, float blue, float alpha)
