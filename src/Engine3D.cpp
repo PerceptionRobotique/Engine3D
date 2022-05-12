@@ -603,7 +603,11 @@ namespace MIS
     void Engine3D::setMoving(bool _isMoving)
     {
         isMoving = _isMoving;
-        if (!isMoving) breakModelsUpdater = true;
+        if (!isMoving)
+        {
+            breakModelsUpdater = true;
+            nextModelsUpdate();
+        }
         emit askUpdate();
     }
 
