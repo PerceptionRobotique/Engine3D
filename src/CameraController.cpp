@@ -13,7 +13,7 @@ namespace MIS
         , mouseCaptureEnabled(false)
         , mouseMoveToSkip(0)
         , keyboardKeysDown(0)
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         , controllerIsMoving(false)
         , currentControllerProfile("Standard")
 #endif
@@ -22,7 +22,7 @@ namespace MIS
     {
         connect(&mouseWheelTimer, SIGNAL(timeout()), this, SLOT(mouseWheelFinished()));
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         controllerProfiles["Standard"][TRANSLATE_X] = Controller::STICK_LEFT_X;
         controllerProfiles["Standard"][TRANSLATE_Y_PLUS] = Controller::TRIGGER_RIGHT;
         controllerProfiles["Standard"][TRANSLATE_Y_MINUS] = Controller::TRIGGER_LEFT;
@@ -376,7 +376,7 @@ namespace MIS
         }
     }
 
-#ifdef WITH_VR
+#ifdef HAVE_VR
     void CameraController::updateVRInputs(VRheadset* vrHeadset)
     {
         if (active)
@@ -421,14 +421,14 @@ namespace MIS
         moving |= mouseWheelTimer.isActive();
         moving |= touchPoints.count() > 0;
         moving |= keyboardKeysDown > 0;
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         moving |= controllerIsMoving;
 #endif
 
         return moving;
     }
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
     QHash<QString, QHash<CameraController::Action, Controller::Input>>& CameraController::getControllerProfiles()
     {
         return controllerProfiles;
@@ -491,7 +491,7 @@ namespace MIS
         mouseCaptureEnabled = enabled;
     }
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
     void CameraController::setCurrentControllerProfile(QString newProfile)
     {
         currentControllerProfile = newProfile;
@@ -507,7 +507,7 @@ namespace MIS
         }
     }
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
     void CameraController::updateController()
     {
         Controller::update();

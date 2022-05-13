@@ -81,7 +81,7 @@ if(WITH_CONTROLLER)
         include/Controller.h
         src/Controller.cpp
     )
-    add_compile_definitions(WITH_CONTROLLER)
+    add_compile_definitions(HAVE_CONTROLLER)
 endif()
 
 ### VR ###
@@ -125,10 +125,10 @@ if(WITH_OPENCV)
         inference_engine
         inference_engine_transformations
         ngraph
-        tbb
+        tbb$<$<CONFIG:Debug>:_debug>
     )
     find_package(OpenCV COMPONENTS ${OpenCV_COMPONENTS} REQUIRED)
-    add_compile_definitions(WITH_OPENCV)
+    add_compile_definitions(HAVE_OPENCV)
 endif()
 
 ### ViSP ###

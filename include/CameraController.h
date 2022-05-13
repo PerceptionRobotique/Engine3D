@@ -12,11 +12,11 @@
 #include "Camera.h"
 #include "Engine3D.h"
 
-#ifdef WITH_VR
+#ifdef HAVE_VR
 #include "VRheadset.h"
 #endif
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
 #include "Controller.h"
 #endif
 
@@ -29,7 +29,7 @@ namespace MIS
     {
         Q_OBJECT
     public:
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         enum Action {
             TRANSLATE_X,
             TRANSLATE_Y_PLUS,
@@ -84,7 +84,7 @@ namespace MIS
         void keyPressed(KeyButton key);
         void keyReleased(KeyButton key);
 
-#ifdef WITH_VR
+#ifdef HAVE_VR
         void updateVRInputs(VRheadset* vrHeadset);
 #endif
 
@@ -93,7 +93,7 @@ namespace MIS
 
         bool isMoving() const;
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         QHash<QString, QHash<Action, Controller::Input>>& getControllerProfiles();
         QString getCurrentControllerProfile() const;
 #endif
@@ -108,13 +108,13 @@ namespace MIS
         void setVerticalAxisEnabled(const bool& _verticalAxisEnabled);
         void setOnGroundEnabled(const bool& _onGroundEnabled);
         void setMouseCaptureEnabled(bool enabled);
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         void setCurrentControllerProfile(QString newProfile);
 #endif
 
     private slots:
         void mouseWheelFinished();
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         void updateController();
 #endif
 
@@ -139,7 +139,7 @@ namespace MIS
         QHash<KeyButton, bool> keysDown;
         int keyboardKeysDown;
 
-#ifdef WITH_CONTROLLER
+#ifdef HAVE_CONTROLLER
         bool controllerIsMoving;
         QTimer controllerUpdater;
         QString currentControllerProfile;
