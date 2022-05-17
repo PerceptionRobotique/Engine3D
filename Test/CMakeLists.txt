@@ -44,6 +44,27 @@ if(NOT Engine3D_FOUND)
     endif()
 endif()
 
+### VR ###
+if(WITH_VR)
+    if(WIN32)
+        if(IS_DIRECTORY ${OPENVR_DIR})
+            list(APPEND OPENVR_INCLUDE_DIRS ${OPENVR_DIR}/include)
+            set(OPENVR_LIBRARIES ${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib)
+        else()
+            message(FATAL_ERROR "OpenVR is missing.")
+        endif()
+    elseif(UNIX)
+        set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
+    endif()
+
+    list(APPEND EXTRA_SOURCES
+        include/VRheadset.h
+        src/VRheadset.cpp
+    )
+
+    add_compile_definitions(HAVE_VR)
+endif()
+
 set(SOURCES
     main.cpp
     MainWindow.cpp
@@ -99,6 +120,7 @@ target_include_directories(Test
     PRIVATE
     ${GLM_INCLUDE_DIRS}
     ${VISP_INCLUDE_DIRS}
+    ${OPENVR_INCLUDE_DIRS}
     ${Engine3D_INCLUDE_DIRS}
 )
 
@@ -108,6 +130,7 @@ target_link_libraries(Test
     PRIVATE
     ${QT_LINKS}
     ${VISP_LIBRARIES}
+    ${OPENVR_LIBRARIES}
     ${Engine3D_LIBRARIES}
 )
 

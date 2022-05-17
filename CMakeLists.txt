@@ -103,6 +103,8 @@ if(WITH_VR)
         include/VRheadset.h
         src/VRheadset.cpp
     )
+
+    add_compile_definitions(HAVE_VR)
 endif()
 
 ## OPENCV ###

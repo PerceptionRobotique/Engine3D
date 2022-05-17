@@ -21,6 +21,10 @@
 #include <visp/vpImageTools.h>
 #endif
 
+#ifdef HAVE_VR
+#include <VRheadset.h>
+#endif
+
 #include "Camera.h"
 #include "ModelPTS.h"
 #include "ModelBIN.h"
@@ -73,6 +77,9 @@ namespace MIS
     public slots:
         void setRenderMode(RenderMode _renderMode);
         void initialize();
+        void addCamera(Camera* camera);
+        void removeCamera(unsigned int index);
+        void removeCamera(Camera* camera);
         void openModel(QString fileName);
         void closeModel(unsigned int index);
         void closeModel(Model3D* model);
@@ -80,6 +87,11 @@ namespace MIS
         QImage takePicture();
 #ifdef HAVE_VISP
         vpImage<float> takePFM();
+#endif
+#ifdef HAVE_VR
+        bool startVR();
+        void stopVR();
+        VRheadset* getVRheadset();
 #endif
         void destroy();
 
@@ -118,6 +130,11 @@ namespace MIS
         QOpenGLShaderProgram* boxShader;
         QVector<Camera*> cameras;
         Camera* mainCamera;
+#ifdef HAVE_VR
+        VRheadset vr;
+        QVector<Camera*> vrCameras;
+        QTimer vrTimer;
+#endif
         QVector<Model3D*> models;
 
         //Debug
@@ -157,6 +174,7 @@ namespace MIS
         bool breakModelsUpdater;
         bool updateModelsNextAsked;
         QFuture<void> modelsUpdater;
+
         void sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload);
         void updateModels();
         void makeCurrent();
@@ -191,6 +209,10 @@ namespace MIS
         void askOpacity(float);
         void askBlendFunction(BlendFunction);
         void renderModeChanged();
+#ifdef HAVE_VR
+        void askStopVR();
+        void vrStopped();
+#endif
     };
 
 }

@@ -10,6 +10,8 @@ namespace MIS
         , active(true)
         , verticalAxisEnabled(true)
         , onGroundEnabled(false)
+        , translationSensitivity(1.0f)
+        , rotationSensitivity(1.0f)
         , mouseCaptureEnabled(false)
         , mouseMoveToSkip(0)
         , keyboardKeysDown(0)
@@ -17,8 +19,9 @@ namespace MIS
         , controllerIsMoving(false)
         , currentControllerProfile("Standard")
 #endif
-        , translationSensitivity(1.0f)
-        , rotationSensitivity(1.0f)
+#ifdef HAVE_VR
+        , vr(nullptr)
+#endif
     {
         connect(&mouseWheelTimer, SIGNAL(timeout()), this, SLOT(mouseWheelFinished()));
 
@@ -41,6 +44,10 @@ namespace MIS
 
         connect(&controllerUpdater, SIGNAL(timeout()), this, SLOT(updateController()));
         controllerUpdater.start(10);
+#endif
+
+#ifdef HAVE_VR
+        connect(&vrInputsUpdater, SIGNAL(timeout()), this, SLOT(updateVRInputs()));
 #endif
     }
 
@@ -377,23 +384,41 @@ namespace MIS
     }
 
 #ifdef HAVE_VR
+    void CameraController::setVRheadset(VRheadset* vrHeadset)
+    {
+        vr = vrHeadset;
+    }
+
+    void CameraController::setVRInputsUpdaterEnabled(bool enabled)
+    {
+        if (vr)
+        {
+            if (enabled) vrInputsUpdater.start(10);
+            else vrInputsUpdater.stop();
+        }
+    }
+
     void CameraController::updateVRInputs(VRheadset* vrHeadset)
     {
         if (active)
         {
-            for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+            if (vrHeadset) vr = vrHeadset;
+            if (vr)
             {
-                vr::VRControllerState_t state;
-                if (vrHeadset->m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
+                for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
                 {
-                    if (vrHeadset->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                    vr::VRControllerState_t state;
+                    if (vr->m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
                     {
-                        camera->translate(vec3(translationSensitivity * state.rAxis->x / 50.0f, 0.0f, -translationSensitivity * state.rAxis->y / 50.0f), true);
-                    }
-                    else if (vrHeadset->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
-                    {
-                        camera->translate(vec3(0, translationSensitivity * state.rAxis->y / 50.0f, 0), true);
-                        vrHeadset->m_mat4EyeRotOffset = glm::rotate(vrHeadset->m_mat4EyeRotOffset, -rotationSensitivity * state.rAxis[0].x / 100.0f, glm::vec3(0, 1, 0));
+                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                        {
+                            camera->translate(vec3(translationSensitivity * state.rAxis->x / 50.0f, 0.0f, -translationSensitivity * state.rAxis->y / 50.0f), true);
+                        }
+                        else if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
+                        {
+                            camera->translate(vec3(0, translationSensitivity * state.rAxis->y / 50.0f, 0), true);
+                            vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, -rotationSensitivity * state.rAxis[0].x / 100.0f, glm::vec3(0, 1, 0));
+                        }
                     }
                 }
             }

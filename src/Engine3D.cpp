@@ -19,6 +19,9 @@ namespace MIS
         , boxShader(nullptr)
         , cameras(1, new Camera)
         , mainCamera(cameras.first())
+#ifdef HAVE_VR
+        , vrCameras(2, nullptr)
+#endif
         , frameCounter(false)
         , pointSize(1.0f)
         , lineWidth(3.0f)
@@ -77,6 +80,11 @@ namespace MIS
         connect(this, SIGNAL(askOpacityEnabled(bool)), this, SLOT(setOpacityEnabled(bool)));
         connect(this, SIGNAL(askOpacity(float)), this, SLOT(setOpacity(float)));
         connect(this, SIGNAL(askBlendFunction(BlendFunction)), this, SLOT(setBlendFunction(BlendFunction)));
+
+#ifdef HAVE_VR
+        connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
+        connect(this, SIGNAL(askStopVR()), this, SLOT(stopVR()));
+#endif
     }
 
     Engine3D::~Engine3D()
@@ -285,6 +293,25 @@ namespace MIS
         }
     }
 
+    void Engine3D::addCamera(Camera* camera)
+    {
+        cameras.append(camera);
+    }
+
+    void Engine3D::removeCamera(unsigned int index)
+    {
+        if (index < cameras.count())
+        {
+            delete cameras[index];
+            cameras.remove(index);
+        }
+    }
+
+    void Engine3D::removeCamera(Camera* camera)
+    {
+        removeCamera(cameras.indexOf(camera));
+    }
+
     void Engine3D::openModel(QString fileName)
     {
         QFileInfo fileInfo(fileName);
@@ -437,6 +464,65 @@ namespace MIS
             emit pictureTaken();
             return pfmAsked;
         }
+    }
+#endif
+
+#ifdef HAVE_VR
+    bool Engine3D::startVR()
+    {
+        if (!vr.isActive())
+        {
+            if (vr.initOpenVR() == VRheadset::noErr)
+            {
+                mainCamera->setActive(false);
+                vr.getEyeTransformations();
+
+                for (unsigned int i = 0; i < 2; i++)
+                {
+                    vrCameras[i] = new Camera;
+                    vrCameras[i]->setWidth(vr.getWidth());
+                    vrCameras[i]->setHeight(vr.getHeight());
+                    vrCameras[i]->setCustomProjection(i ? vr.rmatMVP : vr.lmatMVP);
+                    vrCameras[i]->setProjectionType(Camera::CUSTOM);
+                    vrCameras[i]->setSamples(getMaxSamples());
+                }
+
+                vrTimer.start(1000.0f / vr.m_frequency);
+                return true;
+            }
+            else return false;
+        }
+        else return true;
+    }
+
+    void Engine3D::stopVR()
+    {
+        if (QThread::currentThread() != thread())
+        {
+            QEventLoop loop;
+            connect(this, SIGNAL(vrStopped()), &loop, SLOT(quit()));
+            emit askStopVR();
+            loop.exec();
+        }
+        if (vr.isActive())
+        {
+            vrTimer.stop();
+            vr.shutdown();
+
+            for (unsigned int i = 0; i < 2; i++)
+            {
+                delete vrCameras[i];
+                vrCameras[i] = nullptr;
+            }
+            
+            mainCamera->setActive(true);
+            emit vrStopped();
+        }
+    }
+
+    VRheadset* Engine3D::getVRheadset()
+    {
+        return &vr;
     }
 #endif
 
@@ -840,6 +926,106 @@ namespace MIS
 
                 setFrame();
 
+#ifdef HAVE_VR
+                if (vr.isActive())
+                {
+                    vr.getEyeTransformations();
+                    mainCamera->setRotation(vr.m_mat4eyePosLeft);
+                    vrCameras[0]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosLeft[3]);
+                    vrCameras[1]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosRight[3]);
+                    vrCameras[0]->setRotation(vr.m_mat4eyePosLeft);
+                    vrCameras[1]->setRotation(vr.m_mat4eyePosRight);
+
+                    for (unsigned int i = 0 ; i < 2 ; i++)
+                    {
+                        if (vrCameras[i]->bind())
+                        {
+                            if (shaders[Model3D::POINTS]->bind())
+                            {
+                                glViewport(0, 0, vrCameras[i]->getWidth(), vrCameras[i]->getHeight());
+                                glClearColor(
+                                    vrCameras[i]->getBackgroundColor().redF(),
+                                    vrCameras[i]->getBackgroundColor().greenF(),
+                                    vrCameras[i]->getBackgroundColor().blueF(),
+                                    vrCameras[i]->getBackgroundColor().alphaF());
+                                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                                shaders[Model3D::POINTS]->setUniformValue("equirectangular", vrCameras[i]->getProjectionType() == Camera::EQUIRECTANGULAR);
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "view"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "projection"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+
+                                for (Model3D* model : models)
+                                {
+                                    if (model->isOnRAM())
+                                    {
+                                        if (model->isOnVRAM()) model->draw(shaders[Model3D::POINTS]);
+                                        else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
+                                        {
+                                            vertexToVRAM += model->getVertexNumber();
+                                            model->loadVRAM(waitLoading);
+                                            model->draw(shaders[Model3D::POINTS]);
+                                        }
+                                        else emit askUpdate();
+                                    }
+                                    else model->unloadVRAM(waitLoading);
+                                    Octree* octree = dynamic_cast<Octree*>(model);
+                                    if (octree)
+                                    {
+                                        for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
+                                        {
+                                            for (Octree* child : octree->getDepthChildren(i))
+                                            {
+                                                if (child->isOnRAM())
+                                                {
+                                                    if (child->isOnVRAM()) child->draw(shaders[Model3D::POINTS]);
+                                                    else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
+                                                    {
+                                                        vertexToVRAM += child->getVertexNumber();
+                                                        child->loadVRAM(waitLoading);
+                                                        child->draw(shaders[Model3D::POINTS]);
+                                                    }
+                                                    else emit askUpdate();
+                                                }
+                                                else child->unloadVRAM(waitLoading);
+                                            }
+                                        }
+                                    }
+                                }
+                                shaders[Model3D::POINTS]->release();
+                            }
+                            else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
+
+                            if (boxShader->bind())
+                            {
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+                                for (Model3D* model : models)
+                                {
+                                    if (vrCameras[i]->cullingTest(model)) model->drawBox(boxShader);
+                                    Octree* octree = dynamic_cast<Octree*>(model);
+                                    if (octree)
+                                    {
+                                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                                        {
+                                            for (Octree* child : octree->getDepthChildren(i))
+                                            {
+                                                child->drawBox(boxShader);
+                                            }
+                                        }
+                                    }
+                                }
+                                boxShader->release();
+                            }
+                            else qDebug() << "Can't bind box shader.";
+                            vrCameras[i]->release();
+
+                            vr::Texture_t eyeTexture = { (void*)(uintptr_t)vrCameras[i]->texture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
+                            vr::VRCompositor()->Submit(i ? vr::Eye_Right : vr::Eye_Left, & eyeTexture);
+                        }
+                    }
+                }
+#endif
+
                 if (frameCounter) qDebug() << ++frameNumber;
 
                 GLenum err;
@@ -868,7 +1054,7 @@ namespace MIS
 
     void Engine3D::setFrame()
     {
-        if (mainCamera)
+        if (mainCamera->isActive())
         {
             frameMutex.lock();
             frame = mainCamera->toImage();

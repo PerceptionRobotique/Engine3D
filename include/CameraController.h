@@ -84,10 +84,6 @@ namespace MIS
         void keyPressed(KeyButton key);
         void keyReleased(KeyButton key);
 
-#ifdef HAVE_VR
-        void updateVRInputs(VRheadset* vrHeadset);
-#endif
-
         float getTranslationSensitivity() const;
         float getRotationSensitivity() const;
 
@@ -112,6 +108,12 @@ namespace MIS
         void setCurrentControllerProfile(QString newProfile);
 #endif
 
+#ifdef HAVE_VR
+        void setVRheadset(VRheadset* vrHeadset);
+        void setVRInputsUpdaterEnabled(bool enabled);
+        void updateVRInputs(VRheadset* vrHeadset = nullptr);
+#endif
+
     private slots:
         void mouseWheelFinished();
 #ifdef HAVE_CONTROLLER
@@ -125,6 +127,9 @@ namespace MIS
         bool active;
         bool verticalAxisEnabled;
         bool onGroundEnabled;
+
+        float translationSensitivity;
+        float rotationSensitivity;
 
         QCursor cursor;
         bool mouseCaptureEnabled;
@@ -146,8 +151,10 @@ namespace MIS
         QHash<QString, QHash<Action, Controller::Input>> controllerProfiles;
 #endif
 
-        float translationSensitivity;
-        float rotationSensitivity;
+#ifdef HAVE_VR
+        QTimer vrInputsUpdater;
+        VRheadset* vr;
+#endif
     };
 
 }
