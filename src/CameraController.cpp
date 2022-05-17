@@ -54,6 +54,10 @@ namespace MIS
     CameraController::CameraController(Engine3D* _engine, QWidget* _parent)
         : CameraController(_engine->getMainCamera(), _parent)
     {
+#ifdef HAVE_VR
+        vr = _engine->getVRheadset();
+#endif
+
         connect(this, SIGNAL(moving(bool)), _engine, SLOT(setMoving(bool)));
     }
 

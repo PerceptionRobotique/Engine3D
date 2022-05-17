@@ -77,6 +77,7 @@ namespace MIS
     public slots:
         void setRenderMode(RenderMode _renderMode);
         void initialize();
+        void setMainCamera(Camera* camera);
         void addCamera(Camera* camera);
         void removeCamera(unsigned int index);
         void removeCamera(Camera* camera);
@@ -92,6 +93,7 @@ namespace MIS
         bool startVR();
         void stopVR();
         VRheadset* getVRheadset();
+        Camera* getVRCamera(unsigned int index);
 #endif
         void destroy();
 
@@ -212,6 +214,7 @@ namespace MIS
 #ifdef HAVE_VR
         void askStopVR();
         void vrStopped();
+        void updateVRInputs();
 #endif
     };
 

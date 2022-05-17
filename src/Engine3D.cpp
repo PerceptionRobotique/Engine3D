@@ -103,16 +103,24 @@ namespace MIS
 
     bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
     {
-        bool onScreen = camera->cullingTest(model);
-        const Octree* octree = dynamic_cast<const Octree*>(model);
-        if (octree)
+        bool onScreen = false;
+        if (camera)
         {
-            onScreen &= octree->getDepth() <= octree->getMaxVisibleDepth();
-            if (maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
-            if (viewDistanceEnabled)
+            onScreen |= camera->isActive();
+            if (onScreen)
             {
-                if (octree->getDepth() > ceil((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
-                    onScreen = false;
+                onScreen &= camera->cullingTest(model);
+                const Octree* octree = dynamic_cast<const Octree*>(model);
+                if (octree)
+                {
+                    onScreen &= octree->getDepth() <= octree->getMaxVisibleDepth();
+                    if (maxDepth != -1) onScreen &= octree->getDepth() <= maxDepth;
+                    if (viewDistanceEnabled)
+                    {
+                        if (octree->getDepth() > ceil((float)octree->getMaxDepth() * (1 - camera->distanceWith(octree) / viewDistance)))
+                            onScreen = false;
+                    }
+                }
             }
         }
         return onScreen;
@@ -124,6 +132,9 @@ namespace MIS
         {
             bool onScreen = false;
             for (Camera* camera : cameras) onScreen |= isOnCamera(model, camera);
+#ifdef HAVE_VR
+            if (vr.isActive()) for (Camera* vrCamera : vrCameras) onScreen |= isOnCamera(model, vrCamera);
+#endif
             if (onScreen) currentVertexNumber += model->getVertexNumber();
             return onScreen;
         }
@@ -293,6 +304,11 @@ namespace MIS
         }
     }
 
+    void Engine3D::setMainCamera(Camera* camera)
+    {
+        mainCamera = camera;
+    }
+
     void Engine3D::addCamera(Camera* camera)
     {
         cameras.append(camera);
@@ -362,6 +378,9 @@ namespace MIS
             if (!getRenderAsked())
             {
                 setRenderAsked(true);
+#ifdef HAVE_VR
+                if (vr.isActive()) emit updateVRInputs();
+#endif
                 emit askRender();
             }
             else updateNextAsked = true;
@@ -474,6 +493,8 @@ namespace MIS
         {
             if (vr.initOpenVR() == VRheadset::noErr)
             {
+                QThreadPool::globalInstance()->setMaxThreadCount(QThreadPool::globalInstance()->maxThreadCount() / 2);
+
                 mainCamera->setActive(false);
                 vr.getEyeTransformations();
 
@@ -497,32 +518,43 @@ namespace MIS
 
     void Engine3D::stopVR()
     {
-        if (QThread::currentThread() != thread())
-        {
-            QEventLoop loop;
-            connect(this, SIGNAL(vrStopped()), &loop, SLOT(quit()));
-            emit askStopVR();
-            loop.exec();
-        }
         if (vr.isActive())
         {
-            vrTimer.stop();
-            vr.shutdown();
-
-            for (unsigned int i = 0; i < 2; i++)
+            if (QThread::currentThread() != thread())
             {
-                delete vrCameras[i];
-                vrCameras[i] = nullptr;
+                QEventLoop loop;
+                connect(this, SIGNAL(vrStopped()), &loop, SLOT(quit()));
+                emit askStopVR();
+                loop.exec();
             }
-            
-            mainCamera->setActive(true);
-            emit vrStopped();
+            else
+            {
+                vrTimer.stop();
+                vr.shutdown();
+                vr.shutdown();
+
+                QThreadPool::globalInstance()->setMaxThreadCount(QThreadPool::globalInstance()->maxThreadCount());
+
+                for (unsigned int i = 0; i < 2; i++)
+                {
+                    delete vrCameras[i];
+                    vrCameras[i] = nullptr;
+                }
+
+                mainCamera->setActive(true);
+                emit vrStopped();
+            }
         }
     }
 
     VRheadset* Engine3D::getVRheadset()
     {
         return &vr;
+    }
+
+    Camera* Engine3D::getVRCamera(unsigned int index)
+    {
+        return vrCameras[index];
     }
 #endif
 
@@ -1077,6 +1109,7 @@ namespace MIS
         {
             modelsUpdaterMutex.lock();
             makeCurrent();
+            if (vr.isActive()) stopVR();
             for (Camera* camera : cameras) delete camera;
             for (QOpenGLShaderProgram* shader : shaders) delete shader;
             delete boxShader;

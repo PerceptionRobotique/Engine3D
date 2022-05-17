@@ -43,6 +43,29 @@ if(NOT Engine3D_FOUND OR UNIX)
     endif()
 endif()
 
+set(WITH_OPENCV OFF CACHE BOOL "Include OpenCV functions")
+if(WITH_OPENCV)
+    list(APPEND OpenCV_COMPONENTS
+        core
+        calib3d
+        dnn
+        features2d
+        flann
+        highgui
+        imgcodecs
+        imgproc
+        video
+        videoio
+    )
+
+    list(APPEND OpenCV_EXTRA_DLL
+        inference_engine$<$<CONFIG:Debug>:d>
+        inference_engine_transformations$<$<CONFIG:Debug>:d>
+        ngraph$<$<CONFIG:Debug>:d>
+        tbb$<$<CONFIG:Debug>:_debug>
+    )
+endif()
+
 ### VR ###
 if(WITH_VR)
     if(WIN32)
@@ -110,6 +133,7 @@ endif()
 target_include_directories(OffscreenTest
     PRIVATE
     ${GLM_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
     ${VISP_INCLUDE_DIRS}
     ${OPENVR_INCLUDE_DIRS}
     ${Engine3D_INCLUDE_DIRS}
@@ -120,6 +144,7 @@ target_link_directories(OffscreenTest PRIVATE ${Engine3D_LIBRARIES_DIR})
 target_link_libraries(OffscreenTest
     PRIVATE
     ${QT_LINKS}
+    ${OpenCV_LIBRARIES}
     ${VISP_LIBRARIES}
     ${OPENVR_LIBRARIES}
     ${Engine3D_LIBRARIES}
@@ -172,7 +197,7 @@ if(WIN32)
         foreach (OpenCV_COMPONENT ${OpenCV_COMPONENTS})
             add_custom_command(TARGET OffscreenTest POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}.dll"
+                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
                 $<TARGET_FILE_DIR:OffscreenTest>
             )
         endforeach()
@@ -190,10 +215,18 @@ if(WIN32)
         foreach (visp_component ${VISP_COMPONENTS})
             add_custom_command(TARGET OffscreenTest POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}.dll"
+                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
                 $<TARGET_FILE_DIR:OffscreenTest>
             )
         endforeach()
+    endif()
+
+    if(WITH_VR)
+        add_custom_command(TARGET OffscreenTest POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.dll"
+            $<TARGET_FILE_DIR:OffscreenTest>
+        )
     endif()
 endif()
 
