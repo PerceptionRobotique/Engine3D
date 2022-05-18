@@ -1109,7 +1109,9 @@ namespace MIS
         {
             modelsUpdaterMutex.lock();
             makeCurrent();
+#ifdef HAVE_VR
             if (vr.isActive()) stopVR();
+#endif
             for (Camera* camera : cameras) delete camera;
             for (QOpenGLShaderProgram* shader : shaders) delete shader;
             delete boxShader;
