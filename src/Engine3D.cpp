@@ -350,7 +350,8 @@ namespace MIS
 
         connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
-        connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
+        //connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelChanged()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelDestroyed()), this, SLOT(nextModelsUpdate()));
 

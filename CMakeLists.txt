@@ -145,6 +145,10 @@ if(ANDROID)
     set(VISP_DIR "" CACHE PATH "ViSP directory")
 endif()
 if(WITH_VISP)
+    if(NOT WITH_OPENCV)
+        message(FATAL_ERROR "ViSP needs OpenCV to work !")
+    endif()
+
     list(APPEND VISP_COMPONENTS
         blob
         core

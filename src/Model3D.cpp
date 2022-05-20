@@ -45,7 +45,12 @@ namespace MIS
             file = new QFile(fileName);
             file->open(QFile::ReadOnly);
             name = fileInfo.fileName();
+#ifndef ANDROID
             settings = new QSettings(fileInfo.path() + '/' + fileInfo.fileName().remove(fileInfo.suffix()) + "ini", QSettings::IniFormat);
+#else
+            name = name.split("%2F").last();
+            settings = new QSettings;
+#endif
 
             mat4 wMo(1.0);
             QVector<QVariant> v_wMo;
@@ -57,7 +62,7 @@ namespace MIS
                     def[i * 4 + j] = wMo[i][j];
                 }
             }
-            v_wMo = settings->value("wMo", def).toList();
+            v_wMo = settings->value(name + "wMo", def).toList();
             for (unsigned int i = 0; i < 4; i++)
             {
                 for (unsigned int j = 0; j < 4; j++)
@@ -97,7 +102,7 @@ namespace MIS
                     v_wMo.append(wMo[i][j]);
                 }
             }
-            settings->setValue("wMo", v_wMo);
+            settings->setValue(name + "wMo", v_wMo);
             settings->sync();
         }
         emit modelDestroyed();
