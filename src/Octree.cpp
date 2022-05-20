@@ -57,7 +57,19 @@ namespace MIS
 			maxDepth = new unsigned int(0);
 			maxVisibleDepth = new unsigned int;
 			totalVertexNumber = new unsigned long long(vertexNumber);
+#ifndef ANDROID
 			listOctree.setFileName(fileInfo.path() + "/listOctree.txt");
+#else
+            QStringList androidPathElements = _fileName.split("%");
+            androidPathElements.removeLast();
+            QString listOctreeFileName;
+            for(const QString& element : androidPathElements)
+                listOctreeFileName.append(element + "%");
+            listOctree.setFileName(listOctreeFileName + "2FlistOctree.txt");
+            while(!listOctree.open(QFile::ReadOnly))
+                QFileDialog::getOpenFileName(nullptr, "Ouverture du fichier listOctree.txt", listOctree.fileName(), "listOctree.txt");
+            listOctree.close();
+#endif
 			if (listOctree.open(QFile::ReadOnly))
 			{
 				QString nodeName;
@@ -96,6 +108,7 @@ namespace MIS
 
 				*maxVisibleDepth = *maxDepth;
 			}
+            else qDebug() << ">>>>>>>>>>>>>>>>>>>>>> CAN'T OPEN LIST OCTREE";
 		}
 	}
 

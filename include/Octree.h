@@ -1,6 +1,10 @@
 #ifndef OCTREE_H
 #define OCTREE_H
 
+#ifdef ANDROID
+#include <QFileDialog>
+#endif
+
 #include "ModelBIN.h"
 #include "Camera.h"
 

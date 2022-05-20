@@ -25,6 +25,10 @@
 #include <VRheadset.h>
 #endif
 
+#ifdef ANDROID
+#include <QtCore/private/qandroidextras_p.h>
+#endif
+
 #include "Camera.h"
 #include "ModelPTS.h"
 #include "ModelBIN.h"

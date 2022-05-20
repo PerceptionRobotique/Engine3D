@@ -72,7 +72,9 @@ namespace MIS
         connect(mainCamera, SIGNAL(cameraChanged()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
         connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
+#ifdef HAVE_VISP
         connect(this, SIGNAL(askPFM()), this, SLOT(takePFM()));
+#endif
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
         connect(this, SIGNAL(askPointSizeEnabled(bool)), this, SLOT(setPointSizeEnabled(bool)));
         connect(this, SIGNAL(askPointSize(double)), this, SLOT(setPointSize(double)));
@@ -268,6 +270,9 @@ namespace MIS
 
     void Engine3D::initialize()
     {
+//        QFuture<QtAndroidPrivate::PermissionResult> f = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage);
+//        QFuture<QtAndroidPrivate::PermissionResult> f = QtAndroidPrivate::requestPermission({"android.permission.WRITE_EXTERNAL_STORAGE"});
+//        f.waitForFinished();
         if (QThread::currentThread() != thread())
             emit askInitialization();
         else
@@ -288,8 +293,10 @@ namespace MIS
             boxShader->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/Box.frag");
             if (!boxShader->link()) qDebug() << "Can't link box shader.";
 
+#ifndef ANDROID
             glEnable(GL_DEPTH_TEST);
             glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+#endif
             doneCurrent();
 
             setPointSizeEnabled(true);
@@ -569,10 +576,12 @@ namespace MIS
             emit askPointSizeEnabled(enabled);
         else
         {
+#ifndef ANDROID
             makeCurrent();
             if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
             else glDisable(GL_PROGRAM_POINT_SIZE);
             doneCurrent();
+#endif
             emit askUpdate();
         }
     }

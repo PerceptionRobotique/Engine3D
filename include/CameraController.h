@@ -61,7 +61,8 @@ namespace MIS
             K_S,
             K_D,
             K_A,
-            K_E
+            K_E,
+            K_CTRL
         };
 
         CameraController(Camera* _camera, QWidget* _parent = nullptr);

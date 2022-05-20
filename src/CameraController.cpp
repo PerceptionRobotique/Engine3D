@@ -485,12 +485,16 @@ namespace MIS
                         if (keysDown[key]) keyReleased(key);
                     touchEnd();
                 }
+#ifdef HAVE_CONTROLLER
                 controllerUpdater.stop();
+#endif
             }
+#ifdef HAVE_CONTROLLER
             else
             {
                 controllerUpdater.start();
             }
+#endif
             active = _active;
         }
     }
@@ -571,6 +575,18 @@ namespace MIS
 
                 case ROTATE_Y:
                     camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 5.0f, vec3(0, 1, 0), verticalAxisEnabled);
+                    break;
+
+                case ROTATE_Z:
+                    camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Z]) / 5.0f, vec3(0, 0, 1), verticalAxisEnabled);
+                    break;
+
+                case YAW:
+                    camera->yaw(rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][YAW]) / 3.0f);
+                    break;
+
+                case PITCH:
+                    camera->pitch(rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][PITCH]) / 3.0f);
                     break;
 
                 case ROLL_PLUS:

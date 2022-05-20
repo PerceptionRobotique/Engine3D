@@ -59,6 +59,9 @@ foreach (qt_component ${QT_COMPONENTS})
         Qt${QT_VERSION_MAJOR}::${qt_component}
     )
 endforeach()
+if(ANDROID)
+    list(APPEND QT_LINKS Qt${QT_VERSION_MAJOR}::CorePrivate)
+endif()
 
 find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
