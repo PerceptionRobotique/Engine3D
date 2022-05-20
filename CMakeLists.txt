@@ -112,6 +112,9 @@ endif()
 
 ## OPENCV ###
 set(WITH_OPENCV OFF CACHE BOOL "Include OpenCV functions")
+if(ANDROID)
+    set(OpenCV_DIR "" CACHE PATH "OpenCV directory")
+endif()
 if(WITH_OPENCV)
     list(APPEND OpenCV_COMPONENTS
         core
@@ -138,6 +141,9 @@ endif()
 
 ### ViSP ###
 set(WITH_VISP OFF CACHE BOOL "ViSP")
+if(ANDROID)
+    set(VISP_DIR "" CACHE PATH "ViSP directory")
+endif()
 if(WITH_VISP)
     list(APPEND VISP_COMPONENTS
         blob
@@ -157,6 +163,9 @@ if(WITH_VISP)
         add_compile_definitions(HAVE_VISP)
     else()
         message(FATAL_ERROR Can't find ViSP.)
+    endif()
+    if(ANDROID)
+        set(VISP_INCLUDE_DIRS ${VISP_DIR}/include)
     endif()
 endif()
 
