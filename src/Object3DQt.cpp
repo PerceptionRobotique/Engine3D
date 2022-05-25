@@ -176,4 +176,37 @@ namespace MIS
         setRotationZ((float)_rz);
     }
 
+    mat4 stringToMat4(QString matString)
+    {
+        matString = matString.remove("mat4x4").remove("(").remove(")").remove(",");
+        QStringList values = matString.split(" ");
+        mat4 pose(1.0);
+        if (!matString.isEmpty())
+        {
+            for (unsigned int i = 0; i < 4; i++)
+            {
+                for (unsigned int j = 0; j < 4; j++)
+                {
+                    pose[i][j] = values[i * 4 + j].toFloat();
+                }
+            }
+        }
+        return pose;
+    }
+
+    vec3 stringToVec3(QString vecString)
+    {
+        vecString = vecString.remove("vec3").remove("(").remove(")").remove(",");
+        QStringList values = vecString.split(" ");
+        vec3 vec;
+        if (!vecString.isEmpty())
+        {
+            for (unsigned int i = 0; i < 3; i++)
+            {
+                vec[i] = values[i].toFloat();
+            }
+        }
+        return vec;
+    }
+
 }

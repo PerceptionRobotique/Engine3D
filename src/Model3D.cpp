@@ -51,26 +51,13 @@ namespace MIS
             name = name.split("%2F").last();
             settings = new QSettings;
 #endif
+            setwMo(stringToMat4(settings->value("wMo").toString()));
 
-            mat4 wMo(1.0);
-            QVector<QVariant> v_wMo;
-            QVector<QVariant> def(16);
-            for (unsigned int i = 0; i < 4; i++)
-            {
-                for (unsigned int j = 0; j < 4; j++)
-                {
-                    def[i * 4 + j] = wMo[i][j];
-                }
-            }
-            v_wMo = settings->value(name + "wMo", def).toList();
-            for (unsigned int i = 0; i < 4; i++)
-            {
-                for (unsigned int j = 0; j < 4; j++)
-                {
-                    wMo[i][j] = v_wMo[i * 4 + j].toFloat();
-                }
-            }
-            setwMo(wMo);
+            //POSES
+            settings->beginGroup("poses");
+            for (const QString& key : settings->childKeys())
+                 storedPoses[key] = stringToMat4(settings->value(key).toString());
+            settings->endGroup();
         }
     }
 
@@ -93,17 +80,9 @@ namespace MIS
 
         if (settings)
         {
-            mat4 wMo = getwMo();
-            QVector<QVariant> v_wMo;
-            for (unsigned int i = 0; i < 4; i++)
-            {
-                for (unsigned int j = 0; j < 4; j++)
-                {
-                    v_wMo.append(wMo[i][j]);
-                }
-            }
-            settings->setValue(name + "wMo", v_wMo);
+            settings->setValue("wMo", QString::fromStdString(to_string(getwMo())));
             settings->sync();
+            delete settings;
         }
         emit modelDestroyed();
     }
@@ -251,6 +230,16 @@ namespace MIS
     QColor Model3D::getGlobalColor() const
     {
         return globalColor;
+    }
+
+    QHash<QString, mat4> Model3D::getStoredPoses() const
+    {
+        return storedPoses;
+    }
+
+    mat4 Model3D::getStoredPose(const QString& name) const
+    {
+        return storedPoses[name];
     }
 
     void Model3D::setVisible(bool _visible)
@@ -584,6 +573,29 @@ namespace MIS
     {
         globalColor = color;
         emit modelChanged();
+    }
+
+    bool Model3D::addStoredPose(const QString& name, mat4 pose)
+    {
+        settings->beginGroup("poses");
+        bool ok = true;
+        for (const QString& key : settings->childKeys())
+            ok &= key.toLower() != name.toLower();
+        if (ok)
+        {
+            settings->setValue(name, QString::fromStdString(glm::to_string(pose)));
+            storedPoses[name] = pose;
+        }
+        settings->endGroup();
+        return ok;
+    }
+
+    void Model3D::removeStoredPose(const QString& name)
+    {
+        storedPoses.remove(name);
+        settings->beginGroup("poses");
+        settings->remove(name);
+        settings->endGroup();
     }
 
     void Model3D::unloadRAMthread()

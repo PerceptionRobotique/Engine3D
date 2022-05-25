@@ -370,6 +370,41 @@ namespace MIS
         }
     }
 
+    void Camera::saveCameraParameters(const QString& fileName) const
+    {
+        QSettings cameraFile(fileName, QSettings::IniFormat);
+        cameraFile.setValue("width", size.width());
+        cameraFile.setValue("height", size.height());
+        cameraFile.setValue("near", nearPlane);
+        cameraFile.setValue("far", farPlane);
+        cameraFile.setValue("ViewPoint", viewPoint);
+        cameraFile.setValue("ProjectionType", projectionType);
+        cameraFile.setValue("au", au);
+        cameraFile.setValue("av", av);
+        cameraFile.setValue("ku", ku);
+        cameraFile.setValue("kv", kv);
+        cameraFile.setValue("u0", u0);
+        cameraFile.setValue("v0", v0);
+        cameraFile.setValue("target", QString::fromStdString(to_string(target)));
+    }
+
+    void Camera::loadCameraParameters(const QString& fileName)
+    {
+        QSettings cameraFile(fileName, QSettings::IniFormat);
+        setSize(cameraFile.value("width").toInt(), cameraFile.value("height").toInt());
+        setNearPlane(cameraFile.value("near").toFloat());
+        setFarPlane(cameraFile.value("far").toFloat());
+        setViewPoint((ViewPoint)cameraFile.value("ViewPoint").toInt());
+        setProjectionType((ProjectionType)cameraFile.value("ProjectionType").toInt());
+        setAu(cameraFile.value("Au").toFloat());
+        setAv(cameraFile.value("Av").toFloat());
+        setKu(cameraFile.value("Ku").toFloat());
+        setKv(cameraFile.value("Kv").toFloat());
+        setU0(cameraFile.value("U0").toFloat());
+        setV0(cameraFile.value("V0").toFloat());
+        setTarget(stringToVec3(cameraFile.value("target").toString()));
+    }
+
     mat4 Camera::getProjection() const
     {
         mat4 projection;
@@ -536,9 +571,9 @@ namespace MIS
 
         case THIRD_PERSON_VIEW:
             float dist = glm::distance(getPosition(), target);
-            Object3DQt::translate(vec3(0, 0, -dist));
-            Object3DQt::rotate(_angle, _axis, _verticalAxis);
-            Object3DQt::translate(vec3(0, 0, dist));
+            Object3D::translate(vec3(0, 0, -dist));
+            Object3D::rotate(_angle, _axis, _verticalAxis);
+            Object3D::translate(vec3(0, 0, dist));
             float roll = getRoll();
             lookAt(target);
             Object3DQt::setRoll(roll);
@@ -557,9 +592,9 @@ namespace MIS
 
         case THIRD_PERSON_VIEW:
             float dist = glm::distance(getPosition(), target);
-            Object3DQt::translate(vec3(0, 0, -dist));
-            Object3DQt::rotate(_rotation, _verticalAxis);
-            Object3DQt::translate(vec3(0, 0, dist));
+            Object3D::translate(vec3(0, 0, -dist));
+            Object3D::rotate(_rotation, _verticalAxis);
+            Object3D::translate(vec3(0, 0, dist));
             float roll = getRoll();
             lookAt(target);
             Object3DQt::setRoll(roll);
@@ -578,9 +613,9 @@ namespace MIS
 
         case THIRD_PERSON_VIEW:
             float dist = glm::distance(getPosition(), target);
-            Object3DQt::translate(vec3(0, 0, -dist));
-            Object3DQt::yaw(_yaw);
-            Object3DQt::translate(vec3(0, 0, dist));
+            Object3D::translate(vec3(0, 0, -dist));
+            Object3D::yaw(_yaw);
+            Object3D::translate(vec3(0, 0, dist));
             float roll = getRoll();
             lookAt(target);
             Object3DQt::setRoll(roll);
@@ -599,9 +634,9 @@ namespace MIS
 
         case THIRD_PERSON_VIEW:
             float dist = glm::distance(getPosition(), target);
-            Object3DQt::translate(vec3(0, 0, -dist));
-            Object3DQt::pitch(_pitch);
-            Object3DQt::translate(vec3(0, 0, dist));
+            Object3D::translate(vec3(0, 0, -dist));
+            Object3D::pitch(_pitch);
+            Object3D::translate(vec3(0, 0, dist));
             float roll = getRoll();
             lookAt(target);
             Object3DQt::setRoll(roll);
@@ -620,9 +655,9 @@ namespace MIS
 
         case THIRD_PERSON_VIEW:
             float dist = glm::distance(getPosition(), target);
-            Object3DQt::translate(vec3(0, 0, -dist));
-            Object3DQt::roll(_roll);
-            Object3DQt::translate(vec3(0, 0, dist));
+            Object3D::translate(vec3(0, 0, -dist));
+            Object3D::roll(_roll);
+            Object3D::translate(vec3(0, 0, dist));
             float roll = getRoll();
             lookAt(target);
             Object3DQt::setRoll(roll);

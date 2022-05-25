@@ -9,6 +9,7 @@
 #include <QColor>
 #include <QDebug>
 #include <QMutex>
+#include <QSettings>
 
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
@@ -147,6 +148,10 @@ namespace MIS
         void lookAt(vec3 _point);
         void lookAt(Model3D* model);
         void setView(Model3D* model, Camera::View view);
+
+        //Settings
+        void saveCameraParameters(const QString& fileName) const;
+        void loadCameraParameters(const QString& fileName);
 
     signals:
         void cameraChanged();

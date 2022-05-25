@@ -53,6 +53,9 @@ namespace MIS
         void objectChanged();
     };
 
+    glm::mat4 ENGINE3D_EXPORT stringToMat4(QString matString);
+    glm::vec3 ENGINE3D_EXPORT stringToVec3(QString vecString);
+
 }
 
 #endif // OBJECT3DQT_H

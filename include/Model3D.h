@@ -75,36 +75,6 @@ namespace MIS
             }
         };
 
-        struct StoredPose {
-            vec3 position = vec3(0, 0, 0);
-            vec3 rotation = vec3(0, 0, 0);
-
-            StoredPose(mat4 m = mat4(1.0))
-            {
-                setMatrix(m);
-            };
-
-            StoredPose(const StoredPose& p)
-            {
-                position = p.position;
-                rotation = p.rotation;
-            };
-
-            void setMatrix(mat4 m) {
-                position = m[3];
-                extractEulerAngleXYZ(m, rotation.x, rotation.y, rotation.z);
-            };
-
-            mat4 getMatrix() {
-                mat4 m(1.0);
-                m = glm::rotate(m, rotation.x, vec3(1.0f, 0.0f, 0.0f));
-                m = glm::rotate(m, rotation.y, vec3(0.0f, 1.0f, 0.0f));
-                m = glm::rotate(m, rotation.z, vec3(0.0f, 0.0f, 1.0f));
-                m[3] = vec4(position, 1.0f);
-                return m;
-            };
-        };
-
         Model3D(QString _fileName);
         ~Model3D();
 
@@ -136,6 +106,10 @@ namespace MIS
 
         virtual bool isGlobalColorEnabled() const;
         virtual QColor getGlobalColor() const;
+
+        //Poses
+        QHash<QString, mat4> getStoredPoses() const;
+        mat4 getStoredPose(const QString& name) const;
 
     public slots:
         //visibility
@@ -169,6 +143,10 @@ namespace MIS
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
 
+        //Poses
+        bool addStoredPose(const QString& name, mat4 pose);
+        void removeStoredPose(const QString& name);
+
     private:
         static QMutex vertexNumberMutex;
         static unsigned long long vertexOnRAM;
@@ -199,6 +177,8 @@ namespace MIS
         QOpenGLBuffer posBuffer;
         QOpenGLBuffer colorBuffer;
         QOpenGLBuffer intensityBuffer;
+
+        QHash<QString, mat4> storedPoses;
 
     protected:
         void addVertexOnRAM();
@@ -265,7 +245,6 @@ namespace MIS
         os << "}";
         return os;
     }
-
 }
 
 #endif // MODEL3D_H

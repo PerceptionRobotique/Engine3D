@@ -53,18 +53,6 @@ int main(int argc, char* argv[])
     //engine.takePicture().save("test.png");
     //vpImageIo::writePFM(engine.takePFM(), "test.pfm");
 
-    QObject::connect(&engine, SIGNAL(updateVRInputs()), &cameraController, SLOT(updateVRInputs()));
-    engine.startVR();
-
-    //cameraController.setVRInputsUpdaterEnabled(true);
-    QTimer timer;
-    QEventLoop loop;
-    QObject::connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
-    timer.start(45000);
-    loop.exec();
-
-    engine.stopVR();
-
     engine.destroy();
     //context.doneCurrent();
     return 0;
