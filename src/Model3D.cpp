@@ -50,6 +50,7 @@ namespace MIS
 #else
             name = name.split("%2F").last();
             settings = new QSettings;
+            settings->beginGroup(name);
 #endif
             setwMo(stringToMat4(settings->value("wMo").toString()));
 

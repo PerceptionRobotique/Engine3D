@@ -144,7 +144,7 @@ namespace MIS
         void setGlobalColor(QColor color);
 
         //Poses
-        bool addStoredPose(const QString& name, mat4 pose);
+        bool addStoredPose(const QString &name, mat4 pose);
         void removeStoredPose(const QString& name);
 
     private:
