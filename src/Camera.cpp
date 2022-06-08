@@ -396,12 +396,12 @@ namespace MIS
         setFarPlane(cameraFile.value("far").toFloat());
         setViewPoint((ViewPoint)cameraFile.value("ViewPoint").toInt());
         setProjectionType((ProjectionType)cameraFile.value("ProjectionType").toInt());
-        setAu(cameraFile.value("Au").toFloat());
-        setAv(cameraFile.value("Av").toFloat());
-        setKu(cameraFile.value("Ku").toFloat());
-        setKv(cameraFile.value("Kv").toFloat());
-        setU0(cameraFile.value("U0").toFloat());
-        setV0(cameraFile.value("V0").toFloat());
+        setAu(cameraFile.value("au").toFloat());
+        setAv(cameraFile.value("av").toFloat());
+        setKu(cameraFile.value("ku").toFloat());
+        setKv(cameraFile.value("kv").toFloat());
+        setU0(cameraFile.value("u0").toFloat());
+        setV0(cameraFile.value("v0").toFloat());
         setTarget(stringToVec3(cameraFile.value("target").toString()));
     }
 

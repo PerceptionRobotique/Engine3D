@@ -284,7 +284,11 @@ endif()
 
 set(Engine3D_FOUND ON)
 set(Engine3D_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+if(WIN32)
+    set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+elseif(UNIX)
+    set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
 
 set(BUILD_TEST OFF CACHE BOOL "Build test program")

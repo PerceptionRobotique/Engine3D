@@ -32,7 +32,7 @@ endforeach()
 find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
-if(NOT Engine3D_FOUND OR UNIX)
+if(NOT Engine3D_FOUND)
     set(Engine3D_DIR "Engine3D-NOTFOUND" CACHE PATH "Engine3D directory")
     if(IS_DIRECTORY ${Engine3D_DIR})
         set(Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include)
@@ -140,6 +140,7 @@ target_include_directories(OffscreenTest
 )
 
 target_link_directories(OffscreenTest PRIVATE ${Engine3D_LIBRARIES_DIR})
+message(STATUS ${Engine3D_LIBRARIES_DIR})
 
 target_link_libraries(OffscreenTest
     PRIVATE

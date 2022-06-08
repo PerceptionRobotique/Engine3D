@@ -178,7 +178,7 @@ namespace MIS
 
     mat4 stringToMat4(QString matString)
     {
-        matString = matString.remove("mat4x4").remove("(").remove(")").remove(",");
+        matString = matString.remove("mat4x4").remove("(").remove(")").replace(", ", " ").replace(",", ".");
         QStringList values = matString.split(" ");
         mat4 pose(1.0);
         if (!matString.isEmpty())

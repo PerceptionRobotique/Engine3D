@@ -21,6 +21,7 @@ int main(int argc, char* argv[])
     engine.setWaitLoading(true);
 
     engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
+    //engine.openModel("/media/noel/OS/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
     engine.getMainCamera()->translate(vec3(0, 15, 0));
 
     engine.takePicture().save("OffscreenCapture.png");

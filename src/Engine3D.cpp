@@ -370,6 +370,7 @@ namespace MIS
             models.removeAt(index);
             doneCurrent();
             modelsUpdaterMutex.unlock();
+            nextModelsUpdate();
         }
     }
 
@@ -874,7 +875,7 @@ namespace MIS
                 makeCurrent();
                 if (waitLoading)
                 {
-                    if(modelsUpdater.isRunning()) modelsUpdater.waitForFinished();
+                    if (modelsUpdater.isRunning()) modelsUpdater.waitForFinished();
                     updateModels();
                 }
 
