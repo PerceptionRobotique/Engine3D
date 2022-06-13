@@ -1,0 +1,90 @@
+### QT ###
+set(QT_VERSION "6.3.0" CACHE STRING "Currently installed Qt version")
+if(WIN32)
+    set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
+elseif(UNIX)
+    if(IS_DIRECTORY "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
+        set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
+    elseif(IS_DIRECTORY "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6")
+        set(QT_DIR "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6" CACHE PATH "Qt directory")
+    else()
+        set(QT_DIR "QT_DIR-NOTFOUND" CACHE PATH "Qt directory")
+    endif()
+
+    if(IS_DIRECTORY ${QT_DIR})
+        set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
+        set(Qt6BundledPcre2_DIR "${QT_DIR}BundledPcre2")
+        set(Qt6BundledHarfbuzz_DIR "${QT_DIR}BundledHarfbuzz")
+        set(Qt6BundledLibjpeg_DIR "${QT_DIR}BundledLibjpeg")
+    endif()
+endif()
+
+if(IS_DIRECTORY ${QT_DIR})
+    set(Qt6_DIR "${QT_DIR}")
+    set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
+    set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
+    set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
+endif()
+
+list(APPEND QT_COMPONENTS Core Gui Widgets OpenGL Concurrent)
+foreach (qt_component ${QT_COMPONENTS})
+    list(APPEND QT_LINKS
+        Qt${QT_VERSION_MAJOR}::${qt_component}
+    )
+endforeach()
+if(ANDROID)
+    list(APPEND QT_LINKS Qt${QT_VERSION_MAJOR}::CorePrivate)
+endif()
+
+find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
+
+list(APPEND Engine3D_LIBRARIES ${QT_LINKS})
+
+### GLM ###
+if(WIN32)
+    list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/glm)
+else()
+    find_package(glm)
+endif()
+
+### OpenCV ###
+if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/OpenCV)
+    set(WITH_OPENCV true)
+    add_compile_definitions(HAVE_OPENCV)
+
+    list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/OpenCV)
+    list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenCV)
+    file(GLOB OpenCV_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenCV)
+    list(APPEND Engine3D_LIBRARIES ${OpenCV_LIBS})
+endif()
+
+### ViSP ###
+if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/ViSP)
+    set(WITH_VISP true)
+    add_compile_definitions(HAVE_VISP)
+
+    list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/ViSP)
+    list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
+    file(GLOB VISP_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
+    list(APPEND Engine3D_LIBRARIES ${VISP_LIBS})
+endif()
+
+### OpenVR ###
+if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/OpenVR)
+    set(WITH_VR true)
+    add_compile_definitions(HAVE_VR)
+
+    list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/OpenVR)
+    list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenVR)
+    file(GLOB OPENVR_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenVR)
+    list(APPEND Engine3D_LIBRARIES ${OPENVR_LIBS})
+endif()
+
+### Engine3D ###
+list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include)
+list(APPEND Engine3D_LIBRARIES ${Engine3D_DIR}/lib/$<CONFIG>/Engine3D$<$<CONFIG:Debug>:d>.lib)
+set(Engine3D_DLL ${Engine3D_DIR}/bin/$<CONFIG>/Engine3D$<$<CONFIG:Debug>:d>.dll)
+set(Engine3D_EXTRA_DLL_DIR ${Engine3D_DIR}/bin/$<CONFIG>/3rdParty/)
+
+link_directories(${Engine3D_LIBRARIES_DIRS})

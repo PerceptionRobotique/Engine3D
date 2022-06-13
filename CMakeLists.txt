@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D LANGUAGES CXX)
+project(Engine3D VERSION 2.3.0 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -63,6 +63,14 @@ if(ANDROID)
     list(APPEND QT_LINKS Qt${QT_VERSION_MAJOR}::CorePrivate)
 endif()
 
+list(APPEND QT_PLUGINS
+    platforms/qminimal
+    platforms/qoffscreen
+    platforms/qwindows
+    styles/qwindowsvistastyle
+    imageformats/qjpeg
+)
+
 find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
@@ -87,29 +95,6 @@ if(WITH_CONTROLLER)
     add_compile_definitions(HAVE_CONTROLLER)
 endif()
 
-### VR ###
-set(WITH_VR OFF CACHE BOOL "Include VR functions")
-if(WITH_VR)
-    if(WIN32)
-        set(OPENVR_DIR "OPENVR_DIR-NOTFOUND" CACHE PATH "Install directory of OpenVR")
-        if(IS_DIRECTORY ${OPENVR_DIR})
-            list(APPEND OPENVR_INCLUDE_DIRS ${OPENVR_DIR}/include)
-            set(OPENVR_LIBRARIES ${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib)
-        else()
-            message(FATAL_ERROR "OpenVR is missing.")
-        endif()
-    elseif(UNIX)
-        set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
-    endif()
-
-    list(APPEND EXTRA_SOURCES
-        include/VRheadset.h
-        src/VRheadset.cpp
-    )
-
-    add_compile_definitions(HAVE_VR)
-endif()
-
 ## OPENCV ###
 set(WITH_OPENCV OFF CACHE BOOL "Include OpenCV functions")
 if(ANDROID)
@@ -130,9 +115,9 @@ if(WITH_OPENCV)
     )
 
     list(APPEND OpenCV_EXTRA_DLL
-        inference_engine
-        inference_engine_transformations
-        ngraph
+        inference_engine$<$<CONFIG:Debug>:d>
+        inference_engine_transformations$<$<CONFIG:Debug>:d>
+        ngraph$<$<CONFIG:Debug>:d>
         tbb$<$<CONFIG:Debug>:_debug>
     )
     find_package(OpenCV COMPONENTS ${OpenCV_COMPONENTS} REQUIRED)
@@ -171,6 +156,29 @@ if(WITH_VISP)
     if(ANDROID)
         set(VISP_INCLUDE_DIRS ${VISP_DIR}/include)
     endif()
+endif()
+
+### VR ###
+set(WITH_VR OFF CACHE BOOL "Include VR functions")
+if(WITH_VR)
+    if(WIN32)
+        set(OPENVR_DIR "OPENVR_DIR-NOTFOUND" CACHE PATH "Install directory of OpenVR")
+        if(IS_DIRECTORY ${OPENVR_DIR})
+            list(APPEND OPENVR_INCLUDE_DIRS ${OPENVR_DIR}/include)
+            set(OPENVR_LIBRARIES ${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib)
+        else()
+            message(FATAL_ERROR "OpenVR is missing.")
+        endif()
+    elseif(UNIX)
+        set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
+    endif()
+
+    list(APPEND EXTRA_SOURCES
+        include/VRheadset.h
+        src/VRheadset.cpp
+    )
+
+    add_compile_definitions(HAVE_VR)
 endif()
 
 ### SOURCES ###
@@ -265,21 +273,139 @@ endif()
 target_compile_definitions(Engine3D PRIVATE ENGINE3D_LIBRARY)
 
 if(WIN32)
-    install(TARGETS Engine3D)
+    install(
+        TARGETS Engine3D
+        RUNTIME DESTINATION bin/$<CONFIG>
+        ARCHIVE DESTINATION lib/$<CONFIG>
+    )
+
     install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-        DESTINATION ${CMAKE_INSTALL_PREFIX}
+        DESTINATION .
         FILES_MATCHING PATTERN "*.h*"
     )
+
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ DESTINATION .)
+
+    ### QT ###
+    foreach (qt_component ${QT_COMPONENTS})
+        list(APPEND QT_DLL "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}${qt_component}$<$<CONFIG:Debug>:d>.dll")
+        # list(APPEND QT_LIBS "${Qt${QT_VERSION_MAJOR}_DIR}/../../../lib/Qt${QT_VERSION_MAJOR}${qt_component}$<$<CONFIG:Debug>:d>.lib")
+        # install(DIRECTORY ${Qt${QT_VERSION_MAJOR}_DIR}/../../../include/Qt${qt_component} DESTINATION include/3rdParty/Qt)
+    endforeach()
+    install(FILES ${QT_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
+    # install(FILES ${QT_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/Qt)
+
+    foreach (qt_plugin ${QT_PLUGINS})
+        string(FIND ${qt_plugin} "/" slash)
+        string(SUBSTRING ${qt_plugin} 0 ${slash} folder)
+        add_custom_command(TARGET Engine3D POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_INSTALL_PREFIX}/bin/$<CONFIG>/3rdParty/${folder}")
+        install(FILES "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/${qt_plugin}$<$<CONFIG:Debug>:d>.dll" DESTINATION bin/$<CONFIG>/3rdParty/${folder})
+    endforeach()
+    file(GLOB QT_INCLUDE_FILES ${Qt${QT_VERSION_MAJOR}_DIR}/../../../include/*.h)
+    # install(FILES ${QT_INCLUDE_FILES} DESTINATION include/3rdParty/Qt)
+
+    ### GLM ###
+    install(DIRECTORY ${GLM_INCLUDE_DIRS}/glm DESTINATION include/3rdParty/glm)
+
+    if(WITH_OPENCV)
+        foreach (OpenCV_COMPONENT ${OpenCV_COMPONENTS})
+            list(APPEND OpenCV_INSTALL_LIBS
+                "${OpenCV_INSTALL_PATH}/lib/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.lib"
+            )
+            list(APPEND OpenCV_INSTALL_DLL
+                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
+            )
+        endforeach()
+
+        foreach (OpenCV_EXTRA ${OpenCV_EXTRA_DLL})
+            list(APPEND OpenCV_INSTALL_DLL
+                "${OpenCV_DIR}/../bin/${OpenCV_EXTRA}.dll"
+            )
+        endforeach()
+        install(FILES ${OpenCV_INSTALL_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
+        install(DIRECTORY ${OpenCV_INCLUDE_DIRS}/ DESTINATION include/3rdParty/OpenCV)
+        install(FILES ${OpenCV_INSTALL_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/OpenCV)
+    endif()
+
+    if(WITH_VISP)
+        foreach (visp_component ${VISP_COMPONENTS})
+            list(APPEND VISP_EXTRA_LIBS
+                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/lib/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>.lib"
+            )
+            list(APPEND VISP_EXTRA_DLL
+                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
+            )
+        endforeach()
+        install(FILES ${VISP_EXTRA_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
+        install(DIRECTORY ${VISP_DIR}/include/ DESTINATION include/3rdParty/ViSP)
+        install(FILES ${VISP_EXTRA_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/ViSP)
+    endif()
+
+    if(WITH_VR)
+        install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.dll" DESTINATION bin/$<CONFIG>/3rdParty)
+        install(DIRECTORY ${OPENVR_INCLUDE_DIRS}/ DESTINATION include/3rdParty/OpenVR)
+        install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
+    endif()
+
+### 3rdParty ###
+    # install(DIRECTORY ${PACKAGE_PREFIX_DIR}/ DESTINATION 3rdParty/Qt)
+    # if(WITH_OPENCV)
+    #     install(DIRECTORY ${OpenCV_INSTALL_PATH}/ DESTINATION 3rdParty/OpenCV)
+    # endif()
+    # if(WITH_VISP)
+    #     install(DIRECTORY ${VISP_DIR}/ DESTINATION 3rdParty/ViSP)
+    # endif()
+    # if(WITH_VR)
+    #     install(DIRECTORY ${OPENVR_DIR}/ DESTINATION 3rdParty/OpenVR)
+    # endif()
+
+    install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/ DESTINATION .)
+
+    set(CPACK_PACKAGE_NAME Engine3D)
+    set(CPACK_PACKAGE_VENDOR MIS)
+    set(CPACK_PACKAGE_VERSION_MAJOR ${TARGET_VERSION_MAJOR})
+    set(CPACK_PACKAGE_VERSION_MINOR ${TARGET_VERSION_MINOR})
+    set(CPACK_PACKAGE_VERSION_PATCH ${TARGET_VERSION_PATCH})
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY Engine3D)
+    include(CPack)
 elseif(UNIX)
-    install(TARGETS Engine3D
-        DESTINATION Engine3D/lib
+    find_program(LSB_RELEASE_EXEC lsb_release)
+    execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
+        OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    execute_process(COMMAND ${LSB_RELEASE_EXEC} -rs
+        OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # install(TARGETS Engine3D DESTINATION Engine3D/lib)
+    # install(
+    #     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
+    #     DESTINATION Engine3D
+    #     FILES_MATCHING PATTERN "*.h*"
+    # )
+
+    install(TARGETS Engine3D DESTINATION /usr/local/lib)
     install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-        DESTINATION Engine3D
+        DESTINATION /usr/local
         FILES_MATCHING PATTERN "*.h*"
     )
+
+    set(CPACK_PACKAGE_NAME Engine3D)
+    set(CPACK_PACKAGE_VENDOR MIS)
+    set(CPACK_PACKAGE_VERSION_MAJOR ${CMAKE_PROJECT_VERSION_MAJOR})
+    set(CPACK_PACKAGE_VERSION_MINOR ${CMAKE_PROJECT_VERSION_MINOR})
+    set(CPACK_PACKAGE_VERSION_PATCH ${CMAKE_PROJECT_VERSION_PATCH})
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY Engine3D)
+    set(CPACK_COMPONENTS_GROUPING ALL_COMPONENTS_IN_ONE)
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER n.villette@u-picardie.fr)
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_PACKAGE_FILE_NAME Engine3D-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}-${LSB_RELEASE_ID_SHORT}-${LSB_RELEASE_VERSION_SHORT})
+    set(CPACK_GENERATOR DEB)
+    include(CPack)
 endif()
 
 set(Engine3D_FOUND ON)
@@ -299,7 +425,7 @@ if(BUILD_TEST)
             add_custom_command(TARGET Engine3D POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                $<TARGET_FILE_DIR:Test>
+                $<TARGET_FILE_DIR:Test>/${Engine3D_LIBRARIES}.dll
             )
         endif()
     endif()
@@ -313,7 +439,7 @@ if(BUILD_OFFSCREEN_TEST)
             add_custom_command(TARGET Engine3D POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                $<TARGET_FILE_DIR:OffscreenTest>
+                $<TARGET_FILE_DIR:OffscreenTest>/${Engine3D_LIBRARIES}.dll
         )
         endif()
     endif()
