@@ -389,9 +389,13 @@ elseif(UNIX)
 
     install(TARGETS Engine3D DESTINATION /usr/local/lib)
     install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-        DESTINATION /usr/local
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        DESTINATION /usr/local/include/Engine3D
         FILES_MATCHING PATTERN "*.h*"
+    )
+    install(
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
+        DESTINATION /usr/local/lib/cmake
     )
 
     set(CPACK_PACKAGE_NAME Engine3D)
