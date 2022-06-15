@@ -32,6 +32,7 @@
 #include "Camera.h"
 #include "ModelPTS.h"
 #include "ModelBIN.h"
+#include "ModelOBJ.h"
 #include "Octree.h"
 
 namespace MIS

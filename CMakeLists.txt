@@ -186,6 +186,7 @@ list(APPEND HEADERS
     include/Model3D.h
     include/ModelPTS.h
     include/ModelBIN.h
+    include/ModelOBJ.h
     include/Octree.h
     include/Model3DWriter.h
     include/Engine3D_global.h
@@ -203,6 +204,7 @@ list(APPEND SOURCES
     src/Model3D.cpp
     src/ModelPTS.cpp
     src/ModelBIN.cpp
+    src/ModelOBJ.cpp
     src/Octree.cpp
     src/Model3DWriter.cpp
     src/Engine3D.cpp
@@ -220,6 +222,10 @@ endif()
 set(SHADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Point.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Point.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/SimpleOBJ.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/SimpleOBJ.frag
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/AdvancedOBJ.vert
+    ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/AdvancedOBJ.frag
 
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.vert
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/Shaders/Box.frag

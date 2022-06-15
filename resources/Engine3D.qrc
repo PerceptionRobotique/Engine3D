@@ -4,5 +4,9 @@
         <file>Shaders/Point.vert</file>
         <file>Shaders/Box.frag</file>
         <file>Shaders/Box.vert</file>
+        <file>Shaders/SimpleOBJ.frag</file>
+        <file>Shaders/SimpleOBJ.vert</file>
+        <file>Shaders/AdvancedOBJ.frag</file>
+        <file>Shaders/AdvancedOBJ.vert</file>
     </qresource>
 </RCC>

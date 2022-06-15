@@ -1,11 +1,12 @@
-#include <QGuiApplication>
+#include <QApplication>
+#include <QFileDialog>
 #include <Engine3D.h>
 
 using namespace MIS;
 
 int main(int argc, char* argv[])
 {
-    QGuiApplication app(argc, argv);
+    QApplication app(argc, argv);
     Q_UNUSED(app);
 
     QString diskRoot;
@@ -18,9 +19,9 @@ int main(int argc, char* argv[])
     Engine3D engine(Engine3D::DIRECT);
     engine.initialize();
 
-    engine.setWaitLoading(true);
-
-    engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
+    //QString modelName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle")
+    //engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
+    engine.openModel(diskRoot + "/Users/nvill/3D Objects/Suzanne/Suzanne.obj");
     //engine.openModel("/media/noel/OS/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
     engine.getMainCamera()->translate(vec3(0, 15, 0));
 

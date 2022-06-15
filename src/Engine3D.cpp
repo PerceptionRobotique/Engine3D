@@ -287,6 +287,12 @@ namespace MIS
             shaders[Model3D::POINTS]->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/Point.frag");
             if (!shaders[Model3D::POINTS]->link()) qDebug() << "Can't link shader.";
 
+            shaders[Model3D::TRIANGLES] = new QOpenGLShaderProgram;
+            shaders[Model3D::TRIANGLES]->create();
+            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/SimpleOBJ.vert");
+            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/SimpleOBJ.frag");
+            if (!shaders[Model3D::TRIANGLES]->link()) qDebug() << "Can't link shader.";
+
             boxShader = new QOpenGLShaderProgram;
             boxShader->create();
             boxShader->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/Box.vert");
@@ -340,6 +346,7 @@ namespace MIS
         QFileInfo fileInfo(fileName);
         if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName));
         else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName));
+        else if (fileInfo.suffix() == "obj")                                models.append(new ModelOBJ(fileName));
         else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName));
 
         //connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
@@ -886,30 +893,36 @@ namespace MIS
                 {
                     if (camera->bind())
                     {
-                        if (shaders[Model3D::POINTS]->bind())
+                        glViewport(0, 0, camera->getWidth(), camera->getHeight());
+                        glClearColor(
+                            camera->getBackgroundColor().redF(),
+                            camera->getBackgroundColor().greenF(),
+                            camera->getBackgroundColor().blueF(),
+                            camera->getBackgroundColor().alphaF());
+                        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                        for (QOpenGLShaderProgram* shader : shaders)
                         {
-                            glViewport(0, 0, camera->getWidth(), camera->getHeight());
-                            glClearColor(
-                                camera->getBackgroundColor().redF(),
-                                camera->getBackgroundColor().greenF(),
-                                camera->getBackgroundColor().blueF(),
-                                camera->getBackgroundColor().alphaF());
-                            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                            shader->bind();
+                            shader->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+                            shader->release();
+                        }
 
-                            shaders[Model3D::POINTS]->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
-                            glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
-                            glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
-
-                            for (Model3D* model : models)
+                        for (Model3D* model : models)
+                        {
+                            QOpenGLShaderProgram* shader = shaders[model->getPrimitives()];
+                            if (shader->bind())
                             {
                                 if (model->isOnRAM())
                                 {
-                                    if (model->isOnVRAM()) model->draw(shaders[Model3D::POINTS]);
+                                    if (model->isOnVRAM()) model->draw(shader);
                                     else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                     {
                                         vertexToVRAM += model->getVertexNumber();
                                         model->loadVRAM(waitLoading);
-                                        model->draw(shaders[Model3D::POINTS]);
+                                        model->draw(shader);
                                     }
                                     else emit askUpdate();
                                 }
@@ -923,12 +936,12 @@ namespace MIS
                                         {
                                             if (child->isOnRAM())
                                             {
-                                                if (child->isOnVRAM()) child->draw(shaders[Model3D::POINTS]);
+                                                if (child->isOnVRAM()) child->draw(shader);
                                                 else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                                 {
                                                     vertexToVRAM += child->getVertexNumber();
                                                     child->loadVRAM(waitLoading);
-                                                    child->draw(shaders[Model3D::POINTS]);
+                                                    child->draw(shader);
                                                 }
                                                 else emit askUpdate();
                                             }
@@ -936,10 +949,10 @@ namespace MIS
                                         }
                                     }
                                 }
+                                shader->release();
                             }
-                            shaders[Model3D::POINTS]->release();
+                            else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
                         }
-                        else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
 
                         if (boxShader->bind())
                         {
