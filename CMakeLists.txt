@@ -88,10 +88,8 @@ find_package(glm REQUIRED)
 ### CONTROLLER ###
 set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
 if(WITH_CONTROLLER)
-    list(APPEND EXTRA_SOURCES
-        include/Controller.h
-        src/Controller.cpp
-    )
+    list(APPEND HEADERS include/Controller.h)
+    list(APPEND SOURCES src/Controller.cpp)
     add_compile_definitions(HAVE_CONTROLLER)
 endif()
 
@@ -173,16 +171,14 @@ if(WITH_VR)
         set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
     endif()
 
-    list(APPEND EXTRA_SOURCES
-        include/VRheadset.h
-        src/VRheadset.cpp
-    )
+    list(APPEND HEADERS include/VRheadset.h)
+    list(APPEND SOURCES src/VRheadset.cpp)
 
     add_compile_definitions(HAVE_VR)
 endif()
 
 ### SOURCES ###
-set(HEADERS
+list(APPEND HEADERS
     include/Object3D.h
     include/Object3DQt.h
     include/Camera.h
@@ -199,7 +195,7 @@ set(HEADERS
     include/VideoWriter.h
 )
 
-set(SOURCES
+list(APPEND SOURCES
     src/Object3D.cpp
     src/Object3DQt.cpp
     src/Camera.cpp
@@ -215,7 +211,7 @@ set(SOURCES
     src/VideoWriter.cpp
 )
 
-set(ENGINE3D_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc)
+list(APPEND ENGINE3D_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc)
 
 if(WIN32)
     set(Engine3D_FFmpeg_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/FFmpeg.qrc)
@@ -236,7 +232,6 @@ if(BUILD_SHARED_LIBS)
         ${ENGINE3D_RESOURCES}
         ${Engine3D_FFmpeg_RESOURCES}
         ${SHADERS}
-        ${EXTRA_SOURCES}
     )
 else()
     add_library(Engine3D STATIC
@@ -246,7 +241,6 @@ else()
         ${ENGINE3D_RESOURCES}
         ${Engine3D_FFmpeg_RESOURCES}
         ${SHADERS}
-        ${EXTRA_SOURCES}
     )
 endif()
 
@@ -279,11 +273,7 @@ if(WIN32)
         ARCHIVE DESTINATION lib/$<CONFIG>
     )
 
-    install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-        DESTINATION .
-        FILES_MATCHING PATTERN "*.h*"
-    )
+    install(FILES ${HEADERS} DESTINATION .)
 
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ DESTINATION .)
 
@@ -380,23 +370,32 @@ elseif(UNIX)
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
 
-    # install(TARGETS Engine3D DESTINATION Engine3D/lib)
-    # install(
-    #     DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
-    #     DESTINATION Engine3D
-    #     FILES_MATCHING PATTERN "*.h*"
-    # )
+    install(TARGETS Engine3D DESTINATION lib)
+    if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/libEngine3Dd.so)
+        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libEngine3Dd.so DESTINATION lib)
+    endif()
 
-    install(TARGETS Engine3D DESTINATION /usr/local/lib)
-    install(
-        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        DESTINATION /usr/local/include/Engine3D
-        FILES_MATCHING PATTERN "*.h*"
-    )
+    install(FILES ${HEADERS} DESTINATION include/Engine3D)
     install(
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
-        DESTINATION /usr/local/lib/cmake
+        DESTINATION lib/cmake/Engine3D
     )
+
+    file(WRITE Engine3DExtras.cmake)
+    if(WITH_CONTROLLER)
+        file(APPEND Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
+    endif()
+    if(WITH_OPENCV)
+        file(APPEND Engine3DExtras.cmake "set(WITH_OPENCV ON)\n")
+    endif()
+    if(WITH_VISP)
+        file(APPEND Engine3DExtras.cmake "list(APPEND VISP_COMPONENTS ${VISP_COMPONENTS})\n")
+        file(APPEND Engine3DExtras.cmake "set(WITH_VISP ON)\n")
+    endif()
+    if(WITH_VR)
+        file(APPEND Engine3DExtras.cmake "set(WITH_VR ON)")
+    endif()
+    install(FILES Engine3DExtras.cmake DESTINATION lib/cmake/Engine3D)
 
     set(CPACK_PACKAGE_NAME Engine3D)
     set(CPACK_PACKAGE_VENDOR MIS)
