@@ -4,6 +4,7 @@
 #include <QMutex>
 #include <QVector>
 #include <QOpenGLBuffer>
+#include <QOpenGLTexture>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QOpenGLShaderProgram>
@@ -178,6 +179,10 @@ namespace MIS
         QOpenGLBuffer colorBuffer;
         QOpenGLBuffer intensityBuffer;
 
+        QOpenGLBuffer normalBuffer;
+        QOpenGLBuffer uvBuffer;
+        QVector<QOpenGLTexture*> texturesBuffers;
+
         QHash<QString, mat4> storedPoses;
 
     protected:
@@ -203,9 +208,16 @@ namespace MIS
         QVector<unsigned char> color;
         QVector<unsigned char> intensity;
 
+        // OBJ //
+        QVector<glm::vec2> uv;
+        QVector<glm::vec3> normal;
+        QVector<QImage> textures;
+
     signals:
         void modelCreated();
         void modelChanged();
+        void modelRenderChanged();
+        void modelMoved();
         void modelLoadingDelayed();
         void modelLoadingUpdate(Model3D* model, unsigned int value);
         void modelLoaded();

@@ -22,7 +22,7 @@ namespace MIS
         , u0(size.width() / 2.0f)
         , v0(size.height() / 2.0f)
     {
-        connect(this, SIGNAL(objectChanged()), this, SIGNAL(cameraChanged()));
+        connect(this, SIGNAL(objectMoved()), this, SIGNAL(cameraMoved()));
     }
 
     Camera::~Camera()
@@ -482,6 +482,14 @@ namespace MIS
     bool Camera::cullingTest(const Model3D* model) const
     {
         if (projectionType == EQUIRECTANGULAR)
+            return true;
+        else if (
+            getPosition().x >= model->getAABB().min.x
+            && getPosition().y >= model->getAABB().min.y
+            && getPosition().z >= model->getAABB().min.z
+            && getPosition().x <= model->getAABB().max.x
+            && getPosition().y <= model->getAABB().max.y
+            && getPosition().z <= model->getAABB().max.z)
             return true;
         else
         {

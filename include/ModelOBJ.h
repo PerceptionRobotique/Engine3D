@@ -23,6 +23,7 @@ namespace MIS
 			int illum;
 			QString map_Kd;
 
+			Material(const Material& m);
 			Material(QString fileName = "");
 			void openFile(QString fileName);
 		};

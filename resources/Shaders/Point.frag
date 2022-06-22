@@ -6,7 +6,6 @@ precision mediump float;
 #endif
 
 varying vec4 color;
-//out vec4 out_Color;
 
 void main()
 {

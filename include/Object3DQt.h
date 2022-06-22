@@ -50,7 +50,7 @@ namespace MIS
         void setRoll(const double& _roll);
 
     signals:
-        void objectChanged();
+        void objectMoved();
     };
 
     glm::mat4 ENGINE3D_EXPORT stringToMat4(QString matString);

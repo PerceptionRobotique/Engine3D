@@ -112,6 +112,8 @@ namespace MIS
         void setOpacityEnabled(bool enabled);
         void setOpacity(float _opacity);
         void setBlendFunction(BlendFunction _blendFunction);
+        void setLightOnMainCamera(bool enabled);
+        void setLightPosition(vec3 _lightPosition);
 
         //Optimization
         void setViewDistance(double _viewDistance);
@@ -147,11 +149,15 @@ namespace MIS
         //Debug
         bool frameCounter;
 
+        //Render
         float pointSize;
         float lineWidth;
         bool opacityEnabled;
         float opacity;
         BlendFunction blendFunction;
+        bool lightOnMainCamera;
+        vec3 lightPosition;
+
         bool renderAsked;
         QMutex renderAskedMutex;
         QImage frame;
@@ -215,6 +221,8 @@ namespace MIS
         void askOpacityEnabled(bool);
         void askOpacity(float);
         void askBlendFunction(BlendFunction);
+        void askLightOnMainCamera(bool);
+        void askLightPosition(vec3);
         void renderModeChanged();
 #ifdef HAVE_VR
         void askStopVR();

@@ -1,19 +1,49 @@
-#version 330 core
-attribute vec3 in_vertex;
-in vec4 inColor;
-attribute vec3 in_normal;
-attribute vec2 inTexCoord;
+//#version 330
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
 
-uniform mat4 modelview;
-uniform mat4 projection;
-out vec4 color;
-out vec3 normal;
-out vec2 texCoord;
+attribute vec3 in_vertex;
+attribute vec3 in_normal;
+attribute vec2 in_uv;
+
+uniform mat4 wMo;
+uniform mat4 cMw;
+uniform mat4 iMc;
+
+uniform bool equirectangular;
+
+varying vec3 normal;
+varying vec2 texCoord;
+
 void main()
 {
-    gl_Position = projection * modelview * vec4(in_vertex, 1.0);
+    if(equirectangular)
+    {
+        // changement de repere objet -> camera
+        vec4 cP = cMw * wMo * vec4(in_vertex, 1.0);
+        float fact = length(cP.xyz);
 
-    color = inColor;
+        // projection spherique
+        cP.xyz /= fact;
+
+        // codage azimuth et elevation
+        cP.x = atan(cP.z, cP.x);
+        cP.y = -2.0*acos(cP.y)+3.14;
+        cP.z = -3.14;
+
+        //"projection" (division par Z)
+        gl_Position = iMc * cP;
+
+        //cette ligne et suivante pour mettre rho code a la zbuffer dans le zbuffer
+        cP = iMc * vec4(0.,0.,-fact,1.);
+
+        gl_Position.z = gl_Position.w*cP.z/cP.w;
+    }
+    else
+        gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
+
     normal = in_normal;
-    texCoord = inTexCoord;
+    texCoord = in_uv;
 }

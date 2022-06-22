@@ -35,10 +35,12 @@ namespace MIS
         , posBuffer(QOpenGLBuffer::VertexBuffer)
         , colorBuffer(QOpenGLBuffer::VertexBuffer)
         , intensityBuffer(QOpenGLBuffer::VertexBuffer)
+        , normalBuffer(QOpenGLBuffer::VertexBuffer)
+        , uvBuffer(QOpenGLBuffer::VertexBuffer)
     {
         model3DNumber++;
 
-        connect(this, SIGNAL(objectChanged()), this, SIGNAL(modelChanged()));
+        connect(this, SIGNAL(objectMoved()), this, SIGNAL(modelMoved()));
 
         if (!fileName.isEmpty())
         {
@@ -75,6 +77,12 @@ namespace MIS
         if (onVRAM) unloadVRAM();
         if (boxOnRAM) unloadBoxRAM();
         if (boxOnVRAM) unloadBoxVRAM();
+
+        if (posBuffer.isCreated()) posBuffer.destroy();
+        if (colorBuffer.isCreated()) colorBuffer.destroy();
+        if (intensityBuffer.isCreated()) intensityBuffer.destroy();
+        if (normalBuffer.isCreated()) normalBuffer.destroy();
+        if (uvBuffer.isCreated()) uvBuffer.destroy();
 
         model3DNumber--;
         if (model3DNumber == 0) boxIndexBuffer.destroy();
@@ -252,13 +260,13 @@ namespace MIS
     void Model3D::setBoxVisible(bool _boxVisible)
     {
         boxVisible = _boxVisible;
-        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setShowIntensity(bool _showIntensity)
     {
         showIntensity = _showIntensity;
-        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setAABB(AABB _aabb)
@@ -300,6 +308,13 @@ namespace MIS
                 intensity.clear();
                 intensity.squeeze();
 
+                normal.clear();
+                normal.squeeze();
+                uv.clear();
+                uv.squeeze();
+                textures.clear();
+                textures.squeeze();
+
                 removeVertexOnRAM();
                 onRAM = false;
                 emit modelUnloaded();
@@ -316,15 +331,21 @@ namespace MIS
         {
             if (onRAM && !onVRAM)
             {
-                if (!posBuffer.isCreated()) posBuffer.create();
-                posBuffer.bind();
-                QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(glm::vec3), pos.constData(), GL_STATIC_DRAW);
-                posBuffer.release();
+                if (!pos.isEmpty())
+                {
+                    if (!posBuffer.isCreated()) posBuffer.create();
+                    posBuffer.bind();
+                    QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(glm::vec3), pos.constData(), GL_STATIC_DRAW);
+                    posBuffer.release();
+                }
 
-                if (!colorBuffer.isCreated()) colorBuffer.create();
-                colorBuffer.bind();
-                QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * vertexNumber * sizeof(unsigned char), color.constData(), GL_STATIC_DRAW);
-                colorBuffer.release();
+                if (!color.isEmpty())
+                {
+                    if (!colorBuffer.isCreated()) colorBuffer.create();
+                    colorBuffer.bind();
+                    QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * vertexNumber * sizeof(unsigned char), color.constData(), GL_STATIC_DRAW);
+                    colorBuffer.release();
+                }
 
                 if (hasIntensity())
                 {
@@ -333,6 +354,31 @@ namespace MIS
                     QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, vertexNumber * sizeof(unsigned char), intensity.constData(), GL_STATIC_DRAW);
                     intensityBuffer.release();
                 }
+
+                if (!normal.isEmpty())
+                {
+                    if (!normalBuffer.isCreated()) normalBuffer.create();
+                    normalBuffer.bind();
+                    QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * vertexNumber * sizeof(float), normal.constData(), GL_STATIC_DRAW);
+                    normalBuffer.release();
+                }
+
+                if (!uv.isEmpty())
+                {
+                    if (!uvBuffer.isCreated()) uvBuffer.create();
+                    uvBuffer.bind();
+                    QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 2 * vertexNumber * sizeof(float), uv.constData(), GL_STATIC_DRAW);
+                    uvBuffer.release();
+                }
+
+                for (QImage& texture : textures)
+                {
+                    QOpenGLTexture* textureBuffer = new QOpenGLTexture(QOpenGLTexture::Target2D);
+                    textureBuffer->create();
+                    textureBuffer->setData(texture);
+                    texturesBuffers.append(textureBuffer);
+                }
+
                 addVertexOnVRAM();
                 onVRAM = true;
             }
@@ -348,13 +394,19 @@ namespace MIS
         {
             if (onVRAM)
             {
-                posBuffer.bind();
-                posBuffer.allocate(0);
-                posBuffer.release();
+                if (posBuffer.isCreated())
+                {
+                    posBuffer.bind();
+                    posBuffer.allocate(0);
+                    posBuffer.release();
+                }
 
-                colorBuffer.bind();
-                colorBuffer.allocate(0);
-                colorBuffer.release();
+                if (colorBuffer.isCreated())
+                {
+                    colorBuffer.bind();
+                    colorBuffer.allocate(0);
+                    colorBuffer.release();
+                }
 
                 if (hasIntensity())
                 {
@@ -362,6 +414,28 @@ namespace MIS
                     intensityBuffer.allocate(0);
                     intensityBuffer.release();
                 }
+
+                if (normalBuffer.isCreated())
+                {
+                    normalBuffer.bind();
+                    normalBuffer.allocate(0);
+                    normalBuffer.release();
+                }
+
+                if (uvBuffer.isCreated())
+                {
+                    uvBuffer.bind();
+                    uvBuffer.allocate(0);
+                    uvBuffer.release();
+                }
+
+                for (QOpenGLTexture* texture : texturesBuffers)
+                {
+                    texture->destroy();
+                    delete texture;
+                }
+                texturesBuffers.clear();
+
                 removeVertexOnVRAM();
                 onVRAM = false;
             }
@@ -475,7 +549,7 @@ namespace MIS
                 if (isOnVRAM())
                 {
                     mat4 wMo = getwMo();
-                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
+                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
 
                     shader->setUniformValue("customColor", isGlobalColorEnabled());
                     shader->setUniformValue("R", getGlobalColor().redF());
@@ -483,15 +557,21 @@ namespace MIS
                     shader->setUniformValue("B", getGlobalColor().blueF());
                     shader->setUniformValue("showIntensity", getShowIntensity());
 
-                    posBuffer.bind();
-                    shader->enableAttributeArray("in_vertex");
-                    shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
-                    posBuffer.release();
+                    if (posBuffer.isCreated())
+                    {
+                        posBuffer.bind();
+                        shader->enableAttributeArray("in_vertex");
+                        shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
+                        posBuffer.release();
+                    }
 
-                    colorBuffer.bind();
-                    shader->enableAttributeArray("in_color");
-                    shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
-                    colorBuffer.release();
+                    if (colorBuffer.isCreated())
+                    {
+                        colorBuffer.bind();
+                        shader->enableAttributeArray("in_color");
+                        shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
+                        colorBuffer.release();
+                    }
 
                     if (hasIntensity())
                     {
@@ -501,12 +581,35 @@ namespace MIS
                         intensityBuffer.release();
                     }
 
+                    if (normalBuffer.isCreated())
+                    {
+                        normalBuffer.bind();
+                        shader->enableAttributeArray("in_normal");
+                        shader->setAttributeArray("in_normal", GL_FLOAT, 0, 3);
+                        normalBuffer.release();
+                    }
+
+                    if (uvBuffer.isCreated())
+                    {
+                        uvBuffer.bind();
+                        shader->enableAttributeArray("in_uv");
+                        shader->setAttributeArray("in_uv", GL_FLOAT, 0, 2);
+                        uvBuffer.release();
+                    }
+
+                    if (!texturesBuffers.isEmpty())
+                    {
+                        f->glBindTexture(GL_TEXTURE_2D, texturesBuffers.first()->textureId());
+                    }
+
                     f->glDrawArrays(primitives, 0, vertexNumber);
 
                     shader->disableAttributeArray("in_vertex");
                     shader->disableAttributeArray("in_color");
                     if (hasIntensity())
                         shader->disableAttributeArray("in_intensity");
+                    shader->disableAttributeArray("in_normal");
+                    shader->disableAttributeArray("in_uv");
 
                     drawn = true;
                 }

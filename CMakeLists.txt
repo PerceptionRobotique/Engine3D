@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.3.0 LANGUAGES CXX)
+project(Engine3D VERSION 2.3.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -279,7 +279,7 @@ if(WIN32)
         ARCHIVE DESTINATION lib/$<CONFIG>
     )
 
-    install(FILES ${HEADERS} DESTINATION .)
+    install(FILES ${HEADERS} DESTINATION include)
 
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ DESTINATION .)
 

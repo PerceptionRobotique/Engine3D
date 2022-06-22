@@ -28,6 +28,8 @@ namespace MIS
         , opacityEnabled(false)
         , opacity(1.0f)
         , blendFunction(BLEND_1)
+        , lightOnMainCamera(true)
+        , lightPosition(0, 5, 0)
         , renderAsked(false)
         , maxSamples(-1)
         , viewDistance(150.0f)
@@ -70,6 +72,8 @@ namespace MIS
         connect(this, SIGNAL(askClose(unsigned int)), this, SLOT(closeModel(unsigned int)));
         connect(mainCamera, SIGNAL(cameraChanged()), this, SLOT(nextModelsUpdate()));
         connect(mainCamera, SIGNAL(cameraChanged()), this, SIGNAL(askUpdate()));
+        connect(mainCamera, SIGNAL(cameraMoved()), this, SLOT(nextModelsUpdate()));
+        connect(mainCamera, SIGNAL(cameraMoved()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
         connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
 #ifdef HAVE_VISP
@@ -82,6 +86,8 @@ namespace MIS
         connect(this, SIGNAL(askOpacityEnabled(bool)), this, SLOT(setOpacityEnabled(bool)));
         connect(this, SIGNAL(askOpacity(float)), this, SLOT(setOpacity(float)));
         connect(this, SIGNAL(askBlendFunction(BlendFunction)), this, SLOT(setBlendFunction(BlendFunction)));
+        connect(this, SIGNAL(askLightOnMainCamera(bool)), this, SLOT(setLightOnMainCamera(bool)));
+        connect(this, SIGNAL(askLightPosition(vec3)), this, SLOT(setLightPosition(vec3)));
 
 #ifdef HAVE_VR
         connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -289,8 +295,8 @@ namespace MIS
 
             shaders[Model3D::TRIANGLES] = new QOpenGLShaderProgram;
             shaders[Model3D::TRIANGLES]->create();
-            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/SimpleOBJ.vert");
-            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/SimpleOBJ.frag");
+            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/Shaders/AdvancedOBJ.vert");
+            shaders[Model3D::TRIANGLES]->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/Shaders/AdvancedOBJ.frag");
             if (!shaders[Model3D::TRIANGLES]->link()) qDebug() << "Can't link shader.";
 
             boxShader = new QOpenGLShaderProgram;
@@ -311,6 +317,8 @@ namespace MIS
             setOpacityEnabled(opacityEnabled);
             setOpacity(opacity);
             setBlendFunction(blendFunction);
+            setLightOnMainCamera(lightOnMainCamera);
+            setLightPosition(lightPosition);
 
             initialized = true;
             emit initializationFinished();
@@ -357,8 +365,9 @@ namespace MIS
 
         connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
-        //connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelChanged()), this, SLOT(nextModelsUpdate()));
+        connect(models.last(), SIGNAL(modelRenderChanged()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelMoved()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelDestroyed()), this, SLOT(nextModelsUpdate()));
 
@@ -694,6 +703,38 @@ namespace MIS
         }
     }
 
+    void Engine3D::setLightOnMainCamera(bool enabled)
+    {
+        if (QThread::currentThread() != thread())
+            emit askLightOnMainCamera(enabled);
+        else
+        {
+            lightOnMainCamera = enabled;
+            makeCurrent();
+            shaders[Model3D::TRIANGLES]->bind();
+            glUniform1i(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "lightOnCamera"), lightOnMainCamera);
+            shaders[Model3D::TRIANGLES]->release();
+            doneCurrent();
+            emit askUpdate();
+        }
+    }
+
+    void Engine3D::setLightPosition(vec3 _lightPosition)
+    {
+        if (QThread::currentThread() != thread())
+            emit askLightPosition(_lightPosition);
+        else
+        {
+            lightPosition = _lightPosition;
+            makeCurrent();
+            shaders[Model3D::TRIANGLES]->bind();
+            glUniform3fv(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "lightPosition"), 1, value_ptr(lightPosition));
+            shaders[Model3D::TRIANGLES]->release();
+            doneCurrent();
+            emit askUpdate();
+        }
+    }
+
     void Engine3D::setViewDistance(double _viewDistance)
     {
         viewDistance = _viewDistance;
@@ -905,8 +946,8 @@ namespace MIS
                         {
                             shader->bind();
                             shader->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
-                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
-                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "cMw"), 1, GL_FALSE, camera->getcMwPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "iMc"), 1, GL_FALSE, camera->getProjectionPtr());
                             shader->release();
                         }
 
@@ -956,8 +997,8 @@ namespace MIS
 
                         if (boxShader->bind())
                         {
-                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, camera->getcMwPtr());
-                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, camera->getProjectionPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, camera->getcMwPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, camera->getProjectionPtr());
                             for (Model3D* model : models)
                             {
                                 if (camera->cullingTest(model)) model->drawBox(boxShader);
@@ -1007,8 +1048,8 @@ namespace MIS
                                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                                 shaders[Model3D::POINTS]->setUniformValue("equirectangular", vrCameras[i]->getProjectionType() == Camera::EQUIRECTANGULAR);
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "view"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "projection"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
 
                                 for (Model3D* model : models)
                                 {
@@ -1053,8 +1094,8 @@ namespace MIS
 
                             if (boxShader->bind())
                             {
-                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "view"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
-                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "projection"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
                                 for (Model3D* model : models)
                                 {
                                     if (vrCameras[i]->cullingTest(model)) model->drawBox(boxShader);

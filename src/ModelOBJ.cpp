@@ -3,6 +3,20 @@
 namespace MIS
 {
 
+	ModelOBJ::Material::Material(const Material& m)
+		: name(m.name)
+		, Ns(m.Ns)
+		, Ka{ m.Ka[0], m.Ka[1], m.Ka[2] }
+		, Kd{ m.Kd[0], m.Kd[1], m.Kd[2] }
+		, Ks{ m.Ks[0], m.Ks[1], m.Ks[2] }
+		, Ke{ m.Ke[0], m.Ke[1], m.Ke[2] }
+		, Ni(m.Ni)
+		, d(m.d)
+		, illum(m.illum)
+		, map_Kd(m.map_Kd)
+	{
+	}
+
 	ModelOBJ::Material::Material(QString fileName)
 		: Ns(0)
 		, Ka{0, 0, 0}
@@ -74,6 +88,7 @@ namespace MIS
 				else if (element == "map_Kd")
 				{
 					ls >> map_Kd;
+					map_Kd = QFileInfo(fileName).path() + "/" + map_Kd;
 				}
 			}
 			file.close();
@@ -90,7 +105,20 @@ namespace MIS
 
 	void ModelOBJ::loadRamThread()
 	{
-		pos = v;
+		for (unsigned int i = 0; i < f.count(); i++)
+		{
+			for (unsigned int j = 0; j < 3; j++)
+			{
+				pos.append(v[f[i][j][0] - 1]);
+				uv.append(vt[f[i][j][1] - 1]);
+				normal.append(vn[f[i][j][2] - 1]);
+			}
+		}
+
+		for (Material& material : materials)
+		{
+			textures.append(QImage(material.map_Kd).mirrored());
+		}
 	}
 
 	void ModelOBJ::prepare()
@@ -157,22 +185,23 @@ namespace MIS
 			}
 			else if (element == "f")
 			{
-				f.append(QVector<vec3>(3));
+				QVector<vec3> separated(3);
 				for (unsigned int i = 0; i < 3; i++)
 				{
 					ls >> element;
 					QStringList fl = element.split("/");
-					vec3 _f;
 					for (unsigned int j = 0; j < 3; j++)
-						_f[j] = fl[j].toInt();
-					f.last()[i] = _f;
+						separated[i][j] = fl[j].toInt();
 				}
+				f.append(separated);
 			}
 		}
 
+		vertexNumber = 3 * f.count();
 		aabb.gravity /= v.count();
 		aabb.updateCenter();
 		setAABB(aabb);
+		prepared = true;
 	}
 
 }

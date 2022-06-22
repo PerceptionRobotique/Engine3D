@@ -1,20 +1,31 @@
-#version 330
+//#version 330
+#ifdef GL_ES
+precision mediump int;
+precision mediump float;
+#endif
 
-in vec2 texCoord;
-in vec4 color;
-in vec3 normal;
 vec3 lightPos;
 
 uniform sampler2D textureData;
-out vec4 FragColor;
+uniform bool lightOnCamera;
+uniform vec3 lightPosition;
+uniform mat4 wMo;
+uniform mat4 cMw;
+
+varying vec3 normal;
+varying vec2 texCoord;
+
 void main()
 {
-    lightPos = vec3(-1.0,-1.0, -1.0);
+    vec3 lightPos;
+    if(lightOnCamera)
+        lightPos = inverse(wMo) * inverse(cMw)[3];
+    else
+        lightPos = inverse(wMo) * vec4(lightPosition, 1.0);
     vec3 norm = normalize(normal);
-    vec3 lightDir = normalize(lightPos - FragColor.xyz);
+    vec3 lightDir = normalize(lightPos - gl_FragColor.xyz);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = diff * vec3(1.0,1.0,1.0);
-    vec3 result =  diffuse * texture(textureData, texCoord).xyz;
-    FragColor = vec4(result, 1.0);
-    //FragColor = texture(textureData, texCoord);
+    vec3 diffuse = diff * vec3(1.0, 1.0, 1.0);
+    vec3 result =  diffuse * texture2D(textureData, texCoord).xyz;
+    gl_FragColor = vec4(result, 1.0);
 }

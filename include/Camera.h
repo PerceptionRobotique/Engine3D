@@ -155,6 +155,7 @@ namespace MIS
 
     signals:
         void cameraChanged();
+        void cameraMoved();
         void sizeChanged();
 
     private:

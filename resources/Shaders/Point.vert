@@ -9,9 +9,10 @@ attribute vec3 in_vertex;
 attribute vec3 in_color;
 attribute float in_intensity;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 wMo;
+uniform mat4 cMw;
+uniform mat4 iMc;
+
 uniform float opacity;
 uniform bool showIntensity;
 uniform bool customColor;
@@ -31,7 +32,7 @@ void main()
     if(equirectangular)
     {
         // changement de repere objet -> camera
-        vec4 cP = view * model * vec4(in_vertex, 1.0);
+        vec4 cP = cMw * wMo * vec4(in_vertex, 1.0);
         float fact = length(cP.xyz);
 
         // projection spherique
@@ -43,16 +44,16 @@ void main()
         cP.z = -3.14;
 
         //"projection" (division par Z)
-        gl_Position = projection * cP;
+        gl_Position = iMc * cP;
 
         //cette ligne et suivante pour mettre rho code a la zbuffer dans le zbuffer
-        cP = projection * vec4(0.,0.,-fact,1.);
+        cP = iMc * vec4(0.,0.,-fact,1.);
 
         gl_Position.z = gl_Position.w*cP.z/cP.w;
     }
     else
     {
-        gl_Position = projection * view * model * vec4(in_vertex, 1.0);
+        gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
     }
 
     if (customColor) color = vec4(R,G,B, opacity);
