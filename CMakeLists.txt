@@ -142,7 +142,6 @@ if(WITH_VISP)
         me
         vision
         visual_features
-        # vs
     )
 
     find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
@@ -334,8 +333,10 @@ if(WIN32)
             )
         endforeach()
         install(FILES ${VISP_EXTRA_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
-        install(DIRECTORY ${VISP_DIR}/include/ DESTINATION include/3rdParty/ViSP)
-        install(FILES ${VISP_EXTRA_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/ViSP)
+        # install(DIRECTORY ${VISP_DIR}/include/ DESTINATION include/3rdParty/ViSP)
+        # install(FILES ${VISP_EXTRA_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/ViSP)
+
+        install(DIRECTORY ${VISP_DIR}/ DESTINATION 3rdParty/ViSP)
     endif()
 
     if(WITH_VR)
@@ -343,6 +344,25 @@ if(WIN32)
         install(DIRECTORY ${OPENVR_INCLUDE_DIRS}/ DESTINATION include/3rdParty/OpenVR)
         install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
     endif()
+
+    file(WRITE Engine3DExtras.cmake)
+    if(WITH_CONTROLLER)
+        file(APPEND Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
+    endif()
+    if(WITH_OPENCV)
+        file(APPEND Engine3DExtras.cmake "set(WITH_OPENCV ON)\n")
+        file(APPEND Engine3DExtras.cmake "set(OpenCV_VERSION ${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH})\n")
+        file(APPEND Engine3DExtras.cmake "list(APPEND OpenCV_COMPONENTS ${OpenCV_COMPONENTS})\n")
+    endif()
+    if(WITH_VISP)
+        file(APPEND Engine3DExtras.cmake "set(WITH_VISP ON)\n")
+        file(APPEND Engine3DExtras.cmake "set(VISP_VERSION ${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH})\n")
+        file(APPEND Engine3DExtras.cmake "list(APPEND VISP_COMPONENTS ${VISP_COMPONENTS})\n")
+    endif()
+    if(WITH_VR)
+        file(APPEND Engine3DExtras.cmake "set(WITH_VR ON)")
+    endif()
+    install(FILES Engine3DExtras.cmake DESTINATION .)
 
 ### 3rdParty ###
     # install(DIRECTORY ${PACKAGE_PREFIX_DIR}/ DESTINATION 3rdParty/Qt)

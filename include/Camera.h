@@ -138,6 +138,8 @@ namespace MIS
         void setFarPlane(double _farPlane);
         void setFOV(float _fov);
         void setFOV(double _fov);
+        void setVFOV(float _fov);
+        void setVFOV(double _fov);
         void setHFOV(float _fov);
         void setHFOV(double _fov);
         void setProjectionType(Camera::ProjectionType _projectionType);

@@ -49,30 +49,48 @@ else()
 endif()
 
 if(WIN32)
+    include(${Engine3D_DIR}/Engine3DExtras.cmake)
+    ### CONTROLLER ###
+    if(WITH_CONTROLLER)
+        add_compile_definitions(HAVE_CONTROLLER)
+    endif()
+
     ### OpenCV ###
-    if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/OpenCV)
+    if(WITH_OPENCV)
         set(WITH_OPENCV true)
         add_compile_definitions(HAVE_OPENCV)
 
         list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/OpenCV)
         list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenCV)
-        file(GLOB OpenCV_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenCV)
+        # file(GLOB OpenCV_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenCV)
+        foreach(OpenCV_COMPONENT ${OpenCV_COMPONENTS})
+            list(APPEND OpenCV_LIBS opencv_${OpenCV_COMPONENT}${OpenCV_VERSION}$<$<CONFIG:Debug>:d>)
+        endforeach()
         list(APPEND Engine3D_LIBRARIES ${OpenCV_LIBS})
     endif()
 
     ### ViSP ###
-    if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/ViSP)
+    if(WITH_VISP)
         set(WITH_VISP true)
         add_compile_definitions(HAVE_VISP)
 
-        list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/ViSP)
-        list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
-        file(GLOB VISP_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
+        set(VISP_DIR ${Engine3D_DIR}/3rdParty/ViSP)
+        find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
+        set(VISP_INCLUDE_DIRS ${VISP_DIR}/include)
+        set(VISP_LIBRARIES_DIR ${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/lib)
+
+        # list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/ViSP)
+        # list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
+        # # file(GLOB VISP_LIBS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/ViSP)
+        foreach(VISP_COMPONENT ${VISP_COMPONENTS})
+            list(APPEND VISP_LIBS visp_${VISP_COMPONENT}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>)
+        endforeach()
+        list(APPEND Engine3D_LIBRARIES_DIRS ${VISP_LIBRARIES_DIR})
         list(APPEND Engine3D_LIBRARIES ${VISP_LIBS})
     endif()
 
     ### OpenVR ###
-    if(IS_DIRECTORY ${Engine3D_DIR}/include/3rdParty/OpenVR)
+    if(WITH_VR)
         set(WITH_VR true)
         add_compile_definitions(HAVE_VR)
 

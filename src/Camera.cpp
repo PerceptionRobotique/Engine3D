@@ -892,6 +892,19 @@ namespace MIS
     {
         float hfov = 2.0f * degrees(atan(tan(radians(_fov) / 2.0f) * getAspectRatio()));
         av = size.height() / (2.0f * tan(radians(_fov / 2.0f)));
+        setAu(av);
+        emit cameraChanged();
+    }
+
+    void Camera::setVFOV(float _fov)
+    {
+        setFOV((double)_fov);
+    }
+
+    void Camera::setVFOV(double _fov)
+    {
+        float hfov = 2.0f * degrees(atan(tan(radians(_fov) / 2.0f) * getAspectRatio()));
+        av = size.height() / (2.0f * tan(radians(_fov / 2.0f)));
         emit cameraChanged();
     }
 
