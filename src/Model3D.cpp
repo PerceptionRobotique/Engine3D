@@ -548,8 +548,8 @@ namespace MIS
             {
                 if (isOnVRAM())
                 {
-                    mat4 wMo = getwMo();
-                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
+                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "wMo"), 1, GL_FALSE, value_ptr(getwMo()));
+                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "oMw"), 1, GL_FALSE, value_ptr(inverse(getwMo())));
 
                     shader->setUniformValue("customColor", isGlobalColorEnabled());
                     shader->setUniformValue("R", getGlobalColor().redF());
@@ -635,12 +635,12 @@ namespace MIS
                 {
                     mat4 wMo = getwMo();
                     glm::vec3 color = glm::vec3(boxColor.redF(), boxColor.greenF(), boxColor.blueF());
-                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "model"), 1, GL_FALSE, value_ptr(wMo));
-                    f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "in_color"), 1, value_ptr(color));
+                    f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
+                    f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "color"), 1, value_ptr(color));
 
                     boxBuffer.bind();
-                    shader->enableAttributeArray("pos");
-                    shader->setAttributeBuffer("pos", GL_FLOAT, 0, 3);
+                    shader->enableAttributeArray("in_vertex");
+                    shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
                     boxBuffer.release();
 
                     if (!boxIndexBuffer.isCreated())
@@ -653,7 +653,7 @@ namespace MIS
                     boxIndexBuffer.bind();
                     f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
                     boxIndexBuffer.release();
-                    shader->disableAttributeArray("pos");
+                    shader->disableAttributeArray("in_vertex");
 
                     drawn = true;
                 }

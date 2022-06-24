@@ -15,7 +15,6 @@
 #include <glm/matrix.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "Object3DQt.h"
@@ -82,9 +81,8 @@ namespace MIS
         Camera::ProjectionType getProjectionType() const;
         Camera::ViewPoint getViewPoint() const;
         mat4 getProjection() const;
-        float* getProjectionPtr();
+        mat4 getiMc() const;
         mat4 getcMw() const;
-        float* getcMwPtr();
         mat4 getwMc() const;
         bool cullingTest(const Model3D* model) const;
         float distanceWith(const Model3D* model) const;

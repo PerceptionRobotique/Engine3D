@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
 
     //QString modelName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle")
     //engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
-    engine.openModel(diskRoot + "/Users/nvill/3D Objects/Suzanne/Suzanne.obj");
+    engine.openModel(diskRoot + "/Users/nvill/3D Objects/SuzanneTri/Suzanne.obj");
     engine.openModel(diskRoot + "/Users/nvill/3D Objects/Suzanne/Suzanne.obj");
 
     engine.getModel(0)->setPosition(vec3(-1, 0, 0));

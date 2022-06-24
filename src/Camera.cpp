@@ -457,21 +457,14 @@ namespace MIS
         return projection;
     }
 
-    float* Camera::getProjectionPtr()
+    mat4 Camera::getiMc() const
     {
-        proj = getProjection();
-        return value_ptr(proj);
+        return getProjection();
     }
 
     mat4 Camera::getcMw() const
     {
         return inverse(getPose());
-    }
-
-    float* Camera::getcMwPtr()
-    {
-        view = inverse(getPose());
-        return value_ptr(view);
     }
 
     mat4 Camera::getwMc() const

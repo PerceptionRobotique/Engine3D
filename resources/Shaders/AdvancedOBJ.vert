@@ -14,6 +14,7 @@ uniform mat4 iMc;
 
 uniform bool equirectangular;
 
+varying vec3 vertex;
 varying vec3 normal;
 varying vec2 texCoord;
 
@@ -44,6 +45,7 @@ void main()
     else
         gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
 
+    vertex = in_vertex;
     normal = in_normal;
     texCoord = in_uv;
 }

@@ -115,6 +115,7 @@ namespace MIS
         if (camera)
         {
             onScreen |= camera->isActive();
+            onScreen &= model->isVisible();
             if (onScreen)
             {
                 onScreen &= camera->cullingTest(model);
@@ -671,17 +672,20 @@ namespace MIS
         {
             opacity = _opacity;
             makeCurrent();
-            if (opacityEnabled)
+            for (QOpenGLShaderProgram* shader : shaders)
             {
-                shaders[Model3D::POINTS]->bind();
-                shaders[Model3D::POINTS]->setUniformValue("opacity", opacity);
-                shaders[Model3D::POINTS]->release();
-            }
-            else
-            {
-                shaders[Model3D::POINTS]->bind();
-                shaders[Model3D::POINTS]->setUniformValue("opacity", 1.0f);
-                shaders[Model3D::POINTS]->release();
+                if (opacityEnabled)
+                {
+                    shader->bind();
+                    shader->setUniformValue("opacity", opacity);
+                    shader->release();
+                }
+                else
+                {
+                    shader->bind();
+                    shader->setUniformValue("opacity", 1.0f);
+                    shader->release();
+                }
             }
             doneCurrent();
             emit askUpdate();
@@ -946,8 +950,9 @@ namespace MIS
                         {
                             shader->bind();
                             shader->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
-                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "cMw"), 1, GL_FALSE, camera->getcMwPtr());
-                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "iMc"), 1, GL_FALSE, camera->getProjectionPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "cMw"), 1, GL_FALSE, value_ptr(camera->getcMw()));
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "wMc"), 1, GL_FALSE, value_ptr(camera->getwMc()));
+                            glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "iMc"), 1, GL_FALSE, value_ptr(camera->getiMc()));
                             shader->release();
                         }
 
@@ -997,8 +1002,8 @@ namespace MIS
 
                         if (boxShader->bind())
                         {
-                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, camera->getcMwPtr());
-                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, camera->getProjectionPtr());
+                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(camera->getcMw()));
+                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(camera->getiMc()));
                             for (Model3D* model : models)
                             {
                                 if (camera->cullingTest(model)) model->drawBox(boxShader);
@@ -1048,8 +1053,8 @@ namespace MIS
                                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
                                 shaders[Model3D::POINTS]->setUniformValue("equirectangular", vrCameras[i]->getProjectionType() == Camera::EQUIRECTANGULAR);
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
 
                                 for (Model3D* model : models)
                                 {
@@ -1094,8 +1099,8 @@ namespace MIS
 
                             if (boxShader->bind())
                             {
-                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, vrCameras[i]->getcMwPtr());
-                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, vrCameras[i]->getProjectionPtr());
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
+                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
                                 for (Model3D* model : models)
                                 {
                                     if (vrCameras[i]->cullingTest(model)) model->drawBox(boxShader);

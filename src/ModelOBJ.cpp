@@ -185,15 +185,66 @@ namespace MIS
 			}
 			else if (element == "f")
 			{
-				QVector<vec3> separated(3);
-				for (unsigned int i = 0; i < 3; i++)
+				QStringList indexes = ls.readLine().split(" ");
+				indexes.removeAll("");
+				QVector<vec3> separated(indexes.count());
+				switch (indexes.count())
 				{
-					ls >> element;
-					QStringList fl = element.split("/");
-					for (unsigned int j = 0; j < 3; j++)
-						separated[i][j] = fl[j].toInt();
+				case 3:
+				{
+					for (unsigned int i = 0; i < 3; i++)
+					{
+						QStringList fl = indexes[i].split("/");
+						for (unsigned int j = 0; j < 3; j++)
+							separated[i][j] = fl[j].toInt();
+					}
+					f.append(separated);
 				}
-				f.append(separated);
+					break;
+
+				case 4:
+				{
+					unsigned int si = 0;
+					for (unsigned int i = 0; i < 3; i++)
+					{
+						QStringList fl = indexes[i].split("/");
+						for (unsigned int j = 0; j < 3; j++)
+							separated[si][j] = fl[j].toInt();
+						si++;
+					}
+					f.append(separated);
+
+					separated.clear();
+					separated.resize(3);
+					si = 0;
+					for (unsigned int i = 1; i < 4; i++)
+					{
+						QStringList fl = indexes[i].split("/");
+						for (unsigned int j = 0; j < 3; j++)
+							separated[si][j] = fl[j].toInt();
+						si++;
+					}
+					f.append(separated);
+
+					separated.clear();
+					separated.resize(3);
+					si = 0;
+					unsigned int indices[3] = { 0, 2, 3 };
+					for (unsigned int i : indices)
+					{
+						QStringList fl = indexes[i].split("/");
+						for (unsigned int j = 0; j < 3; j++)
+							separated[si][j] = fl[j].toInt();
+						si++;
+					}
+					f.append(separated);
+					break;
+				}
+
+				default:
+					qDebug() << "Indexes size not computed : " << indexes.count();
+					break;
+				}
 			}
 		}
 
