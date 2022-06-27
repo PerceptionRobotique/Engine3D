@@ -425,7 +425,7 @@ elseif(UNIX)
         file(APPEND Engine3DExtras.cmake "set(WITH_VR ON)\n")
         string(APPEND Engine3D_DEPENDENCIES ", libopenvr-dev")
     endif()
-    file(APPEND Engine3DExtras.cmake "string(APPEND Engine3D_DEPENDENCIES ${Engine3D_DEPENDENCIES})\n")
+    file(APPEND Engine3DExtras.cmake "set(Engine3D_DEPENDENCIES \"${Engine3D_DEPENDENCIES}\")\n")
     install(FILES Engine3DExtras.cmake DESTINATION lib/cmake/Engine3D)
 
     set(CPACK_PACKAGE_NAME Engine3D)
