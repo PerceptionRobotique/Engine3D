@@ -1,0 +1,29 @@
+/*!
+\mainpage
+\section Requirements
+- Qt 6.3.0 (not sure if it can be used with more recent Qt versions)
+ 
+\section CMakeListsMinimumCommands CMakeLists minimum commands
+CMake commands used to include Engine3D library.
+\verbatim find_package(Engine3D REQUIRED)
+
+target_include_directories(ProjectName PRIVATE ${Engine3D_INCLUDE_DIRS})
+
+target_link_libraries(ProjectName PRIVATE ${Engine3D_LIBRARIES})\endverbatim
+
+\subsection CMakeListsOptionnalCommands CMakeLists optionnal commands
+This part can be used to copy every needed DLL from Engine3D next to project binary file.
+\verbatim if(WIN32)
+    add_custom_command(TARGET ProjectName POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${Engine3D_DLL}
+        $<TARGET_FILE_DIR:ProjectName>
+    )
+
+    add_custom_command(TARGET ProjectName POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${Engine3D_EXTRA_DLL_DIR}
+        $<TARGET_FILE_DIR:ProjectName>
+    )
+endif()\endverbatim
+*/

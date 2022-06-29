@@ -24,7 +24,9 @@
 
 namespace MIS
 {
-
+    /// <summary>
+    /// This class helps controlling the camera with devices. It supports keyboard, mouse, touchscreen, Controller, VR Controllers.
+    /// </summary>
     class ENGINE3D_EXPORT CameraController : public QObject
     {
         Q_OBJECT

@@ -14,6 +14,7 @@ namespace MIS
 
     Model3D::Model3D(QString _fileName)
         : vertexNumber(0)
+        , scale(1.0f)
         , prepared(false)
         , showIntensity(false)
         , visible(true)
@@ -154,6 +155,11 @@ namespace MIS
     Model3D::Primitives Model3D::getPrimitives() const
     {
         return primitives;
+    }
+
+    float Model3D::getScale() const
+    {
+        return scale;
     }
 
     mat4 Model3D::getwMo() const
@@ -660,6 +666,17 @@ namespace MIS
             }
         }
         return drawn;
+    }
+
+    void Model3D::setScale(float _scale)
+    {
+        unloadBoxRAM();
+        aabb.min /= scale;
+        aabb.max /= scale;
+        scale = _scale;
+        aabb.min *= scale;
+        aabb.max *= scale;
+        loadBoxRAM();
     }
 
     void Model3D::setwMo(mat4 wMo)

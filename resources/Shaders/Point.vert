@@ -12,6 +12,7 @@ attribute float in_intensity;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
+uniform float scale = 1.0f;
 
 uniform float opacity;
 uniform bool showIntensity;
@@ -27,6 +28,7 @@ varying vec4 color;
 
 void main()
 {
+    in_vertex *= scale;
     gl_PointSize = pointSize;
 
     if(equirectangular)

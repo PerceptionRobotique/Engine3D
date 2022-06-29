@@ -33,6 +33,10 @@ namespace MIS
         FBOMutex.unlock();
     }
 
+    /// <summary>
+    /// Get current camera framebuffer object.
+    /// </summary>
+    /// <returns>Framebuffer object. May be nullptr if camera size or samples changed.</returns>
     QOpenGLFramebufferObject* Camera::getFBO() const
     {
         return FBO;

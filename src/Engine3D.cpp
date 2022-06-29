@@ -9,7 +9,14 @@ void initEngine3DResources() //needs to be launch outside of any namespace
 
 namespace MIS
 {
-
+    /// <summary>
+    /// Create Engine3D instance.
+    /// </summary>
+    /// <param name="_renderMode">Select how the engine manages OpenGL context
+    /// - NONE : no OpenGL context (useful when a widget already has an OpenGL context)
+    /// - DIRECT : renders models directly (useful for scripted programs)
+    /// - THREADED : renders models directly and send frameReady(QImage) signals when frame is ready (useful for GUI so the interface will never be stucked while rendering)</param>
+    /// <param name="parent">parent object</param>
     Engine3D::Engine3D(RenderMode _renderMode, QObject* parent)
         : QObject(parent)
         , renderMode(_renderMode)
@@ -961,6 +968,7 @@ namespace MIS
                             QOpenGLShaderProgram* shader = shaders[model->getPrimitives()];
                             if (shader->bind())
                             {
+                                shader->setUniformValue("scale", model->getScale());
                                 if (model->isOnRAM())
                                 {
                                     if (model->isOnVRAM()) model->draw(shader);
@@ -1003,6 +1011,7 @@ namespace MIS
                         if (boxShader->bind())
                         {
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(camera->getcMw()));
+                            glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "wMc"), 1, GL_FALSE, value_ptr(camera->getwMc()));
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(camera->getiMc()));
                             for (Model3D* model : models)
                             {
@@ -1042,30 +1051,38 @@ namespace MIS
                     {
                         if (vrCameras[i]->bind())
                         {
-                            if (shaders[Model3D::POINTS]->bind())
+                            glViewport(0, 0, vrCameras[i]->getWidth(), vrCameras[i]->getHeight());
+                            glClearColor(
+                                vrCameras[i]->getBackgroundColor().redF(),
+                                vrCameras[i]->getBackgroundColor().greenF(),
+                                vrCameras[i]->getBackgroundColor().blueF(),
+                                vrCameras[i]->getBackgroundColor().alphaF());
+                            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                            for (QOpenGLShaderProgram* shader : shaders)
                             {
-                                glViewport(0, 0, vrCameras[i]->getWidth(), vrCameras[i]->getHeight());
-                                glClearColor(
-                                    vrCameras[i]->getBackgroundColor().redF(),
-                                    vrCameras[i]->getBackgroundColor().greenF(),
-                                    vrCameras[i]->getBackgroundColor().blueF(),
-                                    vrCameras[i]->getBackgroundColor().alphaF());
-                                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                                shader->bind();
+                                shader->setUniformValue("equirectangular", vrCameras[i]->getProjectionType() == Camera::EQUIRECTANGULAR);
+                                glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
+                                glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "wMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getwMc()));
+                                glUniformMatrix4fv(glGetUniformLocation(shader->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
+                                shader->release();
+                            }
 
-                                shaders[Model3D::POINTS]->setUniformValue("equirectangular", vrCameras[i]->getProjectionType() == Camera::EQUIRECTANGULAR);
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
-
-                                for (Model3D* model : models)
+                            for (Model3D* model : models)
+                            {
+                                QOpenGLShaderProgram* shader = shaders[model->getPrimitives()];
+                                if(shader->bind())
                                 {
+                                    shader->setUniformValue("scale", model->getScale());
                                     if (model->isOnRAM())
                                     {
-                                        if (model->isOnVRAM()) model->draw(shaders[Model3D::POINTS]);
+                                        if (model->isOnVRAM()) model->draw(shader);
                                         else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                         {
                                             vertexToVRAM += model->getVertexNumber();
                                             model->loadVRAM(waitLoading);
-                                            model->draw(shaders[Model3D::POINTS]);
+                                            model->draw(shader);
                                         }
                                         else emit askUpdate();
                                     }
@@ -1079,12 +1096,12 @@ namespace MIS
                                             {
                                                 if (child->isOnRAM())
                                                 {
-                                                    if (child->isOnVRAM()) child->draw(shaders[Model3D::POINTS]);
+                                                    if (child->isOnVRAM()) child->draw(shader);
                                                     else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                                     {
                                                         vertexToVRAM += child->getVertexNumber();
                                                         child->loadVRAM(waitLoading);
-                                                        child->draw(shaders[Model3D::POINTS]);
+                                                        child->draw(shader);
                                                     }
                                                     else emit askUpdate();
                                                 }
@@ -1092,15 +1109,16 @@ namespace MIS
                                             }
                                         }
                                     }
+                                    shader->release();
                                 }
-                                shaders[Model3D::POINTS]->release();
+                                else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
                             }
-                            else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
 
                             if (boxShader->bind())
                             {
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
-                                glUniformMatrix4fv(glGetUniformLocation(shaders[Model3D::POINTS]->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "wMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getwMc()));
+                                glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
                                 for (Model3D* model : models)
                                 {
                                     if (vrCameras[i]->cullingTest(model)) model->drawBox(boxShader);

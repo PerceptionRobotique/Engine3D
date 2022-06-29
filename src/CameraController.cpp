@@ -469,6 +469,10 @@ namespace MIS
     }
 #endif
 
+    /// <summary>
+    /// Enables or disables the control of the camera.
+    /// </summary>
+    /// <param name="_active"></param>
     void CameraController::setActive(bool _active)
     {
         if (active != _active)

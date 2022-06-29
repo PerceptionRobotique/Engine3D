@@ -11,6 +11,7 @@ attribute vec2 in_uv;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
+uniform float scale = 10.0f;
 
 uniform bool equirectangular;
 
@@ -20,6 +21,7 @@ varying vec2 texCoord;
 
 void main()
 {
+    in_vertex *= scale;
     if(equirectangular)
     {
         // changement de repere objet -> camera

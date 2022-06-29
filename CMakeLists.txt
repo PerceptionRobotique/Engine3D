@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.4.0 LANGUAGES CXX)
+project(Engine3D VERSION 2.4.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -176,6 +176,16 @@ if(WITH_VR)
     add_compile_definitions(HAVE_VR)
 endif()
 
+### DOXYGEN ###
+set(GENERATE_DOXYGEN CACHE BOOL "Doxygen documentation generator")
+if(GENERATE_DOXYGEN)
+    find_package(Doxygen REQUIRED)
+    doxygen_add_docs(Doxygen
+        doc include src examples
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+endif()
+
 ### SOURCES ###
 list(APPEND HEADERS
     include/Object3D.h
@@ -345,7 +355,14 @@ if(WIN32)
         install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
     endif()
 
-    file(WRITE Engine3DExtras.cmake)
+    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
+    endif()
+
+    file(WRITE Engine3DExtras.cmake "set(Engine3D_VERSION ${Engine3D_VERSION})\n")
+    file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_MAJOR ${Engine3D_VERSION_MAJOR})\n")
+    file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_MINOR ${Engine3D_VERSION_MINOR})\n")
+    file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_PATCH ${Engine3D_VERSION_PATCH})\n")
     if(WITH_CONTROLLER)
         file(APPEND Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
     endif()
@@ -384,6 +401,7 @@ if(WIN32)
     set(CPACK_PACKAGE_VERSION_MINOR ${TARGET_VERSION_MINOR})
     set(CPACK_PACKAGE_VERSION_PATCH ${TARGET_VERSION_PATCH})
     set(CPACK_PACKAGE_INSTALL_DIRECTORY Engine3D)
+    set(CPACK_NSIS_MENU_LINKS doc/index.html "Engine3D documentation")
     include(CPack)
 elseif(UNIX)
     find_program(LSB_RELEASE_EXEC lsb_release)
@@ -406,6 +424,10 @@ elseif(UNIX)
         DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/
         DESTINATION lib/cmake/Engine3D
     )
+
+    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION share/doc/Engine3D)
+    endif()
 
     file(WRITE Engine3DExtras.cmake)
     set(Engine3D_DEPENDENCIES "qt6-base-dev")
@@ -451,34 +473,6 @@ elseif(UNIX)
     set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
-
-set(BUILD_TEST OFF CACHE BOOL "Build test program")
-if(BUILD_TEST)
-    add_subdirectory(Test)
-    if(BUILD_SHARED_LIBS)
-        if(WIN32)
-            add_custom_command(TARGET Engine3D POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                $<TARGET_FILE_DIR:Test>/${Engine3D_LIBRARIES}.dll
-            )
-        endif()
-    endif()
-endif()
-
-set(BUILD_OFFSCREEN_TEST OFF CACHE BOOL "Build test program")
-if(BUILD_OFFSCREEN_TEST)
-    add_subdirectory(OffscreenTest)
-    if(BUILD_SHARED_LIBS)
-        if(WIN32)
-            add_custom_command(TARGET Engine3D POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${Engine3D_LIBRARIES_DIR}/${Engine3D_LIBRARIES}.dll"
-                $<TARGET_FILE_DIR:OffscreenTest>/${Engine3D_LIBRARIES}.dll
-        )
-        endif()
-    endif()
-endif()
 
 if(PRINT_CMAKE_VARIABLES)
         get_cmake_property(_variableNames VARIABLES)

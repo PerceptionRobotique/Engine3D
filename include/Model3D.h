@@ -88,6 +88,7 @@ namespace MIS
         QString getName() const;
 
         Primitives getPrimitives() const;
+        float getScale() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
         QVector<glm::vec3> getBox() const;
@@ -140,6 +141,7 @@ namespace MIS
         virtual bool draw(QOpenGLShaderProgram* shader);
         virtual bool drawBox(QOpenGLShaderProgram* shader);
 
+        void setScale(float _scale);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
@@ -204,6 +206,7 @@ namespace MIS
         void unloadRAMthread();
 
         unsigned long long vertexNumber;
+        float scale;
         QVector<glm::vec3> pos;
         QVector<unsigned char> color;
         QVector<unsigned char> intensity;
