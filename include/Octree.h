@@ -20,6 +20,7 @@ namespace MIS
 		Octree(Octree* _parent = nullptr, QString _fileName = "");
 		~Octree();
 
+		Octree* getMainOctree();
 		Octree* getChild(unsigned int index);
 		QVector<Octree*>& getChildren();
 		QVector<Octree*>& getAllChildren();
@@ -36,6 +37,10 @@ namespace MIS
 		bool isBoxVisible() const override;
 		bool isGlobalColorEnabled() const override;
 		QColor getGlobalColor() const override;
+
+		glm::vec3 getPosAt(unsigned long long index) override;
+		QVector<unsigned char> getColorAt(unsigned long long index) override;
+		unsigned char getIntensityAt(unsigned long long index) override;
 
 		Octree* operator[](std::size_t index);
 

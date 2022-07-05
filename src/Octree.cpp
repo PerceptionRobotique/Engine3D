@@ -128,6 +128,11 @@ namespace MIS
 #endif
 	}
 
+	Octree* Octree::getMainOctree()
+	{
+		return main;
+	}
+
 	Octree* Octree::getChild(unsigned int index)
 	{
 		return children[index];
@@ -201,6 +206,79 @@ namespace MIS
 	QColor Octree::getGlobalColor() const
 	{
 		return main->Model3D::getGlobalColor();
+	}
+
+	glm::vec3 Octree::getPosAt(unsigned long long index)
+	{
+		if (main == this)
+		{
+			if (index >= vertexNumber)
+			{
+				index -= vertexNumber;
+				unsigned int i = 0;
+				while (index >= allChildren[i]->getVertexNumber())
+					index -= allChildren[i]->getVertexNumber();
+				return allChildren[i]->getPosAt(index);
+			}
+			else
+			{
+				return Model3D::getPosAt(index);
+			}
+		}
+		else
+		{
+			return Model3D::getPosAt(index);
+		}
+	}
+
+	QVector<unsigned char> Octree::getColorAt(unsigned long long index)
+	{
+		if (main == this)
+		{
+			if (index >= vertexNumber)
+			{
+				index -= vertexNumber;
+				unsigned int i = 0;
+				while (index >= allChildren[i]->getVertexNumber())
+					index -= allChildren[i]->getVertexNumber();
+				return allChildren[i]->getColorAt(index);
+			}
+			else
+			{
+				return Model3D::getColorAt(index);
+			}
+		}
+		else
+		{
+			return Model3D::getColorAt(index);
+		}
+	}
+
+	unsigned char Octree::getIntensityAt(unsigned long long index)
+	{
+		if (hasIntensity())
+		{
+			if (main == this)
+			{
+				if (index >= vertexNumber)
+				{
+					index -= vertexNumber;
+					unsigned int i = 0;
+					while (index >= allChildren[i]->getVertexNumber())
+						index -= allChildren[i]->getVertexNumber();
+					return allChildren[i]->getIntensityAt(index);
+				}
+				else
+				{
+					return Model3D::getIntensityAt(index);
+				}
+			}
+			else
+			{
+				return Model3D::getIntensityAt(index);
+			}
+		}
+		else return 0;
 	}
 
 	Octree* Octree::operator[](std::size_t index)

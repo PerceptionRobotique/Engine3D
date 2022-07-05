@@ -132,6 +132,10 @@ if(WITH_VISP)
         message(FATAL_ERROR "ViSP needs OpenCV to work !")
     endif()
 
+    if(ANDROID)
+        list(APPEND VISP_COMPONENTS ar)
+    endif()
+
     list(APPEND VISP_COMPONENTS
         blob
         core
@@ -304,7 +308,6 @@ if(WIN32)
     foreach (qt_plugin ${QT_PLUGINS})
         string(FIND ${qt_plugin} "/" slash)
         string(SUBSTRING ${qt_plugin} 0 ${slash} folder)
-        add_custom_command(TARGET Engine3D POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_INSTALL_PREFIX}/bin/$<CONFIG>/3rdParty/${folder}")
         install(FILES "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/${qt_plugin}$<$<CONFIG:Debug>:d>.dll" DESTINATION bin/$<CONFIG>/3rdParty/${folder})
     endforeach()
     file(GLOB QT_INCLUDE_FILES ${Qt${QT_VERSION_MAJOR}_DIR}/../../../include/*.h)
@@ -355,7 +358,7 @@ if(WIN32)
         install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
     endif()
 
-    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+    if(GENERATE_DOXYGEN AND IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
     endif()
 
@@ -363,6 +366,7 @@ if(WIN32)
     file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_MAJOR ${Engine3D_VERSION_MAJOR})\n")
     file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_MINOR ${Engine3D_VERSION_MINOR})\n")
     file(APPEND Engine3DExtras.cmake "set(Engine3D_VERSION_PATCH ${Engine3D_VERSION_PATCH})\n")
+    file(APPEND Engine3DExtras.cmake "add_compile_definitions(ENGINE3D_VERSION ${Engine3D_VERSION})\n")
     if(WITH_CONTROLLER)
         file(APPEND Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
     endif()
@@ -380,18 +384,6 @@ if(WIN32)
         file(APPEND Engine3DExtras.cmake "set(WITH_VR ON)")
     endif()
     install(FILES Engine3DExtras.cmake DESTINATION .)
-
-### 3rdParty ###
-    # install(DIRECTORY ${PACKAGE_PREFIX_DIR}/ DESTINATION 3rdParty/Qt)
-    # if(WITH_OPENCV)
-    #     install(DIRECTORY ${OpenCV_INSTALL_PATH}/ DESTINATION 3rdParty/OpenCV)
-    # endif()
-    # if(WITH_VISP)
-    #     install(DIRECTORY ${VISP_DIR}/ DESTINATION 3rdParty/ViSP)
-    # endif()
-    # if(WITH_VR)
-    #     install(DIRECTORY ${OPENVR_DIR}/ DESTINATION 3rdParty/OpenVR)
-    # endif()
 
     install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/ DESTINATION .)
 
@@ -430,7 +422,7 @@ elseif(UNIX)
     endif()
 
     file(WRITE Engine3DExtras.cmake)
-    set(Engine3D_DEPENDENCIES "qt6-base-dev")
+    set(Engine3D_DEPENDENCIES "qt6-base-dev, ffmpeg")
     if(WITH_CONTROLLER)
         file(APPEND Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
     endif()
@@ -465,14 +457,33 @@ elseif(UNIX)
     include(CPack)
 endif()
 
-set(Engine3D_FOUND ON)
-set(Engine3D_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(Engine3D_DIR ${CMAKE_CURRENT_BINARY_DIR})
+set(Engine3D_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${GLM_INCLUDE_DIRS}
+    ${VISP_INCLUDE_DIRS}
+    ${OPENVR_INCLUDE_DIRS}
+)
 if(WIN32)
     set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
+    set(Engine3D_DLL ${Engine3D_DIR}/$<CONFIG>/Engine3D$<$<CONFIG:Debug>:d>.dll)
+    set(Engine3D_EXTRA_DLL_DIR ${Engine3D_DIR}/bin/$<CONFIG>/3rdParty/)
 elseif(UNIX)
     set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
-set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>)
+set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>
+    ${QT_LINKS}
+    ${VISP_LIBRARIES}
+    ${OPENVR_LIBRARIES}
+)
+
+set(BUILD_TEST OFF CACHE BOOL "Build examples with project")
+if(BUILD_TEST)
+    add_subdirectory(Test)
+    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Test/$<CONFIG>)
+        add_custom_command(TARGET Engine3D POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${Engine3D_DLL} ${CMAKE_CURRENT_BINARY_DIR}/Test/$<CONFIG>/)
+    endif()
+endif()
 
 if(PRINT_CMAKE_VARIABLES)
         get_cmake_property(_variableNames VARIABLES)

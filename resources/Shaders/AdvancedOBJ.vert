@@ -11,7 +11,7 @@ attribute vec2 in_uv;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
-uniform float scale = 10.0f;
+uniform float scale;
 
 uniform bool equirectangular;
 
@@ -21,11 +21,11 @@ varying vec2 texCoord;
 
 void main()
 {
-    in_vertex *= scale;
+    vertex = in_vertex * scale;
     if(equirectangular)
     {
         // changement de repere objet -> camera
-        vec4 cP = cMw * wMo * vec4(in_vertex, 1.0);
+        vec4 cP = cMw * wMo * vec4(vertex, 1.0);
         float fact = length(cP.xyz);
 
         // projection spherique
@@ -45,7 +45,7 @@ void main()
         gl_Position.z = gl_Position.w*cP.z/cP.w;
     }
     else
-        gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
+        gl_Position = iMc * cMw * wMo * vec4(vertex, 1.0);
 
     vertex = in_vertex;
     normal = in_normal;

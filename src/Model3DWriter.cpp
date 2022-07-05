@@ -13,7 +13,7 @@ namespace MIS
 	{
 	}
 
-	bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long vertexPerNode)
+	bool Model3DWriter::write(Model3D* model, QString fileName, unsigned long long vertexPerNode, float factor)
 	{
 		bool ok = true;
 		file.setFileName(fileName);
@@ -50,9 +50,9 @@ namespace MIS
 
 			if (fileInfo.suffix() == "pts")										writer = QtConcurrent::run(&Model3DWriter::writePTS, &file, vertexNumber, &pos, &color, &intensity);
 			else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini")	writer = QtConcurrent::run(&Model3DWriter::writeBIN, &file, vertexNumber, aabb, &pos, &color, &intensity);
-			else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QtConcurrent::run(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity, vertexPerNode);
-			watcher.setFuture(writer);
+			else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") writer = QtConcurrent::run(&Model3DWriter::writeOCT, &file, fileInfo, vertexNumber, model->getAABB(), &pos, &color, &intensity, vertexPerNode, factor);
 			connect(&watcher, SIGNAL(finished()), this, SLOT(writerFinished()));
+			watcher.setFuture(writer);
 		}
 		else ok = false;
 		return ok;
@@ -94,7 +94,7 @@ namespace MIS
 		if (!wasFileOpen) file->close();
 	}
 
-	void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode)
+	void Model3DWriter::writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode, float factor)
 	{
 		QFile listOctree(fileInfo.path() + "/listOctree.txt");
 		QDir(fileInfo.path()).mkdir("octTemp");
@@ -182,7 +182,7 @@ namespace MIS
 					for (Vertex* vertexToStore : *computedVertex.first())
 					{
 						Vertex vertexToWrite;
-						takeRandomVertex(qMin(vertexPerNode, vertexToStore->vertexNumber()), vertexToStore, &vertexToWrite);
+						takeRandomVertex(qMin(vertexPerNode, vertexToStore->vertexNumber()) * qPow(factor, depth), vertexToStore, &vertexToWrite);
 
 						QVector<float> aabbToFile = aabbToVector(vertexToStore->aabb);
 						QFile file(fileInfo.path() + "/octTemp/" + vertexToStore->node + ".bin");
@@ -221,6 +221,11 @@ namespace MIS
 			listOctree.close();
 			QDir(fileInfo.path() + "/octTemp").removeRecursively();
 		}
+	}
+
+	QFutureWatcher<void>& Model3DWriter::getWatcher()
+	{
+		return watcher;
 	}
 
 	void Model3DWriter::computeAABB(unsigned int node, Model3D::AABB aabb, Model3D::AABB* outAABB)

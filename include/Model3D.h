@@ -96,6 +96,9 @@ namespace MIS
         QVector<glm::vec3>& getPos();
         QVector<unsigned char>& getColor();
         QVector<unsigned char>& getIntensity();
+        virtual glm::vec3 getPosAt(unsigned long long index);
+        virtual QVector<unsigned char> getColorAt(unsigned long long index);
+        virtual unsigned char getIntensityAt(unsigned long long index);
 
         virtual bool hasIntensity() const;
         virtual bool getShowIntensity() const;

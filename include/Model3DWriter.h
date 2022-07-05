@@ -47,10 +47,12 @@ namespace MIS
 			};
 		};
 
-		bool write(Model3D* model, QString fileName, unsigned long long vertexPerNode = 10000);
+		bool write(Model3D* model, QString fileName, unsigned long long vertexPerNode = 10000, float factor = 1.0f);
 		static void writePTS(QFile* file, unsigned long long vertexNumber, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity);
 		static void writeBIN(QFile* file, unsigned long long vertexNumber, QVector<float> aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity);
-		static void writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode);
+		static void writeOCT(QFile* file, QFileInfo fileInfo, unsigned long long vertexNumber, Model3D::AABB aabb, QVector<glm::vec3>* pos, QVector<unsigned char>* color, QVector<unsigned char>* intensity, unsigned long long vertexPerNode, float factor);
+
+		QFutureWatcher<void>& getWatcher();
 
 	private:
 		QFuture<void> writer;

@@ -197,6 +197,39 @@ namespace MIS
         return intensity;
     }
 
+    glm::vec3 Model3D::getPosAt(unsigned long long index)
+    {
+        bool wasOnRAM = isOnRAM();
+        loadRAM();
+        glm::vec3 res = pos[index];
+        if(!wasOnRAM) unloadRAM();
+        return res;
+    }
+
+    QVector<unsigned char> Model3D::getColorAt(unsigned long long index)
+    {
+        bool wasOnRAM = isOnRAM();
+        loadRAM();
+        QVector<unsigned char> res(3);
+        for(unsigned int i = 0 ; i < 3 ; i++)
+            res[i] = color[3 * index + i];
+        if (!wasOnRAM) unloadRAM();
+        return res;
+    }
+
+    unsigned char Model3D::getIntensityAt(unsigned long long index)
+    {
+        if (hasIntensity())
+        {
+            bool wasOnRAM = isOnRAM();
+            loadRAM();
+            unsigned char res = intensity[index];
+            if (!wasOnRAM) unloadRAM();
+            return res;
+        }
+        else return 0;
+    }
+
     bool Model3D::hasIntensity() const
     {
         return m_hasIntensity;

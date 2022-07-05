@@ -12,7 +12,7 @@ attribute float in_intensity;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
-uniform float scale = 1.0f;
+uniform float scale;
 
 uniform float opacity;
 uniform bool showIntensity;
@@ -28,13 +28,13 @@ varying vec4 color;
 
 void main()
 {
-    in_vertex *= scale;
+    vec3 vertex = in_vertex * scale;
     gl_PointSize = pointSize;
 
     if(equirectangular)
     {
         // changement de repere objet -> camera
-        vec4 cP = cMw * wMo * vec4(in_vertex, 1.0);
+        vec4 cP = cMw * wMo * vec4(vertex, 1.0);
         float fact = length(cP.xyz);
 
         // projection spherique
@@ -55,7 +55,7 @@ void main()
     }
     else
     {
-        gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
+        gl_Position = iMc * cMw * wMo * vec4(vertex, 1.0);
     }
 
     if (customColor) color = vec4(R,G,B, opacity);

@@ -26,4 +26,7 @@ This part can be used to copy every needed DLL from Engine3D next to project bin
         $<TARGET_FILE_DIR:ProjectName>
     )
 endif()\endverbatim
+
+\section UbuntuTerminalNvidia Utiliser le processeur graphique NVidia en ligne de commande
+\verbatim __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia program arguments\endverbatim
 */
