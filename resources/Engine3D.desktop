@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Engine3D Documentation
+Comment=Point cloud engine 3D
+Exec=xdg-open /usr/share/doc/Engine3D/index.html
+Terminal=false
+X-MultipleArgs=false
+Type=Application
+Icon=text-html
+Categories=3DGraphics;
+StartupNotify=false

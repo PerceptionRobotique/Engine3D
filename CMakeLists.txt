@@ -358,7 +358,7 @@ if(WIN32)
         install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
     endif()
 
-    if(GENERATE_DOXYGEN AND IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+    if(GENERATE_DOXYGEN)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
     endif()
 
@@ -417,7 +417,7 @@ elseif(UNIX)
         DESTINATION lib/cmake/Engine3D
     )
 
-    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html)
+    if(GENERATE_DOXYGEN)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION share/doc/Engine3D)
     endif()
 
@@ -441,6 +441,8 @@ elseif(UNIX)
     endif()
     file(APPEND Engine3DExtras.cmake "set(Engine3D_DEPENDENCIES \"${Engine3D_DEPENDENCIES}\")\n")
     install(FILES Engine3DExtras.cmake DESTINATION lib/cmake/Engine3D)
+
+    install(FILES ./resources/Engine3D.desktop DESTINATION /usr/share/applications)
 
     set(CPACK_PACKAGE_NAME Engine3D)
     set(CPACK_PACKAGE_VENDOR MIS)
