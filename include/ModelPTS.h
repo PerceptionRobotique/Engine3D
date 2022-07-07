@@ -16,7 +16,7 @@ namespace MIS
 	class ENGINE3D_EXPORT ModelPTS : public Model3D
 	{
 	public:
-		ModelPTS(QString _fileName);
+		ModelPTS(QString _fileName, QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
 		~ModelPTS();
 
 		void loadRamThread() override;
@@ -26,6 +26,7 @@ namespace MIS
 		QFuture<void> ramLoader;
 		QList<QFuture<void>> loaders;
 		void computePTSLines(const QStringList& lines, AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity);
+		void render(QOpenGLFunctions* f) override;
 	};
 
 }

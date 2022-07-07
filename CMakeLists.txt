@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.4.1 LANGUAGES CXX)
+project(Engine3D VERSION 2.4.2 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
@@ -482,7 +482,7 @@ set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>
 set(BUILD_TEST OFF CACHE BOOL "Build examples with project")
 if(BUILD_TEST)
     add_subdirectory(Test)
-    if(IS_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Test/$<CONFIG>)
+    if(WIN32)
         add_custom_command(TARGET Engine3D POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${Engine3D_DLL} ${CMAKE_CURRENT_BINARY_DIR}/Test/$<CONFIG>/)
     endif()
 endif()

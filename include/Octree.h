@@ -17,7 +17,7 @@ namespace MIS
 	{
 		Q_OBJECT
 	public:
-		Octree(Octree* _parent = nullptr, QString _fileName = "");
+		Octree(Octree* _parent = nullptr, QString _fileName = "", QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
 		~Octree();
 
 		Octree* getMainOctree();

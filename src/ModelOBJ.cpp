@@ -6,10 +6,10 @@ namespace MIS
 	ModelOBJ::Material::Material(const Material& m)
 		: name(m.name)
 		, Ns(m.Ns)
-		, Ka{ m.Ka[0], m.Ka[1], m.Ka[2] }
-		, Kd{ m.Kd[0], m.Kd[1], m.Kd[2] }
-		, Ks{ m.Ks[0], m.Ks[1], m.Ks[2] }
-		, Ke{ m.Ke[0], m.Ke[1], m.Ke[2] }
+		, Ka(m.Ka)
+		, Kd(m.Kd)
+		, Ks(m.Ks)
+		, Ke(m.Ke)
 		, Ni(m.Ni)
 		, d(m.d)
 		, illum(m.illum)
@@ -18,14 +18,6 @@ namespace MIS
 	}
 
 	ModelOBJ::Material::Material(QString fileName)
-		: Ns(0)
-		, Ka{0, 0, 0}
-		, Kd{0, 0, 0}
-		, Ks{0, 0, 0}
-		, Ke{0, 0, 0}
-		, Ni(0)
-		, d(0)
-		, illum(0)
 	{
 		if (!fileName.isEmpty()) openFile(fileName);
 	}
@@ -39,6 +31,7 @@ namespace MIS
 			QString line;
 			QString element;
 			QTextStream ls(&line);
+			unsigned int index = 0;
 			ts.seek(0);
 			while (!ts.atEnd())
 			{
@@ -47,56 +40,68 @@ namespace MIS
 				ls >> element;
 				if (element == "newmtl")
 				{
-					ls >> name;
+					index++;
+					name.resize(index);
+					Ns.resize(index);
+					Ka.resize(index);
+					Kd.resize(index);
+					Ks.resize(index);
+					Ke.resize(index);
+					Ni.resize(index);
+					d.resize(index);
+					illum.resize(index);
+					ls >> name[index - 1];
 				}
 				else if (element == "Ns")
 				{
-					ls >> Ns;
+					ls >> Ns[index - 1];
 				}
 				else if (element == "Ka")
 				{
 					for (unsigned int i = 0; i < 3; i++)
-						ls >> Ka[i];
+						ls >> Ka[index - 1][i];
 				}
 				else if (element == "Kd")
 				{
 					for (unsigned int i = 0; i < 3; i++)
-						ls >> Kd[i];
+						ls >> Kd[index - 1][i];
 				}
 				else if (element == "Ks")
 				{
 					for (unsigned int i = 0; i < 3; i++)
-						ls >> Ks[i];
+						ls >> Ks[index - 1][i];
 				}
 				else if (element == "Ke")
 				{
 					for (unsigned int i = 0; i < 3; i++)
-						ls >> Ke[i];
+						ls >> Ke[index - 1][i];
 				}
 				else if (element == "Ni")
 				{
-					ls >> Ni;
+					ls >> Ni[index - 1];
 				}
 				else if (element == "d")
 				{
-					ls >> d;
+					ls >> d[index - 1];
 				}
 				else if (element == "illum")
 				{
-					ls >> illum;
+					ls >> illum[index - 1];
 				}
 				else if (element == "map_Kd")
 				{
-					ls >> map_Kd;
-					map_Kd = QFileInfo(fileName).path() + "/" + map_Kd;
+					QString name;
+					ls >> name;
+					map_Kd[this->name[index - 1]] = QFileInfo(fileName).path() + "/" + name;
 				}
 			}
 			file.close();
 		}
 	}
 
-	ModelOBJ::ModelOBJ(QString _fileName)
-		: Model3D(_fileName)
+	ModelOBJ::ModelOBJ(QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
+		: Model3D(_fileName, shader, boxShader)
+		, objectNumber(0)
 	{
 		primitives = TRIANGLES;
 		liveLoading = true;
@@ -105,20 +110,31 @@ namespace MIS
 
 	void ModelOBJ::loadRamThread()
 	{
-		for (unsigned int i = 0; i < f.count(); i++)
+		point.resize(objectNumber);
+		uv.resize(objectNumber);
+		normal.resize(objectNumber);
+		unsigned int vOffset = 0;
+		unsigned int vtOffset = 0;
+		unsigned int vnOffset = 0;
+		for (unsigned int index = 0; index < objectNumber; index++)
 		{
-			for (unsigned int j = 0; j < 3; j++)
+			for (unsigned int i = 0; i < f[index].count(); i++)
 			{
-				pos.append(v[f[i][j][0] - 1]);
-				uv.append(vt[f[i][j][1] - 1]);
-				normal.append(vn[f[i][j][2] - 1]);
+				for (unsigned int j = 0; j < 3; j++)
+				{
+					point[index].append(v[index][f[index][i][j][0] - vOffset - 1]);
+					uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
+					normal[index].append(vn[index][f[index][i][j][2] - vnOffset - 1]);
+				}
 			}
+			vOffset += v[index].count();
+			vtOffset += vt[index].count();
+			vnOffset += vn[index].count();
 		}
 
 		for (Material& material : materials)
-		{
-			textures.append(QImage(material.map_Kd).mirrored());
-		}
+			for (QString& tn : textureNames)
+				textures.append(QImage(material.map_Kd[tn]).mirrored());
 	}
 
 	void ModelOBJ::prepare()
@@ -129,6 +145,7 @@ namespace MIS
 		QString line;
 		QString element;
 		QTextStream ls(&line);
+		objectNumber = 0;
 		ts.seek(0);
 		while (!ts.atEnd())
 		{
@@ -142,6 +159,13 @@ namespace MIS
 			}
 			else if (element == "o")
 			{
+				if (objectNumber > 0) subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
+				objectNumber++;
+				subVertexNumber.append(0);
+				v.resize(objectNumber);
+				vt.resize(objectNumber);
+				vn.resize(objectNumber);
+				f.resize(objectNumber);
 			}
 			else if (element == "v")
 			{
@@ -167,69 +191,33 @@ namespace MIS
 					aabb.max = _v;
 					aabb.gravity += _v;
 				}
-				v.append(_v);
+				v[objectNumber - 1].append(_v);
 			}
 			else if (element == "vt")
 			{
 				vec2 _vt;
 				ls >> _vt[0];
 				ls >> _vt[1];
-				vt.append(_vt);
+				vt[objectNumber - 1].append(_vt);
 			}
 			else if (element == "vn")
 			{
 				vec3 _vn;
 				for (unsigned int i = 0; i < 3; i++)
 					ls >> _vn[i];
-				vn.append(_vn);
+				vn[objectNumber - 1].append(_vn);
 			}
 			else if (element == "f")
 			{
 				QStringList indexes = ls.readLine().split(" ");
 				indexes.removeAll("");
 				QVector<vec3> separated(indexes.count());
-				switch (indexes.count())
+				for (unsigned int t = 1; t < indexes.count() - 1; t++)
 				{
-				case 3:
-				{
-					for (unsigned int i = 0; i < 3; i++)
-					{
-						QStringList fl = indexes[i].split("/");
-						for (unsigned int j = 0; j < 3; j++)
-							separated[i][j] = fl[j].toInt();
-					}
-					f.append(separated);
-				}
-					break;
-
-				case 4:
-				{
+					separated.clear();
+					separated.resize(3);
 					unsigned int si = 0;
-					for (unsigned int i = 0; i < 3; i++)
-					{
-						QStringList fl = indexes[i].split("/");
-						for (unsigned int j = 0; j < 3; j++)
-							separated[si][j] = fl[j].toInt();
-						si++;
-					}
-					f.append(separated);
-
-					separated.clear();
-					separated.resize(3);
-					si = 0;
-					for (unsigned int i = 1; i < 4; i++)
-					{
-						QStringList fl = indexes[i].split("/");
-						for (unsigned int j = 0; j < 3; j++)
-							separated[si][j] = fl[j].toInt();
-						si++;
-					}
-					f.append(separated);
-
-					separated.clear();
-					separated.resize(3);
-					si = 0;
-					unsigned int indices[3] = { 0, 2, 3 };
+					QVector<unsigned int> indices = { 0, t, t + 1 };
 					for (unsigned int i : indices)
 					{
 						QStringList fl = indexes[i].split("/");
@@ -237,22 +225,66 @@ namespace MIS
 							separated[si][j] = fl[j].toInt();
 						si++;
 					}
-					f.append(separated);
-					break;
+					f[objectNumber - 1].append(separated);
 				}
-
-				default:
-					qDebug() << "Indexes size not computed : " << indexes.count();
-					break;
-				}
+			}
+			else if (element == "usemtl")
+			{
+				QString tn;
+				ls >> tn;
+				textureNames.append(tn);
 			}
 		}
 
-		vertexNumber = 3 * f.count();
-		aabb.gravity /= v.count();
+		subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
+		vertexNumber = 0;
+		for(unsigned long long& vNumber : subVertexNumber)
+			vertexNumber += vNumber;
+		aabb.gravity /= vertexNumber;
 		aabb.updateCenter();
 		setAABB(aabb);
 		prepared = true;
+	}
+
+	void ModelOBJ::render(QOpenGLFunctions* f)
+	{
+		for (unsigned int i = 0; i < objectNumber; i++)
+		{
+			if (pointBuffer[i].isCreated())
+			{
+				pointBuffer[i].bind();
+				shader->enableAttributeArray("in_vertex");
+				shader->setAttributeArray("in_vertex", GL_FLOAT, 0, 3);
+				pointBuffer[i].release();
+			}
+
+			if (normalBuffer[i].isCreated())
+			{
+				normalBuffer[i].bind();
+				shader->enableAttributeArray("in_normal");
+				shader->setAttributeArray("in_normal", GL_FLOAT, 0, 3);
+				normalBuffer[i].release();
+			}
+
+			if (uvBuffer[i].isCreated())
+			{
+				uvBuffer[i].bind();
+				shader->enableAttributeArray("in_uv");
+				shader->setAttributeArray("in_uv", GL_FLOAT, 0, 2);
+				uvBuffer[i].release();
+			}
+
+			if (!texturesBuffers.isEmpty())
+			{
+				f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[i]->textureId());
+			}
+
+			f->glDrawArrays(primitives, 0, subVertexNumber[i]);
+
+			shader->disableAttributeArray("in_vertex");
+			shader->disableAttributeArray("in_normal");
+			shader->disableAttributeArray("in_uv");
+		}
 	}
 
 }

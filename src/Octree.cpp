@@ -3,8 +3,8 @@
 namespace MIS
 {
 
-	Octree::Octree(Octree* _parent, QString _fileName)
-		: ModelBIN(_fileName)
+	Octree::Octree(Octree* _parent, QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
+		: ModelBIN(_fileName, shader, boxShader)
 		, main(this)
 		, parent(_parent)
 		, children(8, nullptr)
@@ -88,7 +88,7 @@ namespace MIS
 					}
 					if (current != this)
 					{
-						current = new Octree(currentParent);
+						current = new Octree(currentParent, "", shader, boxShader);
 
 						connect(current, SIGNAL(modelChanged()), this, SIGNAL(modelChanged()));
 						connect(current, SIGNAL(modelLoadingDelayed()), this, SIGNAL(modelLoadingDelayed()));
@@ -302,5 +302,4 @@ namespace MIS
 		*maxVisibleDepth = value;
 		emit modelChanged();
 	}
-
 }

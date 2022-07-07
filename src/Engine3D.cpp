@@ -360,10 +360,10 @@ namespace MIS
     void Engine3D::openModel(QString fileName)
     {
         QFileInfo fileInfo(fileName);
-        if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName));
-        else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName));
-        else if (fileInfo.suffix() == "obj")                                models.append(new ModelOBJ(fileName));
-        else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName));
+        if (fileInfo.suffix() == "pts")                                     models.append(new ModelPTS(fileName, shaders[Model3D::POINTS], boxShader));
+        else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName, shaders[Model3D::POINTS], boxShader));
+        else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName, shaders[Model3D::POINTS], boxShader));
+        else if (fileInfo.suffix() == "obj")                                models.append(new ModelOBJ(fileName, shaders[Model3D::TRIANGLES], boxShader));
 
         //connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
         //connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
@@ -686,12 +686,18 @@ namespace MIS
                     shader->bind();
                     shader->setUniformValue("opacity", opacity);
                     shader->release();
+                    boxShader->bind();
+                    boxShader->setUniformValue("opacity", opacity);
+                    boxShader->release();
                 }
                 else
                 {
                     shader->bind();
                     shader->setUniformValue("opacity", 1.0f);
                     shader->release();
+                    boxShader->bind();
+                    boxShader->setUniformValue("opacity", 1.0f);
+                    boxShader->release();
                 }
             }
             doneCurrent();
@@ -965,47 +971,40 @@ namespace MIS
 
                         for (Model3D* model : models)
                         {
-                            QOpenGLShaderProgram* shader = shaders[model->getPrimitives()];
-                            if (shader->bind())
+                            if (model->isOnRAM())
                             {
-                                shader->setUniformValue("scale", model->getScale());
-                                if (model->isOnRAM())
+                                if (model->isOnVRAM()) model->draw();
+                                else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                 {
-                                    if (model->isOnVRAM()) model->draw(shader);
-                                    else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
-                                    {
-                                        vertexToVRAM += model->getVertexNumber();
-                                        model->loadVRAM(waitLoading);
-                                        model->draw(shader);
-                                    }
-                                    else emit askUpdate();
+                                    vertexToVRAM += model->getVertexNumber();
+                                    model->loadVRAM(waitLoading);
+                                    model->draw();
                                 }
-                                else model->unloadVRAM(waitLoading);
-                                Octree* octree = dynamic_cast<Octree*>(model);
-                                if (octree)
-                                {
-                                    for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
-                                    {
-                                        for (Octree* child : octree->getDepthChildren(i))
-                                        {
-                                            if (child->isOnRAM())
-                                            {
-                                                if (child->isOnVRAM()) child->draw(shader);
-                                                else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
-                                                {
-                                                    vertexToVRAM += child->getVertexNumber();
-                                                    child->loadVRAM(waitLoading);
-                                                    child->draw(shader);
-                                                }
-                                                else emit askUpdate();
-                                            }
-                                            else child->unloadVRAM(waitLoading);
-                                        }
-                                    }
-                                }
-                                shader->release();
+                                else emit askUpdate();
                             }
-                            else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
+                            else model->unloadVRAM(waitLoading);
+                            Octree* octree = dynamic_cast<Octree*>(model);
+                            if (octree)
+                            {
+                                for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
+                                {
+                                    for (Octree* child : octree->getDepthChildren(i))
+                                    {
+                                        if (child->isOnRAM())
+                                        {
+                                            if (child->isOnVRAM()) child->draw();
+                                            else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
+                                            {
+                                                vertexToVRAM += child->getVertexNumber();
+                                                child->loadVRAM(waitLoading);
+                                                child->draw();
+                                            }
+                                            else emit askUpdate();
+                                        }
+                                        else child->unloadVRAM(waitLoading);
+                                    }
+                                }
+                            }
                         }
 
                         if (boxShader->bind())
@@ -1013,24 +1012,25 @@ namespace MIS
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(camera->getcMw()));
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "wMc"), 1, GL_FALSE, value_ptr(camera->getwMc()));
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(camera->getiMc()));
-                            for (Model3D* model : models)
-                            {
-                                if (camera->cullingTest(model)) model->drawBox(boxShader);
-                                Octree* octree = dynamic_cast<Octree*>(model);
-                                if (octree)
-                                {
-                                    for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-                                    {
-                                        for (Octree* child : octree->getDepthChildren(i))
-                                        {
-                                            child->drawBox(boxShader);
-                                        }
-                                    }
-                                }
-                            }
                             boxShader->release();
                         }
                         else qDebug() << "Can't bind box shader.";
+
+                        for (Model3D* model : models)
+                        {
+                            if (camera->cullingTest(model)) model->drawBox();
+                            Octree* octree = dynamic_cast<Octree*>(model);
+                            if (octree)
+                            {
+                                for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                                {
+                                    for (Octree* child : octree->getDepthChildren(i))
+                                    {
+                                        child->drawBox();
+                                    }
+                                }
+                            }
+                        }
                         camera->release();
                     }
                 }
@@ -1071,47 +1071,40 @@ namespace MIS
 
                             for (Model3D* model : models)
                             {
-                                QOpenGLShaderProgram* shader = shaders[model->getPrimitives()];
-                                if(shader->bind())
+                                if (model->isOnRAM())
                                 {
-                                    shader->setUniformValue("scale", model->getScale());
-                                    if (model->isOnRAM())
+                                    if (model->isOnVRAM()) model->draw();
+                                    else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
                                     {
-                                        if (model->isOnVRAM()) model->draw(shader);
-                                        else if (!model->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
-                                        {
-                                            vertexToVRAM += model->getVertexNumber();
-                                            model->loadVRAM(waitLoading);
-                                            model->draw(shader);
-                                        }
-                                        else emit askUpdate();
+                                        vertexToVRAM += model->getVertexNumber();
+                                        model->loadVRAM(waitLoading);
+                                        model->draw();
                                     }
-                                    else model->unloadVRAM(waitLoading);
-                                    Octree* octree = dynamic_cast<Octree*>(model);
-                                    if (octree)
-                                    {
-                                        for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
-                                        {
-                                            for (Octree* child : octree->getDepthChildren(i))
-                                            {
-                                                if (child->isOnRAM())
-                                                {
-                                                    if (child->isOnVRAM()) child->draw(shader);
-                                                    else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
-                                                    {
-                                                        vertexToVRAM += child->getVertexNumber();
-                                                        child->loadVRAM(waitLoading);
-                                                        child->draw(shader);
-                                                    }
-                                                    else emit askUpdate();
-                                                }
-                                                else child->unloadVRAM(waitLoading);
-                                            }
-                                        }
-                                    }
-                                    shader->release();
+                                    else emit askUpdate();
                                 }
-                                else QMessageBox::warning(nullptr, "Error", "Can't bind shader.");
+                                else model->unloadVRAM(waitLoading);
+                                Octree* octree = dynamic_cast<Octree*>(model);
+                                if (octree)
+                                {
+                                    for (unsigned int i = 1; i <= qMin(octree->getMaxDepth(), maxMovingDepth != -1 ? isMoving ? maxMovingDepth : octree->getMaxDepth() : octree->getMaxDepth()); i++)
+                                    {
+                                        for (Octree* child : octree->getDepthChildren(i))
+                                        {
+                                            if (child->isOnRAM())
+                                            {
+                                                if (child->isOnVRAM()) child->draw();
+                                                else if (!child->isOnVRAM() && vertexToVRAM <= maxVertexToVRAM || !maxVertexToVRAMEnabled || waitLoading)
+                                                {
+                                                    vertexToVRAM += child->getVertexNumber();
+                                                    child->loadVRAM(waitLoading);
+                                                    child->draw();
+                                                }
+                                                else emit askUpdate();
+                                            }
+                                            else child->unloadVRAM(waitLoading);
+                                        }
+                                    }
+                                }
                             }
 
                             if (boxShader->bind())
@@ -1119,24 +1112,25 @@ namespace MIS
                                 glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(vrCameras[i]->getcMw()));
                                 glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "wMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getwMc()));
                                 glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(vrCameras[i]->getiMc()));
-                                for (Model3D* model : models)
-                                {
-                                    if (vrCameras[i]->cullingTest(model)) model->drawBox(boxShader);
-                                    Octree* octree = dynamic_cast<Octree*>(model);
-                                    if (octree)
-                                    {
-                                        for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-                                        {
-                                            for (Octree* child : octree->getDepthChildren(i))
-                                            {
-                                                child->drawBox(boxShader);
-                                            }
-                                        }
-                                    }
-                                }
                                 boxShader->release();
                             }
                             else qDebug() << "Can't bind box shader.";
+
+                            for (Model3D* model : models)
+                            {
+                                if (vrCameras[i]->cullingTest(model)) model->drawBox();
+                                Octree* octree = dynamic_cast<Octree*>(model);
+                                if (octree)
+                                {
+                                    for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
+                                    {
+                                        for (Octree* child : octree->getDepthChildren(i))
+                                        {
+                                            child->drawBox();
+                                        }
+                                    }
+                                }
+                            }
                             vrCameras[i]->release();
 
                             vr::Texture_t eyeTexture = { (void*)(uintptr_t)vrCameras[i]->texture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };

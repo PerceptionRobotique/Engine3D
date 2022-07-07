@@ -15,6 +15,15 @@ target_link_directories(TEST PRIVATE ${Engine3D_LIBRARIES_DIR})
 target_link_libraries(TEST PRIVATE ${Engine3D_LIBRARIES})
 
 if(WIN32)
+    set(USE_TERMINAL_OUTPUT ON CACHE BOOL "Launch with a terminal")
+    if(NOT ${USE_TERMINAL_OUTPUT})
+        set_target_properties(TEST PROPERTIES
+            WIN32_EXECUTABLE TRUE
+        )
+    endif()
+endif()
+
+if(WIN32)
     add_custom_command(TARGET TEST POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different ${Engine3D_DIR}/$<CONFIG>/Engine3D$<$<CONFIG:Debug>:d>.dll $<TARGET_FILE_DIR:TEST>)
 
     foreach(qt_dll ${QT_DLL})

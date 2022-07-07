@@ -12,35 +12,39 @@ namespace MIS
 	{
 	public:
 		struct Material {
-			QString name;
-			float Ns;
-			float Ka[3];
-			float Kd[3];
-			float Ks[3];
-			float Ke[3];
-			float Ni;
-			float d;
-			int illum;
-			QString map_Kd;
+			QVector<QString> name;
+			QVector<float> Ns;
+			QVector<vec3> Ka;
+			QVector<vec3> Kd;
+			QVector<vec3> Ks;
+			QVector<vec3> Ke;
+			QVector<float> Ni;
+			QVector<float> d;
+			QVector<int> illum;
+			QHash<QString, QString> map_Kd;
 
 			Material(const Material& m);
 			Material(QString fileName = "");
 			void openFile(QString fileName);
 		};
 
-		ModelOBJ(QString _fileName = "");
+		ModelOBJ(QString _fileName = "", QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
 
 		void loadRamThread() override;
 
 	private:
 		QHash<QString, Material> materials;
 
-		QVector<vec3> v;
-		QVector<vec2> vt;
-		QVector<vec3> vn;
-		QVector<QVector<vec3>> f;
+		unsigned int objectNumber;
+		QVector<unsigned long long> subVertexNumber;
+		QVector<QVector<vec3>> v;
+		QVector<QVector<vec2>> vt;
+		QVector<QVector<vec3>> vn;
+		QVector<QVector<QVector<vec3>>> f;
+		QVector<QString> textureNames;
 
 		void prepare();
+		void render(QOpenGLFunctions* f) override;
 	};
 
 }

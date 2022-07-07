@@ -3,8 +3,8 @@
 namespace MIS
 {
 
-    ModelPTS::ModelPTS(QString _fileName)
-        : Model3D(_fileName)
+    ModelPTS::ModelPTS(QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
+        : Model3D(_fileName, shader, boxShader)
         , stop(false)
     {
         liveLoading = false;
@@ -258,6 +258,39 @@ namespace MIS
             if (stop)
                 break;
         }
+    }
+
+    void ModelPTS::render(QOpenGLFunctions* f)
+    {
+        if (posBuffer.isCreated())
+        {
+            posBuffer.bind();
+            shader->enableAttributeArray("in_vertex");
+            shader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
+            posBuffer.release();
+        }
+
+        if (colorBuffer.isCreated())
+        {
+            colorBuffer.bind();
+            shader->enableAttributeArray("in_color");
+            shader->setAttributeArray("in_color", GL_UNSIGNED_BYTE, 0, 3);
+            colorBuffer.release();
+        }
+
+        if (hasIntensity())
+        {
+            intensityBuffer.bind();
+            shader->enableAttributeArray("in_intensity");
+            shader->setAttributeArray("in_intensity", GL_UNSIGNED_BYTE, 0, 1);
+            intensityBuffer.release();
+        }
+
+        f->glDrawArrays(primitives, 0, vertexNumber);
+
+        shader->disableAttributeArray("in_vertex");
+        shader->disableAttributeArray("in_color");
+        shader->disableAttributeArray("in_intensity");
     }
 
 }

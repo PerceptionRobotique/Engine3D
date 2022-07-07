@@ -76,7 +76,7 @@ namespace MIS
             }
         };
 
-        Model3D(QString _fileName);
+        Model3D(QString _fileName, QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
         ~Model3D();
 
         static unsigned int model3DNumber;
@@ -117,13 +117,17 @@ namespace MIS
         mat4 getStoredPose(const QString& name) const;
 
     public slots:
-        //visibility
+        //Visibility
         void setVisible(bool _visible);
         void setBoxVisible(bool _boxVisible);
         void setShowIntensity(bool _showIntensity);
 
         //AABB
         void setAABB(AABB _aabb);
+
+        //Shaders
+        void setShader(QOpenGLShaderProgram* shader);
+        void setBoxShader(QOpenGLShaderProgram* boxShader);
 
         //RAM
         void loadRAM(bool force = false);
@@ -141,8 +145,9 @@ namespace MIS
         void loadBoxVRAM();
         void unloadBoxVRAM();
 
-        virtual bool draw(QOpenGLShaderProgram* shader);
-        virtual bool drawBox(QOpenGLShaderProgram* shader);
+        //Draw
+        virtual bool draw();
+        virtual bool drawBox();
 
         void setScale(float _scale);
         void setwMo(mat4 wMo);
@@ -179,14 +184,7 @@ namespace MIS
 
         AABB aabb;
         QVector<glm::vec3> box;
-        QOpenGLBuffer boxBuffer;
-        QOpenGLBuffer posBuffer;
-        QOpenGLBuffer colorBuffer;
-        QOpenGLBuffer intensityBuffer;
-
-        QOpenGLBuffer normalBuffer;
-        QOpenGLBuffer uvBuffer;
-        QVector<QOpenGLTexture*> texturesBuffers;
+        QOpenGLShaderProgram* boxShader;
 
         QHash<QString, mat4> storedPoses;
 
@@ -207,6 +205,7 @@ namespace MIS
         bool onRAM;
         virtual void loadRamThread() = 0;
         void unloadRAMthread();
+        virtual void render(QOpenGLFunctions* f) = 0;
 
         unsigned long long vertexNumber;
         float scale;
@@ -214,9 +213,21 @@ namespace MIS
         QVector<unsigned char> color;
         QVector<unsigned char> intensity;
 
+        QOpenGLShaderProgram* shader;
+        QOpenGLBuffer boxBuffer;
+        QOpenGLBuffer posBuffer;
+        QOpenGLBuffer colorBuffer;
+        QOpenGLBuffer intensityBuffer;
+
+        QVector<QOpenGLBuffer> pointBuffer;
+        QVector<QOpenGLBuffer> normalBuffer;
+        QVector<QOpenGLBuffer> uvBuffer;
+        QVector<QOpenGLTexture*> texturesBuffers;
+
         // OBJ //
-        QVector<glm::vec2> uv;
-        QVector<glm::vec3> normal;
+        QVector<QVector<glm::vec3>> point;
+        QVector<QVector<glm::vec2>> uv;
+        QVector<QVector<glm::vec3>> normal;
         QVector<QImage> textures;
 
     signals:
