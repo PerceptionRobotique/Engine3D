@@ -30,6 +30,7 @@ namespace MIS
 		unsigned int getMaxVisibleDepth() const;
 		unsigned long long getTotalVertexNumber() const;
 
+		float getScale() const override;
 		mat4 getwMo() const override;
 		bool hasIntensity() const override;
 		bool getShowIntensity() const override;

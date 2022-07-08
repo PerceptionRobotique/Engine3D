@@ -173,6 +173,11 @@ namespace MIS
 		return *totalVertexNumber;
 	}
 
+	float Octree::getScale() const
+	{
+		return main->Model3D::getScale();
+	}
+
 	mat4 Octree::getwMo() const
 	{
 		return main->Model3D::getwMo();

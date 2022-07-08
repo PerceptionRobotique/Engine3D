@@ -376,6 +376,7 @@ namespace MIS
         connect(models.last(), SIGNAL(modelChanged()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelRenderChanged()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelMoved()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelMoved()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SLOT(nextModelsUpdate()));
         connect(models.last(), SIGNAL(modelDestroyed()), this, SLOT(nextModelsUpdate()));
 

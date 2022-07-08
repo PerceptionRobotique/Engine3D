@@ -5,6 +5,8 @@
 
 #include <QHash>
 
+#define BYTES_PER_READ 1000000
+
 namespace MIS
 {
 
@@ -29,10 +31,12 @@ namespace MIS
 		};
 
 		ModelOBJ(QString _fileName = "", QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
+		~ModelOBJ();
 
 		void loadRamThread() override;
 
 	private:
+		QMutex prepareMutex;
 		QHash<QString, Material> materials;
 
 		unsigned int objectNumber;
@@ -43,6 +47,7 @@ namespace MIS
 		QVector<QVector<QVector<vec3>>> f;
 		QVector<QString> textureNames;
 
+		static unsigned int computeLines(const QString& text);
 		void prepare();
 		void render(QOpenGLFunctions* f) override;
 	};

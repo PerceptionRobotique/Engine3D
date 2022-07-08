@@ -449,12 +449,12 @@ namespace MIS
                     }
                 }
 
-                for (QImage& texture : textures)
+                for (QString& key : textures.keys())
                 {
                     QOpenGLTexture* textureBuffer = new QOpenGLTexture(QOpenGLTexture::Target2D);
                     textureBuffer->create();
-                    textureBuffer->setData(texture);
-                    texturesBuffers.append(textureBuffer);
+                    textureBuffer->setData(textures[key]);
+                    texturesBuffers[key] = textureBuffer;
                 }
 
                 addVertexOnVRAM();
@@ -646,7 +646,7 @@ namespace MIS
                     {
                         if (isOnVRAM())
                         {
-                            shader->setUniformValue("scale", scale);
+                            shader->setUniformValue("scale", getScale());
                             f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "wMo"), 1, GL_FALSE, value_ptr(getwMo()));
                             f->glUniformMatrix4fv(f->glGetUniformLocation(shader->programId(), "oMw"), 1, GL_FALSE, value_ptr(inverse(getwMo())));
 
@@ -736,8 +736,9 @@ namespace MIS
         }
     }
 
-    void Model3D::setScale(float _scale)
+    void Model3D::setScale(double _scale)
     {
+        unloadBoxVRAM();
         unloadBoxRAM();
         aabb.min /= scale;
         aabb.max /= scale;
@@ -745,6 +746,7 @@ namespace MIS
         aabb.min *= scale;
         aabb.max *= scale;
         loadBoxRAM();
+        emit modelMoved();
     }
 
     void Model3D::setwMo(mat4 wMo)

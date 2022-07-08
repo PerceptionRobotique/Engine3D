@@ -88,7 +88,7 @@ namespace MIS
         QString getName() const;
 
         Primitives getPrimitives() const;
-        float getScale() const;
+        virtual float getScale() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
         QVector<glm::vec3> getBox() const;
@@ -149,7 +149,7 @@ namespace MIS
         virtual bool draw();
         virtual bool drawBox();
 
-        void setScale(float _scale);
+        void setScale(double _scale);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
@@ -222,13 +222,13 @@ namespace MIS
         QVector<QOpenGLBuffer> pointBuffer;
         QVector<QOpenGLBuffer> normalBuffer;
         QVector<QOpenGLBuffer> uvBuffer;
-        QVector<QOpenGLTexture*> texturesBuffers;
+        QHash<QString, QOpenGLTexture*> texturesBuffers;
 
         // OBJ //
         QVector<QVector<glm::vec3>> point;
         QVector<QVector<glm::vec2>> uv;
         QVector<QVector<glm::vec3>> normal;
-        QVector<QImage> textures;
+        QHash<QString, QImage> textures;
 
     signals:
         void modelCreated();

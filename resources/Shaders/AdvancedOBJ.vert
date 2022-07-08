@@ -47,7 +47,6 @@ void main()
     else
         gl_Position = iMc * cMw * wMo * vec4(vertex, 1.0);
 
-    vertex = in_vertex;
     normal = in_normal;
     texCoord = in_uv;
 }

@@ -20,10 +20,9 @@ int main(int argc, char* argv[])
 
 	//engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
 	engine.getMainCamera()->setBackgroundColor(Qt::gray);
-	//engine.openModel(diskRoot + "/Users/nvill/3D Objects/Suzanne/Suzanne.obj");
-	engine.openModel(diskRoot + "/Users/nvill/3D Objects/SuzanneMulti/SuzanneMulti.obj");
-	engine.getMainCamera()->translate(vec3(-1.5, 0.3, 2.3));
-	engine.getMainCamera()->lookAt(engine.getModel(0));
+	//engine.openModel(diskRoot + "/Users/nvill/3D Objects/SuzanneMulti/SuzanneMulti.obj");
+	engine.openModel(diskRoot + "/Users/nvill/3D Objects/ModeleCAO/CharpenteFlecheAmiensTexturee.obj");
+	engine.getModel(0)->setScale(2);
 	//engine.getModel(0)->setBoxVisible(true);
 	engine.takePicture().save("test.png");
 
