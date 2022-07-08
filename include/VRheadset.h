@@ -1,6 +1,7 @@
 #ifndef __VRHEADSET_H__
 #define __VRHEADSET_H__
 
+#include <Engine3D_global.h>
 #include <openvr/openvr.h>
 
 #include <string>
@@ -13,13 +14,13 @@
 namespace MIS
 {
 
-	class VRheadset
+	class ENGINE3D_EXPORT VRheadset
 	{
 	public:
 
 		VRheadset();
 		~VRheadset();
-		bool isActive() { return active; }
+		bool isActive() const;
 		int initOpenVR();
 		void shutdown();
 		glm::vec3 forward = glm::vec3(1, 0, 0);

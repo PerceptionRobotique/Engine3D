@@ -16,6 +16,10 @@ namespace MIS
 		shutdown();
 	}
 
+	bool VRheadset::isActive() const
+	{
+		return active;
+	}
 
 	int VRheadset::initOpenVR()
 	{
