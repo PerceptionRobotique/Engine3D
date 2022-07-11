@@ -1013,6 +1013,7 @@ namespace MIS
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "cMw"), 1, GL_FALSE, value_ptr(camera->getcMw()));
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "wMc"), 1, GL_FALSE, value_ptr(camera->getwMc()));
                             glUniformMatrix4fv(glGetUniformLocation(boxShader->programId(), "iMc"), 1, GL_FALSE, value_ptr(camera->getiMc()));
+                            boxShader->setUniformValue("equirectangular", camera->getProjectionType() == Camera::EQUIRECTANGULAR);
                             boxShader->release();
                         }
                         else qDebug() << "Can't bind box shader.";

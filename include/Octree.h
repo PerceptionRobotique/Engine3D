@@ -49,6 +49,7 @@ namespace MIS
 
 	public slots:
 		void setMaxVisibleDepth(int value);
+		bool drawBox() override;
 
 	private:
 		QString name;

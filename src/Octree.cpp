@@ -307,4 +307,11 @@ namespace MIS
 		*maxVisibleDepth = value;
 		emit modelChanged();
 	}
+
+	bool Octree::drawBox()
+	{
+		if (depth == 0) return Model3D::drawBox();
+		else if (parent->isOnVRAM()) return Model3D::drawBox();
+		else return false;
+	}
 }

@@ -179,6 +179,18 @@ namespace MIS
         return aabb;
     }
 
+    bool Model3D::isPointInAABB(vec3 point) const
+    {
+        AABB aabb = getwMo() * getAABB();
+        return
+            point.x >= aabb.min.x &&
+            point.y >= aabb.min.y &&
+            point.z >= aabb.min.z &&
+            point.x <= aabb.max.x &&
+            point.y <= aabb.max.y &&
+            point.z <= aabb.max.z;
+    }
+
     QVector<glm::vec3> Model3D::getBox() const
     {
         return box;

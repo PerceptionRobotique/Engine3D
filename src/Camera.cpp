@@ -478,15 +478,11 @@ namespace MIS
 
     bool Camera::cullingTest(const Model3D* model) const
     {
+        vec3 camPos = getPosition();
+        Model3D::AABB modelAABB = model->getwMo() * model->getAABB();
         if (projectionType == EQUIRECTANGULAR)
             return true;
-        else if (
-            getPosition().x >= model->getAABB().min.x
-            && getPosition().y >= model->getAABB().min.y
-            && getPosition().z >= model->getAABB().min.z
-            && getPosition().x <= model->getAABB().max.x
-            && getPosition().y <= model->getAABB().max.y
-            && getPosition().z <= model->getAABB().max.z)
+        else if (model->isPointInAABB(camPos))
             return true;
         else
         {
@@ -542,7 +538,24 @@ namespace MIS
 
     float Camera::distanceWith(const Model3D* model) const
     {
-        return glm::distance(getPosition(), (model->getwMo() * model->getAABB()).center);
+        QVector<vec3> box = model->getBox();
+        vec3 camPos = getPosition();
+        Model3D::AABB modelAABB = model->getwMo() * model->getAABB();
+        if (
+            camPos.x >= modelAABB.min.x &&
+            camPos.y >= modelAABB.min.y &&
+            camPos.z >= modelAABB.min.z &&
+            camPos.x <= modelAABB.max.x &&
+            camPos.y <= modelAABB.max.y &&
+            camPos.z <= modelAABB.max.z
+            )
+            return 0;
+        else
+        {
+            float dist = glm::distance(camPos, modelAABB.center);
+            for (vec3 point : box) dist = glm::min(dist, glm::distance(camPos, vec3(model->getwMo() * vec4(point, 1.0))));
+            return dist;
+        }
     }
 
     void Camera::translate(const vec3& _translation, const bool& _onGround)

@@ -74,6 +74,19 @@ namespace MIS
                 vector.append(max.z);
                 return vector;
             }
+
+            void fix()
+            {
+                for (unsigned int i = 0; i < 3; i++)
+                {
+                    if (min[i] > max[i])
+                    {
+                        float t = min[i];
+                        min[i] = max[i];
+                        max[i] = t;
+                    }
+                }
+            }
         };
 
         Model3D(QString _fileName, QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
@@ -91,6 +104,7 @@ namespace MIS
         virtual float getScale() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
+        bool isPointInAABB(vec3 point) const;
         QVector<glm::vec3> getBox() const;
         unsigned long long getVertexNumber() const;
         QVector<glm::vec3>& getPos();
@@ -251,6 +265,7 @@ namespace MIS
         _aabb.max = vec3(vec4(matrix * vec4(aabb.max, 1.0f)) / vec4(matrix * vec4(aabb.max, 1.0f)).w);
         _aabb.center = vec3(vec4(matrix * vec4(aabb.center, 1.0f)) / vec4(matrix * vec4(aabb.center, 1.0f)).w);
         _aabb.gravity = vec3(vec4(matrix * vec4(aabb.gravity, 1.0f)) / vec4(matrix * vec4(aabb.gravity, 1.0f)).w);
+        _aabb.fix();
         return _aabb;
     }
 
@@ -261,6 +276,7 @@ namespace MIS
         _aabb.max = vec3(vec4(vec4(aabb.max, 1.0f) * matrix) / vec4(vec4(aabb.max, 1.0f) * matrix).w);
         _aabb.center = vec3(vec4(vec4(aabb.center, 1.0f) * matrix) / vec4(vec4(aabb.center, 1.0f) * matrix).w);
         _aabb.gravity = vec3(vec4(vec4(aabb.gravity, 1.0f) * matrix) / vec4(vec4(aabb.gravity, 1.0f) * matrix).w);
+        _aabb.fix();
         return _aabb;
     }
 
