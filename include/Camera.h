@@ -84,7 +84,7 @@ namespace MIS
         mat4 getiMc() const;
         mat4 getcMw() const;
         mat4 getwMc() const;
-        bool cullingTest(const Model3D* model) const;
+        bool isModelVisible(const Model3D* model) const;
         float distanceWith(const Model3D* model) const;
 
     public slots:

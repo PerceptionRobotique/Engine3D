@@ -16,6 +16,7 @@ namespace MIS
         : vertexNumber(0)
         , scale(1.0f)
         , prepared(false)
+        , liveLoading(true)
         , showIntensity(false)
         , visible(true)
         , boxVisible(false)
@@ -176,7 +177,7 @@ namespace MIS
 
     Model3D::AABB Model3D::getAABB() const
     {
-        return aabb;
+        return getScale() * aabb;
     }
 
     bool Model3D::isPointInAABB(vec3 point) const
@@ -193,7 +194,10 @@ namespace MIS
 
     QVector<glm::vec3> Model3D::getBox() const
     {
-        return box;
+        QVector<vec3> b;
+        for (vec3 point : box)
+            b.append(getScale() * point);
+        return b;
     }
 
     unsigned long long Model3D::getVertexNumber() const
@@ -331,8 +335,9 @@ namespace MIS
     {
         aabb = _aabb;
         unloadBoxVRAM();
+        unloadBoxRAM();
         loadBoxRAM();
-        emit modelChanged();
+        emit modelMoved();
     }
 
     void Model3D::setShader(QOpenGLShaderProgram* shader)
@@ -637,9 +642,7 @@ namespace MIS
     {
         if (boxOnVRAM)
         {
-            boxBuffer.bind();
-            boxBuffer.allocate(0);
-            boxBuffer.release();
+            boxBuffer.destroy();
             boxOnVRAM = false;
         }
     }
@@ -709,6 +712,7 @@ namespace MIS
                             mat4 wMo = getwMo();
                             glm::vec3 color = glm::vec3(boxColor.redF(), boxColor.greenF(), boxColor.blueF());
                             f->glUniformMatrix4fv(f->glGetUniformLocation(boxShader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
+                            boxShader->setUniformValue("scale", getScale());
                             f->glUniform3fv(f->glGetUniformLocation(boxShader->programId(), "color"), 1, value_ptr(color));
 
                             boxBuffer.bind();
@@ -750,14 +754,7 @@ namespace MIS
 
     void Model3D::setScale(double _scale)
     {
-        unloadBoxVRAM();
-        unloadBoxRAM();
-        aabb.min /= scale;
-        aabb.max /= scale;
         scale = _scale;
-        aabb.min *= scale;
-        aabb.max *= scale;
-        loadBoxRAM();
         emit modelMoved();
     }
 

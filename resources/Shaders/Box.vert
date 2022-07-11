@@ -8,6 +8,7 @@ precision mediump float;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
+uniform float scale;
 
 uniform bool equirectangular;
 
@@ -15,10 +16,11 @@ attribute vec3 in_vertex;
 
 void main()
 {
+    vec3 vertex = in_vertex * scale;
     if(equirectangular)
     {
         // changement de repere objet -> camera
-        vec4 cP = cMw * wMo * vec4(in_vertex, 1.0);
+        vec4 cP = cMw * wMo * vec4(vertex, 1.0);
         float fact = length(cP.xyz);
 
         // projection spherique
@@ -39,6 +41,6 @@ void main()
     }
     else
     {
-        gl_Position = iMc * cMw * wMo * vec4(in_vertex, 1.0);
+        gl_Position = iMc * cMw * wMo * vec4(vertex, 1.0);
     }
 }

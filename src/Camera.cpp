@@ -476,64 +476,42 @@ namespace MIS
         return getPose();
     }
 
-    bool Camera::cullingTest(const Model3D* model) const
+    /// <summary>
+    /// Test if a model is visible by a camera
+    /// </summary>
+    /// <param name="model">Model tested</param>
+    /// <returns>Model is visible</returns>
+    bool Camera::isModelVisible(const Model3D* model) const
     {
-        vec3 camPos = getPosition();
-        Model3D::AABB modelAABB = model->getwMo() * model->getAABB();
-        if (projectionType == EQUIRECTANGULAR)
-            return true;
-        else if (model->isPointInAABB(camPos))
-            return true;
-        else
+        if (isActive())
         {
-            QVector<glm::vec3> box = model->getBox();
-            QVector<vec4> points;
-            float minZ = 0.0f, maxZ = 0.0f;
-            for (int i = 0; i < box.count(); i++)
-            {
-                float z = -vec4(getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1)).z;
-                if (minZ > z || i == 0) minZ = z;
-                if (maxZ < z || i == 0) maxZ = z;
-            }
-            for (int i = 0; i < box.count(); i++)
-            {
-                float z = vec4(getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1)).z;
-                if ((-z >= nearPlane && -z <= farPlane) || (minZ <= nearPlane && maxZ >= farPlane))
-                {
-                    points.append(getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1));
-                    points.last() /= points.last().w;
-                }
-            }
-
-            if (!points.isEmpty())
-            {
-                vec4 min = points[0];
-                vec4 max = points[0];
-                for (int i = 1; i < points.count(); i++)
-                {
-                    if (min.x > points[i].x) min.x = points[i].x;
-                    if (min.y > points[i].y) min.y = points[i].y;
-                    if (min.z > points[i].z) min.z = points[i].z;
-
-                    if (max.x < points[i].x) max.x = points[i].x;
-                    if (max.y < points[i].y) max.y = points[i].y;
-                    if (max.z < points[i].z) max.z = points[i].z;
-                }
-
-                float limit = 1.0f;
-
-                return (min.x >= -limit && min.x <= limit && min.y >= -limit && min.y <= limit) ||
-                    (min.x >= -limit && min.x <= limit && max.y >= -limit && max.y <= limit) ||
-                    (max.x >= -limit && max.x <= limit && min.y >= -limit && min.y <= limit) ||
-                    (max.x >= -limit && max.x <= limit && max.y >= -limit && max.y <= limit) ||
-                    (min.y <= -limit && max.y >= limit && ((min.x >= -limit && min.x <= limit) || (max.x >= -limit && max.x <= limit))) ||
-                    (min.x <= -limit && max.x >= limit && ((min.y >= -limit && min.y <= limit) || (max.y >= -limit && max.y <= limit))) ||
-                    (min.x <= -limit && max.x >= limit && min.y <= -limit && max.y >= limit)
-                    ;
-            }
+            if (projectionType == EQUIRECTANGULAR)
+                return true;
             else
-                return false;
+            {
+                QVector<vec3> box = model->getBox();
+                QVector<vec4> boxImage;
+                for (vec3 point : box)
+                {
+                    boxImage.append(getiMc() * getcMw() * model->getwMo() * vec4(point, 1.0));
+                    boxImage.last() /= boxImage.last().w;
+                    boxImage.last().z = -(getcMw() * model->getwMo() * vec4(point, 1.0)).z;
+                }
+                vec3 min2D = boxImage.first();
+                vec3 max2D = boxImage.first();
+                for (vec3 dot : boxImage)
+                {
+                    min2D.x = min(min2D.x, dot.x);
+                    min2D.y = min(min2D.y, dot.y);
+                    min2D.z = min(min2D.z, dot.z);
+                    max2D.x = max(max2D.x, dot.x);
+                    max2D.y = max(max2D.y, dot.y);
+                    max2D.z = max(max2D.z, dot.z);
+                }
+                return min2D.x <= 1 && min2D.y <= 1 && min2D.z <= getFarPlane() && max2D.x >= -1 && max2D.y >= -1 && max2D.z >= getNearPlane();
+            }
         }
+        else return false;
     }
 
     float Camera::distanceWith(const Model3D* model) const

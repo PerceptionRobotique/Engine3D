@@ -59,6 +59,7 @@ namespace MIS
 
         bool isInitialized() const;
 
+        bool isModelVisible(const Model3D* model) const;
         bool isOnCamera(const Model3D* model, const Camera* camera) const;
         bool isOnScreen(const Model3D* model);
 

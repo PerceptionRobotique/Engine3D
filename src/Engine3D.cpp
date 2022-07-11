@@ -116,6 +116,17 @@ namespace MIS
         return initialized;
     }
 
+    bool Engine3D::isModelVisible(const Model3D* model) const
+    {
+        bool visible = false;
+        for (Camera* camera : cameras)
+            visible |= camera->isModelVisible(model);
+#ifdef HAVE_VR
+        if (vr.isActive()) for (Camera* vrCamera : vrCameras) visible |= vrCamera->isModelVisible(model);
+#endif
+        return visible;
+    }
+
     bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
     {
         bool onScreen = false;
@@ -125,7 +136,7 @@ namespace MIS
             onScreen &= model->isVisible();
             if (onScreen)
             {
-                onScreen &= camera->cullingTest(model);
+                onScreen &= camera->isModelVisible(model);
                 const Octree* octree = dynamic_cast<const Octree*>(model);
                 if (octree)
                 {
@@ -146,11 +157,7 @@ namespace MIS
     {
         if (!maxVertexLimitEnabled || currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
         {
-            bool onScreen = false;
-            for (Camera* camera : cameras) onScreen |= isOnCamera(model, camera);
-#ifdef HAVE_VR
-            if (vr.isActive()) for (Camera* vrCamera : vrCameras) onScreen |= isOnCamera(model, vrCamera);
-#endif
+            bool onScreen = isModelVisible(model);
             if (onScreen) currentVertexNumber += model->getVertexNumber();
             return onScreen;
         }
@@ -1020,7 +1027,7 @@ namespace MIS
 
                         for (Model3D* model : models)
                         {
-                            if (camera->cullingTest(model)) model->drawBox();
+                            if (camera->isModelVisible(model)) model->drawBox();
                             Octree* octree = dynamic_cast<Octree*>(model);
                             if (octree)
                             {
@@ -1120,7 +1127,7 @@ namespace MIS
 
                             for (Model3D* model : models)
                             {
-                                if (vrCameras[i]->cullingTest(model)) model->drawBox();
+                                if (vrCameras[i]->isModelVisible(model)) model->drawBox();
                                 Octree* octree = dynamic_cast<Octree*>(model);
                                 if (octree)
                                 {

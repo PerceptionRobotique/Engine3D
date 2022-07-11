@@ -137,7 +137,7 @@ namespace MIS
         void setShowIntensity(bool _showIntensity);
 
         //AABB
-        void setAABB(AABB _aabb);
+        virtual void setAABB(AABB _aabb);
 
         //Shaders
         void setShader(QOpenGLShaderProgram* shader);
@@ -163,7 +163,7 @@ namespace MIS
         virtual bool draw();
         virtual bool drawBox();
 
-        void setScale(double _scale);
+        virtual void setScale(double _scale);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
@@ -257,6 +257,22 @@ namespace MIS
         void vertexOnVRAMChanged();
         void modelDestroyed();
     };
+
+    inline Model3D::AABB operator*(const double& scalar, const Model3D::AABB& aabb)
+    {
+        Model3D::AABB _aabb = aabb;
+        _aabb.min *= scalar;
+        _aabb.max *= scalar;
+        _aabb.center *= scalar;
+        _aabb.gravity *= scalar;
+        _aabb.fix();
+        return _aabb;
+    }
+
+    inline Model3D::AABB operator*(const Model3D::AABB& aabb, const double& scalar)
+    {
+        return scalar * aabb;
+    }
 
     inline Model3D::AABB operator*(const mat4& matrix, const Model3D::AABB& aabb)
     {
