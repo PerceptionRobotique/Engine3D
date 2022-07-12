@@ -115,6 +115,7 @@ namespace MIS
         void setBlendFunction(BlendFunction _blendFunction);
         void setLightOnMainCamera(bool enabled);
         void setLightPosition(vec3 _lightPosition);
+        void setGlobalIllumination(float globalIllumination);
 
         //Optimization
         void setViewDistance(double _viewDistance);
@@ -158,6 +159,7 @@ namespace MIS
         BlendFunction blendFunction;
         bool lightOnMainCamera;
         vec3 lightPosition;
+        float globalIllumination;
 
         bool renderAsked;
         QMutex renderAskedMutex;
@@ -224,6 +226,7 @@ namespace MIS
         void askBlendFunction(BlendFunction);
         void askLightOnMainCamera(bool);
         void askLightPosition(vec3);
+        void askGlobalIllumination(float);
         void renderModeChanged();
 #ifdef HAVE_VR
         void askStopVR();

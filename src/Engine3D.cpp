@@ -37,6 +37,7 @@ namespace MIS
         , blendFunction(BLEND_1)
         , lightOnMainCamera(true)
         , lightPosition(0, 5, 0)
+        , globalIllumination(0.1f)
         , renderAsked(false)
         , maxSamples(-1)
         , viewDistance(150.0f)
@@ -95,6 +96,7 @@ namespace MIS
         connect(this, SIGNAL(askBlendFunction(BlendFunction)), this, SLOT(setBlendFunction(BlendFunction)));
         connect(this, SIGNAL(askLightOnMainCamera(bool)), this, SLOT(setLightOnMainCamera(bool)));
         connect(this, SIGNAL(askLightPosition(vec3)), this, SLOT(setLightPosition(vec3)));
+        connect(this, SIGNAL(askGlobalIllumination(float)), this, SLOT(setGlobalIllumination(float)));
 
 #ifdef HAVE_VR
         connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -334,6 +336,7 @@ namespace MIS
             setBlendFunction(blendFunction);
             setLightOnMainCamera(lightOnMainCamera);
             setLightPosition(lightPosition);
+            setGlobalIllumination(globalIllumination);
 
             initialized = true;
             emit initializationFinished();
@@ -754,6 +757,22 @@ namespace MIS
             makeCurrent();
             shaders[Model3D::TRIANGLES]->bind();
             glUniform3fv(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "lightPosition"), 1, value_ptr(lightPosition));
+            shaders[Model3D::TRIANGLES]->release();
+            doneCurrent();
+            emit askUpdate();
+        }
+    }
+
+    void Engine3D::setGlobalIllumination(float globalIllumination)
+    {
+        if (QThread::currentThread() != thread())
+            emit askGlobalIllumination(globalIllumination);
+        else
+        {
+            this->globalIllumination = globalIllumination;
+            makeCurrent();
+            shaders[Model3D::TRIANGLES]->bind();
+            shaders[Model3D::TRIANGLES]->setUniformValue("globalIllumination", globalIllumination);
             shaders[Model3D::TRIANGLES]->release();
             doneCurrent();
             emit askUpdate();
