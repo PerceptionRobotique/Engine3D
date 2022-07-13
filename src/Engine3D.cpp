@@ -159,8 +159,12 @@ namespace MIS
     {
         if (!maxVertexLimitEnabled || currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
         {
-            bool onScreen = isModelVisible(model);
-            if (onScreen) currentVertexNumber += model->getVertexNumber();
+            bool onScreen = false;
+            for (Camera* camera : cameras)
+            {
+                onScreen |= isOnCamera(model, camera);
+                if (onScreen) currentVertexNumber += model->getVertexNumber();
+            }
             return onScreen;
         }
         else
@@ -870,22 +874,6 @@ namespace MIS
                 {
                     if (isOnScreen(model)) modelsByDepthAndDistance[depth][dist].append(model);
                     else if (model->isLiveLoading()) modelsToUnload.append(model);
-                    //if (depth == 0)
-                    //{
-                    //    if (!onScreen)
-                    //    {
-                    //        qDebug() << "currentVertexNumber = " << currentVertexNumber;
-                    //        qDebug() << "culling test = " << mainCamera->cullingTest(model);
-                    //        Octree* octree = dynamic_cast<Octree*>(model);
-                    //        if (octree)
-                    //        {
-                    //            qDebug() << "depthTest = " << octree->getDepth() << " <= " << octree->getMaxVisibleDepth();
-                    //            qDebug() << "maxDepth = " << octree->getDepth() << " <= " << maxDepth;
-                    //            qDebug() << "viewDistance = " << octree->getDepth() << " > " << ceil((float)octree->getMaxDepth() * (1 - mainCamera->distanceWith(octree) / viewDistance));
-                    //            qDebug() << Qt::endl;
-                    //        }
-                    //    }
-                    //}
                     if (breakModelsUpdater) break;
                 }
                 if (breakModelsUpdater) break;
@@ -904,16 +892,17 @@ namespace MIS
             sortModelsByDepthAndDistance(modelsByDepthAndDistance, modelsToUnload);
 
             QFuture<void> modelsUnloader = QtConcurrent::map(modelsToUnload, std::bind(&Model3D::unloadRAM, std::placeholders::_1, waitLoading));
+            QList<Model3D*> modelsToLoad;
             for (unsigned int depth : modelsByDepthAndDistance.keys())
             {
                 for (float dist : modelsByDepthAndDistance[depth].keys())
                 {
-                    QList<Model3D*>& modelsToLoad = modelsByDepthAndDistance[depth][dist];
-                    QtConcurrent::blockingMap(modelsToLoad, std::bind(&Model3D::loadRAM, std::placeholders::_1, waitLoading));
+                    modelsToLoad.append(modelsByDepthAndDistance[depth][dist]);
                     if (breakModelsUpdater) break;
                 }
                 if (breakModelsUpdater) break;
             }
+            QtConcurrent::blockingMap(modelsToLoad, std::bind(&Model3D::loadRAM, std::placeholders::_1, waitLoading));
             modelsUnloader.waitForFinished();
             modelsUpdaterMutex.unlock();
         }

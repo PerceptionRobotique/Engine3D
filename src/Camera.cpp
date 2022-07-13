@@ -530,8 +530,7 @@ namespace MIS
             return 0;
         else
         {
-            float dist = glm::distance(camPos, modelAABB.center);
-            for (vec3 point : box) dist = glm::min(dist, glm::distance(camPos, vec3(model->getwMo() * vec4(point, 1.0))));
+            float dist = glm::distance(camPos, modelAABB.center) - glm::distance(modelAABB.center, modelAABB.min));
             return dist;
         }
     }
