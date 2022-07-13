@@ -530,7 +530,7 @@ namespace MIS
             return 0;
         else
         {
-            float dist = glm::distance(camPos, modelAABB.center) - glm::distance(modelAABB.center, modelAABB.min));
+            float dist = glm::distance(camPos, modelAABB.center) - glm::distance(modelAABB.center, modelAABB.min);
             return dist;
         }
     }
