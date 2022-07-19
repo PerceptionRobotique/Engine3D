@@ -1,6 +1,9 @@
 #include "Engine3D.h"
 
 #ifdef __linux__
+/**
+ * @brief      Initializes the engine 3D resources (Linux only).
+ */
 void initEngine3DResources() //needs to be launch outside of any namespace
 {
     Q_INIT_RESOURCE(Engine3D);
@@ -113,11 +116,23 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Determines if the engine is initialized.
+     *
+     * @return     True if initialized, False otherwise.
+     */
     bool Engine3D::isInitialized() const
     {
         return initialized;
     }
 
+    /**
+     * @brief      Determines whether the specified model is visible.
+     *
+     * @param[in]  model  The model
+     *
+     * @return     True if the specified model is visible, False otherwise.
+     */
     bool Engine3D::isModelVisible(const Model3D* model) const
     {
         bool visible = false;
@@ -129,6 +144,14 @@ namespace MIS
         return visible;
     }
 
+    /**
+     * @brief      Determines specified model is visible by specified camera.
+     *
+     * @param[in]  model   The model
+     * @param[in]  camera  The camera
+     *
+     * @return     True if on camera, False otherwise.
+     */
     bool Engine3D::isOnCamera(const Model3D* model, const Camera* camera) const
     {
         bool onScreen = false;
@@ -155,6 +178,13 @@ namespace MIS
         return onScreen;
     }
 
+    /**
+     * @brief      Determines whether the specified model is on screen.
+     *
+     * @param[in]  model  The model
+     *
+     * @return     True if the specified model is on screen, False otherwise.
+     */
     bool Engine3D::isOnScreen(const Model3D* model)
     {
         if (!maxVertexLimitEnabled || currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
@@ -171,16 +201,31 @@ namespace MIS
             return false;
     }
 
+    /**
+     * @brief      Gets the render mode.
+     *
+     * @return     The render mode.
+     */
     Engine3D::RenderMode Engine3D::getRenderMode() const
     {
         return renderMode;
     }
 
+    /**
+     * @brief      Gets the current OpenGL context.
+     *
+     * @return     The current OpenGL context.
+     */
     QOpenGLContext* Engine3D::getContext()
     {
         return context;
     }
 
+    /**
+     * @brief      Gets the last frame generated.
+     *
+     * @return     The last frame generated.
+     */
     QImage Engine3D::getFrame()
     {
         QImage output;
@@ -190,26 +235,55 @@ namespace MIS
         return output;
     }
 
+    /**
+     * @brief      Gets the main camera.
+     *
+     * @return     The main camera.
+     */
     Camera* Engine3D::getMainCamera()
     {
         return mainCamera;
     }
 
+    /**
+     * @brief      Gets the cameras.
+     *
+     * @return     The cameras.
+     */
     QVector<Camera*>& Engine3D::getCameras()
     {
         return cameras;
     }
 
+    /**
+     * @brief      Gets the maximum samples for this device.
+     *
+     * @return     The maximum samples available.
+     */
     int Engine3D::getMaxSamples()
     {
         return maxSamples;
     }
 
+    /**
+     * @brief      Gets the model by index.
+     *
+     * @param[in]  index  The index
+     *
+     * @return     The model.
+     */
     Model3D* Engine3D::getModel(unsigned int index)
     {
         return models[index];
     }
 
+    /**
+     * @brief      Gets the index from the model.
+     *
+     * @param[in]  _model  The model
+     *
+     * @return     The model index.
+     */
     int Engine3D::getModelIndex(const Model3D* _model) const
     {
         int index = -1;
@@ -220,41 +294,73 @@ namespace MIS
         return index;
     }
 
+    /**
+     * @brief      Gets the models.
+     *
+     * @return     The models.
+     */
     QVector<Model3D*>& Engine3D::getModels()
     {
         return models;
     }
 
+    /**
+     * @brief      Gets the opacity.
+     *
+     * @return     The opacity.
+     */
     float Engine3D::getOpacity() const
     {
         return opacity;
     }
 
+    /**
+     * @brief      Gets the wait loading parameter.
+     *
+     * @return     The wait loading parameter.
+     */
     bool Engine3D::getWaitLoading() const
     {
         return waitLoading;
     }
 
+    /**
+     * @brief      Locks the draw function.
+     */
     void Engine3D::lockDraw()
     {
         drawMutex.lock();
     }
 
+    /**
+     * @brief      Unlocks the draw function.
+     */
     void Engine3D::unlockDraw()
     {
         drawMutex.unlock();
     }
 
+    /**
+     * @brief      Locks the models updater thread.
+     */
     void Engine3D::lockModelsUpdater()
     {
         modelsUpdaterMutex.lock();
     }
 
+    /**
+     * @brief      Unlocks the models updater thread.
+     */
     void Engine3D::unlockModelsUpdater()
     {
         modelsUpdaterMutex.unlock();
     }
 
+    /**
+     * @brief      Sets the render mode without requiring a restart (don't work yet, may be deleted in a close future).
+     *
+     * @param[in]  _renderMode  The render mode
+     */
     void Engine3D::setRenderMode(RenderMode _renderMode)
     {
         //if (QThread::currentThread() != thread())
@@ -295,6 +401,9 @@ namespace MIS
         //}
     }
 
+    /**
+     * @brief      Initializes the Engine.
+     */
     void Engine3D::initialize()
     {
 //        QFuture<QtAndroidPrivate::PermissionResult> f = QtAndroidPrivate::requestPermission(QtAndroidPrivate::Storage);
@@ -347,16 +456,31 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the main camera.
+     *
+     * @param      camera  The camera
+     */
     void Engine3D::setMainCamera(Camera* camera)
     {
         mainCamera = camera;
     }
 
+    /**
+     * @brief      Adds a camera.
+     *
+     * @param      camera  The camera
+     */
     void Engine3D::addCamera(Camera* camera)
     {
         cameras.append(camera);
     }
 
+    /**
+     * @brief      Removes a camera.
+     *
+     * @param[in]  index  The index of the camera
+     */
     void Engine3D::removeCamera(unsigned int index)
     {
         if (index < cameras.count())
@@ -366,11 +490,21 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Removes a camera.
+     *
+     * @param      camera  The camera
+     */
     void Engine3D::removeCamera(Camera* camera)
     {
         removeCamera(cameras.indexOf(camera));
     }
 
+    /**
+     * @brief      Opens a model.
+     *
+     * @param[in]  fileName  The file name of the model
+     */
     void Engine3D::openModel(QString fileName)
     {
         QFileInfo fileInfo(fileName);
@@ -397,6 +531,11 @@ namespace MIS
         nextModelsUpdate();
     }
 
+    /**
+     * @brief      Closes a model.
+     *
+     * @param[in]  index  The index of the model
+     */
     void Engine3D::closeModel(unsigned int index)
     {
         if (QThread::currentThread() != thread())
@@ -413,12 +552,20 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Closes a model.
+     *
+     * @param      model  The model to close
+     */
     void Engine3D::closeModel(Model3D* model)
     {
         int index = getModelIndex(model);
         if (index >= 0) closeModel(index);
     }
 
+    /**
+     * @brief      Asks a render update.
+     */
     void Engine3D::update()
     {
         if (initialized)
@@ -435,6 +582,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Asks a full render in an image.
+     *
+     * @return     The image.
+     */
     QImage Engine3D::takePicture()
     {
         bool wasWaitLoading = getWaitLoading();
@@ -459,6 +611,11 @@ namespace MIS
     }
 
 #ifdef HAVE_VISP
+    /**
+     * @brief      Asks a full depth render in a vpImage.
+     *
+     * @return     The image.
+     */
     vpImage<float> Engine3D::takePFM()
     {
         bool wasWaitLoading = getWaitLoading();
@@ -535,6 +692,11 @@ namespace MIS
 #endif
 
 #ifdef HAVE_VR
+    /**
+     * @brief      Starts VR.
+     *
+     * @return     True if VR started successfully. False otherwise.
+     */
     bool Engine3D::startVR()
     {
         if (!vr.isActive())
@@ -564,6 +726,9 @@ namespace MIS
         else return true;
     }
 
+    /**
+     * @brief      Stops VR.
+     */
     void Engine3D::stopVR()
     {
         if (vr.isActive())
@@ -595,22 +760,44 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Gets the VR headset.
+     *
+     * @return     The VR headset.
+     */
     VRheadset* Engine3D::getVRheadset()
     {
         return &vr;
     }
 
+    /**
+     * @brief      Gets the VR camera.
+     *
+     * @param[in]  index  The index of the camera (0-1)
+     *
+     * @return     The VR camera.
+     */
     Camera* Engine3D::getVRCamera(unsigned int index)
     {
         return vrCameras[index];
     }
 #endif
 
+    /**
+     * @brief      Sets the frame counter enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setFrameCounterEnabled(bool enabled)
     {
         frameCounter = enabled;
     }
 
+    /**
+     * @brief      Sets the point size enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setPointSizeEnabled(bool enabled)
     {
         if (QThread::currentThread() != thread())
@@ -627,6 +814,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the point size (OpenGL context required).
+     *
+     * @param[in]  _pointSize  The point size
+     */
     void Engine3D::setPointSize(double _pointSize)
     {
         if (QThread::currentThread() != thread())
@@ -643,6 +835,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the line width (OpenGL context required).
+     *
+     * @param[in]  _lineWidth  The line width
+     */
     void Engine3D::setLineWidth(float _lineWidth)
     {
         if (QThread::currentThread() != thread())
@@ -657,6 +854,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the opacity enabled (OpenGL context required).
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setOpacityEnabled(bool enabled)
     {
         if (QThread::currentThread() != thread())
@@ -686,6 +888,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the opacity (OpenGL context required).
+     *
+     * @param[in]  _opacity  The opacity
+     */
     void Engine3D::setOpacity(float _opacity)
     {
         if (QThread::currentThread() != thread())
@@ -720,6 +927,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the blend function (OpenGL context required).
+     *
+     * @param[in]  _blendFunction  The blend function
+     */
     void Engine3D::setBlendFunction(BlendFunction _blendFunction)
     {
         if (QThread::currentThread() != thread())
@@ -735,6 +947,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the light on main camera (OpenGL context required).
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setLightOnMainCamera(bool enabled)
     {
         if (QThread::currentThread() != thread())
@@ -751,6 +968,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the light position (OpenGL context required).
+     *
+     * @param[in]  _lightPosition  The light position
+     */
     void Engine3D::setLightPosition(vec3 _lightPosition)
     {
         if (QThread::currentThread() != thread())
@@ -767,6 +989,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the global illumination.
+     *
+     * @param[in]  globalIllumination  The global illumination
+     */
     void Engine3D::setGlobalIllumination(float globalIllumination)
     {
         if (QThread::currentThread() != thread())
@@ -783,50 +1010,95 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the view distance.
+     *
+     * @param[in]  _viewDistance  The view distance
+     */
     void Engine3D::setViewDistance(double _viewDistance)
     {
         viewDistance = _viewDistance;
         nextModelsUpdate();
     }
 
+    /**
+     * @brief      Sets the view distance enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setViewDistanceEnabled(bool enabled)
     {
         viewDistanceEnabled = enabled;
         nextModelsUpdate();
     }
 
+    /**
+     * @brief      Sets the wait loading enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setWaitLoading(bool enabled)
     {
         waitLoading = enabled;
     }
 
+    /**
+     * @brief      Sets the maximum vertex limit enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setMaxVertexLimitEnabled(bool enabled)
     {
         maxVertexLimitEnabled = enabled;
         nextModelsUpdate();
     }
 
+    /**
+     * @brief      Sets the maximum vertex limit.
+     *
+     * @param[in]  _maxVertexLimit  The maximum vertex limit
+     */
     void Engine3D::setMaxVertexLimit(int _maxVertexLimit)
     {
         maxVertexLimit = _maxVertexLimit * 1000000;
         nextModelsUpdate();
     }
 
+    /**
+     * @brief      Sets the maximum vertex to video random access memory enabled.
+     *
+     * @param[in]  enabled  Indicates if enabled
+     */
     void Engine3D::setMaxVertexToVRAMEnabled(bool enabled)
     {
         maxVertexToVRAMEnabled = enabled;
     }
 
+    /**
+     * @brief      Sets the maximum vertex to video random access memory.
+     *
+     * @param[in]  _maxVertexToVRAM  The maximum vertex to video random access memory
+     */
     void Engine3D::setMaxVertexToVRAM(double _maxVertexToVRAM)
     {
         maxVertexToVRAM = _maxVertexToVRAM * 1000000;
     }
 
+    /**
+     * @brief      Sets the maximum moving depth.
+     *
+     * @param[in]  _maxMovingDepth  The maximum moving depth
+     */
     void Engine3D::setMaxMovingDepth(int _maxMovingDepth)
     {
         maxMovingDepth = _maxMovingDepth;
     }
 
+    /**
+     * @brief      Indicates if the main camera is moving.
+     *
+     * @param[in]  _isMoving  Indicates if main camera moving
+     */
     void Engine3D::setMoving(bool _isMoving)
     {
         isMoving = _isMoving;
@@ -838,6 +1110,12 @@ namespace MIS
         emit askUpdate();
     }
 
+    /**
+     * @brief      Sort models by depth and distance
+     *
+     * @param      modelsByDepthAndDistance  The models sorted by depth and distance
+     * @param      modelsToUnload            The models to unload
+     */
     void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
     {
         QMap<unsigned int, QMap<float, QList<Model3D*>>> totlaModelsByDepthAndDistance;
@@ -882,6 +1160,9 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Update if models are visible and load or unload in consequence.
+     */
     void Engine3D::updateModels()
     {
         if (modelsUpdaterMutex.tryLock())
@@ -914,6 +1195,9 @@ namespace MIS
         breakModelsUpdater = false;
     }
 
+    /**
+     * @brief      Makes OpenGL context current if available.
+     */
     void Engine3D::makeCurrent()
     {
         if (context)
@@ -923,6 +1207,9 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Release OpenGL context if available.
+     */
     void Engine3D::doneCurrent()
     {
         if (context)
@@ -932,6 +1219,11 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Sets the render asked.
+     *
+     * @param[in]  value  The value
+     */
     void Engine3D::setRenderAsked(bool value)
     {
         renderAskedMutex.lock();
@@ -939,6 +1231,11 @@ namespace MIS
         renderAskedMutex.unlock();
     }
 
+    /**
+     * @brief      Gets the render asked.
+     *
+     * @return     The render asked.
+     */
     bool Engine3D::getRenderAsked()
     {
         renderAskedMutex.lock();
