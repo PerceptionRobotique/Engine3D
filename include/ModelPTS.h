@@ -13,6 +13,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes model pts.
+	 */
 	class ENGINE3D_EXPORT ModelPTS : public Model3D
 	{
 	public:

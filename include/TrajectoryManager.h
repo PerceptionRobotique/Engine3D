@@ -9,6 +9,9 @@
 namespace MIS
 {
 
+    /**
+     * @brief      This class describes a trajectory manager.
+     */
     class ENGINE3D_EXPORT TrajectoryManager
     {
     public:

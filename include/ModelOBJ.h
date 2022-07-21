@@ -10,6 +10,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes a model obj.
+	 */
 	class ENGINE3D_EXPORT ModelOBJ : public Model3D
 	{
 	public:

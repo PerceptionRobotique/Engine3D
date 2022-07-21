@@ -13,6 +13,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes an octree based on binary models.
+	 */
 	class ENGINE3D_EXPORT Octree : public ModelBIN
 	{
 		Q_OBJECT

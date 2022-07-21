@@ -8,6 +8,9 @@
 namespace MIS
 {
 
+    /**
+     * @brief      This class describes an 3D object using Qt signals and slots.
+     */
     class ENGINE3D_EXPORT Object3DQt : public QObject, public Object3D
     {
         Q_OBJECT

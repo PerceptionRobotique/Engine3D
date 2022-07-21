@@ -6,6 +6,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes a model bin.
+	 */
 	class ENGINE3D_EXPORT ModelBIN : public Model3D
 	{
 	public:

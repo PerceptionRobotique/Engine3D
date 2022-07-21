@@ -28,6 +28,9 @@ using namespace glm;
 namespace MIS
 {
 
+    /**
+     * @brief      This class describes a 3D model.
+     */
     class ENGINE3D_EXPORT Model3D : public Object3DQt
     {
         Q_OBJECT

@@ -14,6 +14,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes a VR headset.
+	 */
 	class ENGINE3D_EXPORT VRheadset
 	{
 	public:

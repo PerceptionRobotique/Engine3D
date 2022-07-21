@@ -325,6 +325,26 @@ namespace MIS
     }
 
     /**
+     * @brief      Determines if view distance enabled.
+     *
+     * @return     True if view distance enabled, False otherwise.
+     */
+    bool Engine3D::isViewDistanceEnabled() const
+    {
+        return viewDistanceEnabled;
+    }
+
+    /**
+     * @brief      Determines if maximum vertex limit enabled.
+     *
+     * @return     True if maximum vertex limit enabled, False otherwise.
+     */
+    bool Engine3D::isMaxVertexLimitEnabled() const
+    {
+        return maxVertexLimitEnabled;
+    }
+
+    /**
      * @brief      Locks the draw function.
      */
     void Engine3D::lockDraw()
@@ -1244,6 +1264,9 @@ namespace MIS
         return value;
     }
 
+    /**
+     * @brief      Renders one frame.
+     */
     void Engine3D::render()
     {
         if (initialized)
@@ -1472,6 +1495,9 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Ask for a new models update. If a current update is processing, waits end.
+     */
     void Engine3D::nextModelsUpdate()
     {
         if (!modelsUpdater.isRunning())
@@ -1480,6 +1506,9 @@ namespace MIS
             updateModelsNextAsked = true;
     }
 
+    /**
+     * @brief      Sets the frame (private).
+     */
     void Engine3D::setFrame()
     {
         if (mainCamera->isActive())
@@ -1491,6 +1520,9 @@ namespace MIS
         }
     }
 
+    /**
+     * @brief      Destroys the object. Last call for Engine3D.
+     */
     void Engine3D::destroy()
     {
         initialized = false;

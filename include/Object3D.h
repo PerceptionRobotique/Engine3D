@@ -12,6 +12,9 @@ using namespace glm;
 namespace MIS
 {
 
+    /**
+     * @brief      This class describes a 3D object.
+     */
     class ENGINE3D_EXPORT Object3D
     {
     public:

@@ -38,6 +38,9 @@
 namespace MIS
 {
 
+    /**
+     * @brief      This class describes a 3D Engine improved for huge cloud points display using OpenGL.
+     */
     class ENGINE3D_EXPORT Engine3D : public QObject, public QOpenGLFunctions
     {
         Q_OBJECT
@@ -74,6 +77,8 @@ namespace MIS
         QVector<Model3D*>& getModels();
         float getOpacity() const;
         bool getWaitLoading() const;
+        bool isViewDistanceEnabled() const;
+        bool isMaxVertexLimitEnabled() const;
 
         void lockDraw();
         void unlockDraw();

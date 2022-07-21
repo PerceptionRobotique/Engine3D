@@ -11,6 +11,9 @@
 namespace MIS
 {
 
+	/**
+	 * @brief      This class describes a video writer.
+	 */
 	class ENGINE3D_EXPORT VideoWriter : public QProcess
 	{
 		Q_OBJECT
