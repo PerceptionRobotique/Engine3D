@@ -234,9 +234,11 @@ namespace MIS
         void askGlobalIllumination(float);
         void renderModeChanged();
 #ifdef HAVE_VR
+        void vrStarted();
         void askStopVR();
         void vrStopped();
         void updateVRInputs();
+        void vrFramesReady(QVector<QImage>);
 #endif
     };
 

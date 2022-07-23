@@ -12,8 +12,7 @@ int main(int argc, char* argv[])
 	Engine3D engine(Engine3D::DIRECT);
 	engine.initialize();
 
-	//engine.openModel("../Model/Suzanne.obj");
-	engine.openModel("C:/Users/nvill/3D Objects/Suzanne/Suzanne.obj");
+	engine.openModel("../Model/Suzanne.obj");
 	engine.getMainCamera()->translate(vec3(0, 0, 5));
 
 	CameraController cameraController(&engine);
@@ -26,7 +25,7 @@ int main(int argc, char* argv[])
 
 	QTimer timer;
 	QEventLoop loop;
-	timer.singleShot(60000, &loop, SLOT(quit()));
+	timer.singleShot(30000, &loop, SLOT(quit()));
 	loop.exec();
 
 	engine.stopVR();

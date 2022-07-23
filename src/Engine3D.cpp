@@ -190,11 +190,22 @@ namespace MIS
         if (!maxVertexLimitEnabled || currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
         {
             bool onScreen = false;
-            for (Camera* camera : cameras)
+#ifdef HAVE_VR
+            if (vr.isActive())
             {
-                onScreen |= isOnCamera(model, camera);
+                for (Camera* vrCamera : vrCameras)
+                    onScreen |= isOnCamera(model, vrCamera);
                 if (onScreen) currentVertexNumber += model->getVertexNumber();
             }
+            else
+            {
+#endif
+                for (Camera* camera : cameras)
+                    onScreen |= isOnCamera(model, camera);
+                if (onScreen) currentVertexNumber += model->getVertexNumber();
+#ifdef HAVE_VR
+            }
+#endif
             return onScreen;
         }
         else
@@ -594,7 +605,11 @@ namespace MIS
             {
                 setRenderAsked(true);
 #ifdef HAVE_VR
-                if (vr.isActive()) emit updateVRInputs();
+                if (vr.isActive())
+                {
+                    disconnect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
+                    emit updateVRInputs();
+                }
 #endif
                 emit askRender();
             }
@@ -739,6 +754,7 @@ namespace MIS
                 }
 
                 vrTimer.start(1000.0f / vr.m_frequency);
+                emit vrStarted();
                 return true;
             }
             else return false;
@@ -753,8 +769,10 @@ namespace MIS
     {
         if (vr.isActive())
         {
+            if (vrTimer.isActive() && vrTimer.thread() == QThread::currentThread()) vrTimer.stop();
             if (QThread::currentThread() != thread())
             {
+                disconnect(&vrTimer);
                 QEventLoop loop;
                 connect(this, SIGNAL(vrStopped()), &loop, SLOT(quit()));
                 emit askStopVR();
@@ -762,10 +780,7 @@ namespace MIS
             }
             else
             {
-                vrTimer.stop();
                 vr.shutdown();
-                vr.shutdown();
-
                 QThreadPool::globalInstance()->setMaxThreadCount(QThreadPool::globalInstance()->maxThreadCount());
 
                 for (unsigned int i = 0; i < 2; i++)
@@ -1474,7 +1489,11 @@ namespace MIS
                             vr::VRCompositor()->Submit(i ? vr::Eye_Right : vr::Eye_Left, & eyeTexture);
                         }
                     }
+
+                    QVector<QImage> vrFrames = { vrCameras[0]->toImage(), vrCameras[1]->toImage() };
+                    emit vrFramesReady(vrFrames);
                 }
+                connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
 #endif
 
                 if (frameCounter) qDebug() << ++frameNumber;

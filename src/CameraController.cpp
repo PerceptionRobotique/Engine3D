@@ -409,19 +409,22 @@ namespace MIS
             if (vrHeadset) vr = vrHeadset;
             if (vr)
             {
-                for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+                if (vr->isActive())
                 {
-                    vr::VRControllerState_t state;
-                    if (vr->m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
+                    for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
                     {
-                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                        vr::VRControllerState_t state;
+                        if (vr->m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
                         {
-                            camera->translate(vec3(translationSensitivity * state.rAxis->x / 50.0f, 0.0f, -translationSensitivity * state.rAxis->y / 50.0f), true);
-                        }
-                        else if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
-                        {
-                            camera->translate(vec3(0, translationSensitivity * state.rAxis->y / 50.0f, 0), true);
-                            vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, -rotationSensitivity * state.rAxis[0].x / 100.0f, glm::vec3(0, 1, 0));
+                            if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                            {
+                                camera->translate(vec3(translationSensitivity * state.rAxis->x / 50.0f, 0.0f, -translationSensitivity * state.rAxis->y / 50.0f), true);
+                            }
+                            else if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
+                            {
+                                camera->translate(vec3(0, translationSensitivity * state.rAxis->y / 50.0f, 0), true);
+                                vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, -rotationSensitivity * state.rAxis[0].x / 100.0f, glm::vec3(0, 1, 0));
+                            }
                         }
                     }
                 }
