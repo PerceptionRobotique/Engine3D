@@ -105,6 +105,7 @@ namespace MIS
         void stopVR();
         VRheadset* getVRheadset();
         Camera* getVRCamera(unsigned int index);
+        QOpenGLFramebufferObject* getEyesFBO();
 #endif
         void destroy();
 
@@ -150,6 +151,7 @@ namespace MIS
         VRheadset vr;
         QVector<Camera*> vrCameras;
         QTimer vrTimer;
+        QOpenGLFramebufferObject* eyesFBO;
 #endif
         QVector<Model3D*> models;
 
@@ -238,7 +240,6 @@ namespace MIS
         void askStopVR();
         void vrStopped();
         void updateVRInputs();
-        void vrFramesReady(QVector<QImage>);
 #endif
     };
 

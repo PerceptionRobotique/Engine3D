@@ -254,10 +254,13 @@ namespace MIS
 
     void Camera::lookAt(vec3 _point)
     {
-        vec3 position = getPosition();
-        setcMw(glm::lookAt(getPosition(), _point, vec3(0, 1, 0)));
-        setPosition(position);
-        if (viewPoint == THIRD_PERSON_VIEW) target = _point;
+        if (distance(getPosition(), _point) > 0)
+        {
+            vec3 position = getPosition();
+            setcMw(glm::lookAt(getPosition(), _point, vec3(0, 1, 0)));
+            setPosition(position);
+            if (viewPoint == THIRD_PERSON_VIEW) target = _point;
+        }
     }
 
     void Camera::lookAt(Model3D* model)

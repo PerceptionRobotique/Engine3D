@@ -31,6 +31,7 @@ namespace MIS
         , mainCamera(cameras.first())
 #ifdef HAVE_VR
         , vrCameras(2, nullptr)
+        , eyesFBO(nullptr)
 #endif
         , frameCounter(false)
         , pointSize(1.0f)
@@ -789,6 +790,9 @@ namespace MIS
                     vrCameras[i] = nullptr;
                 }
 
+                delete eyesFBO;
+                eyesFBO = nullptr;
+
                 mainCamera->setActive(true);
                 emit vrStopped();
             }
@@ -815,6 +819,15 @@ namespace MIS
     Camera* Engine3D::getVRCamera(unsigned int index)
     {
         return vrCameras[index];
+    }
+
+    /// <summary>
+    /// Returns a FBO with eyes renders in a frame.
+    /// </summary>
+    /// <returns>The eyes frame.</returns>
+    QOpenGLFramebufferObject* Engine3D::getEyesFBO()
+    {
+        return eyesFBO;
     }
 #endif
 
@@ -1387,8 +1400,6 @@ namespace MIS
                     }
                 }
 
-                setFrame();
-
 #ifdef HAVE_VR
                 if (vr.isActive())
                 {
@@ -1484,17 +1495,37 @@ namespace MIS
                                 }
                             }
                             vrCameras[i]->release();
+                            
+                            if (eyesFBO)
+                            {
+                                if (eyesFBO->width() != vr.getWidth() * 2 || eyesFBO->height() != vr.getHeight())
+                                {
+                                    delete eyesFBO;
+                                    eyesFBO = nullptr;
+                                }
+                            }
+                            if (!eyesFBO)
+                            {
+                                eyesFBO = new QOpenGLFramebufferObject(vr.getWidth() * 2, vr.getHeight());
+                                eyesFBO->release();
+                            }
+                            QOpenGLFramebufferObject::blitFramebuffer(
+                                eyesFBO,
+                                QRect(i * eyesFBO->width() / 2, 0, eyesFBO->width() / 2, eyesFBO->height()),
+                                vrCameras[i]->getFBO(),
+                                QRect(0, 0, vrCameras[i]->getWidth(), vrCameras[i]->getHeight()),
+                                GL_COLOR_BUFFER_BIT,
+                                GL_LINEAR
+                            );
 
                             vr::Texture_t eyeTexture = { (void*)(uintptr_t)vrCameras[i]->texture(), vr::TextureType_OpenGL, vr::ColorSpace_Gamma };
                             vr::VRCompositor()->Submit(i ? vr::Eye_Right : vr::Eye_Left, & eyeTexture);
                         }
                     }
-
-                    QVector<QImage> vrFrames = { vrCameras[0]->toImage(), vrCameras[1]->toImage() };
-                    emit vrFramesReady(vrFrames);
                 }
                 connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
 #endif
+                setFrame();
 
                 if (frameCounter) qDebug() << ++frameNumber;
 
@@ -1530,13 +1561,27 @@ namespace MIS
      */
     void Engine3D::setFrame()
     {
-        if (mainCamera->isActive())
+#ifdef HAVE_VR
+        if (vr.isActive())
         {
             frameMutex.lock();
-            frame = mainCamera->toImage();
+            frame = eyesFBO->toImage();
             frameMutex.unlock();
             emit frameReady(frame);
         }
+        else
+        {
+#endif
+            if (mainCamera->isActive())
+            {
+                frameMutex.lock();
+                frame = mainCamera->toImage();
+                frameMutex.unlock();
+                emit frameReady(frame);
+            }
+#ifdef HAVE_VR
+        }
+#endif
     }
 
     /**
