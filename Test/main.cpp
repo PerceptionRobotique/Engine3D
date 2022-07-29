@@ -1,12 +1,16 @@
-#include <QGuiApplication>
+#include <QApplication>
+#include <QFileDialog>
+#include <QSettings>
 #include <Engine3D.h>
 
 using namespace MIS;
 
 int main(int argc, char* argv[])
 {
-	QGuiApplication app(argc, argv);
+	QApplication app(argc, argv);
 	Q_UNUSED(app);
+
+	QSettings settings("settings.ini", QSettings::IniFormat);
 
 	Engine3D engine(Engine3D::DIRECT);
 	engine.initialize();
@@ -18,13 +22,16 @@ int main(int argc, char* argv[])
 	diskRoot = "/mnt/c/";
 #endif
 
-	//engine.openModel(diskRoot + "/Users/nvill/3D Objects/ECathedrale/Other_Models/IntTout50/IntTout50.oct");
-	engine.getMainCamera()->setBackgroundColor(Qt::gray);
-	//engine.openModel(diskRoot + "/Users/nvill/3D Objects/SuzanneMulti/SuzanneMulti.obj");
-	engine.openModel(diskRoot + "/Users/nvill/3D Objects/ModeleCAO/CharpenteFlecheAmiensTexturee.obj");
-	engine.getModel(0)->setScale(2);
-	//engine.getModel(0)->setBoxVisible(true);
-	engine.takePicture().save("test.png");
+	QString fileName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle 3D", settings.value("FileName").toString(), "Modèle 3D (*.pts *.bin *.bini *.oct *.octi *.obj)");
+	if (!fileName.isEmpty())
+	{
+		settings.setValue("FileName", fileName);
+		engine.getMainCamera()->translate(vec3(0, 0, 3));
+		engine.openModel(fileName);
+		engine.getModel(0)->setBoxVisible(true);
+		engine.getMainCamera()->setView(engine.getModel(0), Camera::CENTER);
+		engine.takePicture().save("capture.png");
+	}
 
 	engine.destroy();
 	return 0;

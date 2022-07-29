@@ -5,7 +5,7 @@ namespace MIS
 
     Camera::Camera()
         : active(true)
-        , target(vec3(0, 0, 0))
+        , target(vec3(0, 0, -1))
         , size(1920, 1080)
         , FBO(nullptr)
         , textureFBO(nullptr)
@@ -14,7 +14,7 @@ namespace MIS
         , projectionType(PERSPECTIVE)
         , viewPoint(FIRST_PERSON_VIEW)
         , nearPlane(0.1f)
-        , farPlane(500.0f)
+        , farPlane(1000.0f)
         , au(540)
         , av(540)
         , ku(30)
@@ -257,7 +257,9 @@ namespace MIS
         if (distance(getPosition(), _point) > 0)
         {
             vec3 position = getPosition();
-            setcMw(glm::lookAt(getPosition(), _point, vec3(0, 1, 0)));
+            vec3 vAxis(0, 1, 0);
+            if (abs(getRotation().x) == 90) vAxis = vec3(0, 0, -1);
+            setcMw(glm::lookAt(getPosition(), _point, vAxis));
             setPosition(position);
             if (viewPoint == THIRD_PERSON_VIEW) target = _point;
         }
@@ -278,6 +280,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(center);
                 setRotation(vec3(0, 0, 0));
                 translate(vec3(0, 0, distance));
@@ -289,6 +292,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(center);
                 setRotation(vec3(0, 180, 0));
                 translate(vec3(0, 0, distance));
@@ -300,6 +304,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(vec3(center.x, center.y + distance, center.z));
                 setRotation(vec3(-90, 0, 0));
                 setTarget(center);
@@ -310,6 +315,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(vec3(center.x, center.y - distance, center.z));
                 setRotation(vec3(90, 0, 0));
                 setTarget(center);
@@ -320,6 +326,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(center);
                 setRotation(vec3(0, -90, 0));
                 translate(vec3(0, 0, distance));
@@ -331,6 +338,7 @@ namespace MIS
             {
                 vec3 center = (model->getwMo() * model->getAABB()).center;
                 float distance = glm::distance(center, getPosition());
+                if (distance == 0) distance = 1;
                 setPosition(center);
                 setRotation(vec3(0, 90, 0));
                 translate(vec3(0, 0, distance));
@@ -349,12 +357,13 @@ namespace MIS
                     float currentMax = 0;
                     for (int i = 0; i < box.count(); i++)
                     {
-                        vec3 _point2D = getProjection() * getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                        vec4 _point2D = getiMc() * getcMw() * model->getwMo() * vec4(box[i], 1.0);
+                        _point2D /= _point2D.w;
                         if (max(abs(_point2D.x), abs(_point2D.y)) > currentMax || i == 0)
                         {
                             currentMax = max(abs(_point2D.x), abs(_point2D.y));
                             point2D = _point2D;
-                            point = getcMw() * model->getwMo() * vec4(box[i].x, box[i].y, box[i].z, 1);
+                            point = getcMw() * model->getwMo() * vec4(box[i], 1.0);
                         }
                     }
                     float factor = point.y;
@@ -365,11 +374,14 @@ namespace MIS
                         fov = getHFOV();
                     }
                     if (getProjectionType() == Camera::ORTHOGRAPHIC)
-                    {
                         fov = 180;
-                    }
                     float d = factor / sin(radians(fov / 2.0f)) * cos(radians(fov / 2.0f));
                     translate(vec3(0, 0, point.z + abs(d)));
+                }
+                else
+                {
+                    setPosition(model->getwMo() * vec4(model->getAABB().center, 1.0));
+                    setRotation(vec3(0, 0, 0));
                 }
                 break;
             }
