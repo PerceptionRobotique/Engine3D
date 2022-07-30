@@ -352,19 +352,22 @@ namespace MIS
 
     void Model3D::loadRAM(bool force)
     {
-        if (force) vertexLoader.lock();
-        if (vertexLoader.tryLock() || force)
+        if (isPrepared())
         {
-            if (!onRAM)
+            if (force) vertexLoader.lock();
+            if (vertexLoader.tryLock() || force)
             {
-                loadRamThread();
-                addVertexOnRAM();
-                onRAM = true;
-                emit modelLoaded();
+                if (!onRAM)
+                {
+                    loadRamThread();
+                    addVertexOnRAM();
+                    onRAM = true;
+                    emit modelLoaded();
+                }
+                vertexLoader.unlock();
             }
-            vertexLoader.unlock();
+            else emit modelLoadingDelayed();
         }
-        else emit modelLoadingDelayed();
     }
 
     void Model3D::unloadRAM(bool force)

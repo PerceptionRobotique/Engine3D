@@ -102,13 +102,20 @@ namespace MIS
 	ModelOBJ::ModelOBJ(QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
 		: Model3D(_fileName, shader, boxShader)
 		, objectNumber(0)
+		, stopPrepare(false)
 	{
 		primitives = TRIANGLES;
 		liveLoading = true;
+		prepareFuture = QtConcurrent::run(&ModelOBJ::prepare, this);
 	}
 
 	ModelOBJ::~ModelOBJ()
 	{
+		if (prepareFuture.isRunning())
+		{
+			stopPrepare = true;
+			prepareFuture.waitForFinished();
+		}
 		if (!prepared)
 		{
 			prepareMutex.lock();
@@ -118,35 +125,36 @@ namespace MIS
 
 	void ModelOBJ::loadRamThread()
 	{
-		prepare();
-
-		point.resize(objectNumber);
-		uv.resize(objectNumber);
-		normal.resize(objectNumber);
-		unsigned int vOffset = 0;
-		unsigned int vtOffset = 0;
-		unsigned int vnOffset = 0;
-		for (unsigned int index = 0; index < objectNumber; index++)
+		if (isPrepared())
 		{
-			for (unsigned int i = 0; i < f[index].count(); i++)
+			point.resize(objectNumber);
+			uv.resize(objectNumber);
+			normal.resize(objectNumber);
+			unsigned int vOffset = 0;
+			unsigned int vtOffset = 0;
+			unsigned int vnOffset = 0;
+			for (unsigned int index = 0; index < objectNumber; index++)
 			{
-				for (unsigned int j = 0; j < 3; j++)
+				for (unsigned int i = 0; i < f[index].count(); i++)
 				{
-					point[index].append(v[index][f[index][i][j][0] - vOffset - 1]);
-					uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
-					normal[index].append(vn[index][f[index][i][j][2] - vnOffset - 1]);
+					for (unsigned int j = 0; j < 3; j++)
+					{
+						point[index].append(v[index][f[index][i][j][0] - vOffset - 1]);
+						uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
+						normal[index].append(vn[index][f[index][i][j][2] - vnOffset - 1]);
+					}
 				}
+				vOffset += v[index].count();
+				vtOffset += vt[index].count();
+				vnOffset += vn[index].count();
 			}
-			vOffset += v[index].count();
-			vtOffset += vt[index].count();
-			vnOffset += vn[index].count();
-		}
 
-		for (Material& material : materials)
-		{
-			for (QString& textureName : material.map_Kd.keys())
+			for (Material& material : materials)
 			{
-				textures[textureName] = QImage(material.map_Kd[textureName]).mirrored();
+				for (QString& textureName : material.map_Kd.keys())
+				{
+					textures[textureName] = QImage(material.map_Kd[textureName]).mirrored();
+				}
 			}
 		}
 	}
@@ -158,7 +166,7 @@ namespace MIS
 
 	void ModelOBJ::prepare()
 	{
-		if (!prepared)
+		if (!isPrepared())
 		{
 			prepareMutex.lock();
 			unsigned int progress = 0;
@@ -190,7 +198,7 @@ namespace MIS
 				nbLines += nb;
 
 			ts.seek(0);
-			while (!ts.atEnd())
+			while (!ts.atEnd() && !stopPrepare)
 			{
 				currentLineNumber++;
 				if (progress < (unsigned int)(100.0 * currentLineNumber / nbLines))
@@ -286,15 +294,19 @@ namespace MIS
 				}
 			}
 
-			subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
-			vertexNumber = 0;
-			for (unsigned long long& vNumber : subVertexNumber)
-				vertexNumber += vNumber;
-			aabb.gravity /= vertexNumber;
-			aabb.updateCenter();
-			setAABB(aabb);
-			emit modelLoadingUpdate(this, 100);
-			prepared = true;
+			if (!stopPrepare)
+			{
+				subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
+				vertexNumber = 0;
+				for (unsigned long long& vNumber : subVertexNumber)
+					vertexNumber += vNumber;
+				aabb.gravity /= vertexNumber;
+				aabb.updateCenter();
+				setAABB(aabb);
+				emit modelLoadingUpdate(this, 100);
+				prepared = true;
+			}
+			stopPrepare = false;
 			prepareMutex.unlock();
 		}
 	}

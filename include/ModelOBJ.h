@@ -41,6 +41,8 @@ namespace MIS
 	private:
 		QMutex prepareMutex;
 		QHash<QString, Material> materials;
+		QFuture<void> prepareFuture;
+		bool stopPrepare;
 
 		unsigned int objectNumber;
 		QVector<unsigned long long> subVertexNumber;

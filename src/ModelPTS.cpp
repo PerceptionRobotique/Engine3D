@@ -50,20 +50,17 @@ namespace MIS
         ts.seek(0);
         ts.flush();
 
+        prepared = true;
+
         ramLoader = QtConcurrent::run(&ModelPTS::loadRAM, this, true);
     }
 
     ModelPTS::~ModelPTS()
     {
-        if (!prepared)
+        if (ramLoader.isRunning())
         {
             stop = true;
-            while (!prepared) {};
-            for (QFuture<void>& loader : loaders)
-            {
-                loader.waitForFinished();
-            }
-            loaders.clear();
+            ramLoader.waitForFinished();
         }
     }
 
@@ -109,7 +106,8 @@ namespace MIS
 
             loaders.append(QtConcurrent::run(&ModelPTS::computePTSLines, this, computedLines.last(), computedAABB.last(), computedPos.last(), computedColor.last(), computedIntensity.last()));
 
-            while (loaders.first().isFinished())
+            bool loadersFinished = loaders.first().isFinished();
+            while (loadersFinished)
             {
                 //AABB
                 if (!firstBlocComputed)
@@ -150,12 +148,17 @@ namespace MIS
                     loadingPourcentage = 100.0f * pos.count() / vertexNumber;
                     emit modelLoadingUpdate(this, loadingPourcentage);
                 }
+
+                if (!loaders.isEmpty())
+                    loadersFinished = loaders.first().isFinished();
+                else
+                    loadersFinished = false;
             }
         }
         ts.seek(0);
         ts.flush();
 
-        while (!loaders.isEmpty() && !stop)
+        while (!loaders.isEmpty())
         {
             loaders.first().waitForFinished();
 
@@ -208,8 +211,6 @@ namespace MIS
         aabb.gravity /= vertexNumber;
         aabb.center = (aabb.max + aabb.min) / 2.0f;
         setAABB(aabb);
-
-        prepared = true;
     }
 
     void ModelPTS::computePTSLines(const QStringList& lines, Model3D::AABB* currentAABB, QVector<glm::vec3>* currentPos, QVector<unsigned char>* currentColor, QVector<unsigned char>* currentIntensity)
