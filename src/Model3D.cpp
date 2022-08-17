@@ -462,10 +462,13 @@ namespace MIS
                     uvBuffer.resize(uv.count());
                     for (unsigned int i = 0; i < uv.count(); i++)
                     {
-                        if (!uvBuffer[i].isCreated()) uvBuffer[i].create();
-                        uvBuffer[i].bind();
-                        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 2 * uv[i].count() * sizeof(float), uv[i].constData(), GL_STATIC_DRAW);
-                        uvBuffer[i].release();
+                        if (!uv[i].isEmpty())
+                        {
+                            if (!uvBuffer[i].isCreated()) uvBuffer[i].create();
+                            uvBuffer[i].bind();
+                            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 2 * uv[i].count() * sizeof(float), uv[i].constData(), GL_STATIC_DRAW);
+                            uvBuffer[i].release();
+                        }
                     }
                 }
 

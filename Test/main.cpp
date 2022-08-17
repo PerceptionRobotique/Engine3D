@@ -26,6 +26,7 @@ int main(int argc, char* argv[])
 	if (!fileName.isEmpty())
 	{
 		settings.setValue("FileName", fileName);
+		settings.sync();
 		engine.getMainCamera()->translate(vec3(0, 0, 3));
 		engine.openModel(fileName);
 		engine.getModel(0)->setBoxVisible(true);

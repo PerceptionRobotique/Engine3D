@@ -90,8 +90,8 @@ namespace MIS
 				}
 				else if (element == "map_Kd")
 				{
-					QString name;
-					ls >> name;
+					QString name = line;
+					name.remove("map_Kd ");
 					map_Kd[this->name[index - 1]] = QFileInfo(fileName).path() + "/" + name;
 				}
 			}
@@ -107,6 +107,7 @@ namespace MIS
 		primitives = TRIANGLES;
 		liveLoading = true;
 		prepareFuture = QtConcurrent::run(&ModelOBJ::prepare, this);
+		prepareFuture.waitForFinished();
 	}
 
 	ModelOBJ::~ModelOBJ()
@@ -134,13 +135,14 @@ namespace MIS
 			unsigned int vtOffset = 0;
 			unsigned int vnOffset = 0;
 			for (unsigned int index = 0; index < objectNumber; index++)
-			{
+			{ 
 				for (unsigned int i = 0; i < f[index].count(); i++)
 				{
 					for (unsigned int j = 0; j < 3; j++)
 					{
 						point[index].append(v[index][f[index][i][j][0] - vOffset - 1]);
-						uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
+						if(f[index][i][j][1] - vtOffset - 1 >= 0)
+							uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
 						normal[index].append(vn[index][f[index][i][j][2] - vnOffset - 1]);
 					}
 				}
@@ -339,6 +341,7 @@ namespace MIS
 				uvBuffer[i].release();
 			}
 
+			shader->setUniformValue("hasTexture", texturesBuffers.keys().contains(textureNames[i]));
 			if (texturesBuffers.keys().contains(textureNames[i]))
 				f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[textureNames[i]]->textureId());
 			else

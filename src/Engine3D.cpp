@@ -42,6 +42,7 @@ namespace MIS
         , lightOnMainCamera(true)
         , lightPosition(0, 5, 0)
         , globalIllumination(0.1f)
+        , defaultFaceColor(0.5, 0.5, 0.5)
         , renderAsked(false)
         , maxSamples(-1)
         , viewDistance(150.0f)
@@ -101,7 +102,8 @@ namespace MIS
         connect(this, SIGNAL(askLightOnMainCamera(bool)), this, SLOT(setLightOnMainCamera(bool)));
         connect(this, SIGNAL(askLightPosition(vec3)), this, SLOT(setLightPosition(vec3)));
         connect(this, SIGNAL(askGlobalIllumination(float)), this, SLOT(setGlobalIllumination(float)));
-
+        connect(this, SIGNAL(askDefaultFaceColor(vec3)), this, SLOT(setDefaultFaceColor(vec3)));
+            
 #ifdef HAVE_VR
         connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
         connect(this, SIGNAL(askStopVR()), this, SLOT(stopVR()));
@@ -357,6 +359,16 @@ namespace MIS
     }
 
     /**
+     * @brief      Gets the default face color parameter.
+     *
+     * @return     The default face color parameter.
+     */
+    vec3 Engine3D::getDefaultFaceColor() const
+    {
+        return defaultFaceColor;
+    }
+
+    /**
      * @brief      Locks the draw function.
      */
     void Engine3D::lockDraw()
@@ -482,6 +494,7 @@ namespace MIS
             setLightOnMainCamera(lightOnMainCamera);
             setLightPosition(lightPosition);
             setGlobalIllumination(globalIllumination);
+            setDefaultFaceColor(defaultFaceColor);
 
             initialized = true;
             emit initializationFinished();
@@ -544,12 +557,6 @@ namespace MIS
         else if (fileInfo.suffix() == "bin" || fileInfo.suffix() == "bini") models.append(new ModelBIN(fileName, shaders[Model3D::POINTS], boxShader));
         else if (fileInfo.suffix() == "oct" || fileInfo.suffix() == "octi") models.append(new Octree(nullptr, fileName, shaders[Model3D::POINTS], boxShader));
         else if (fileInfo.suffix() == "obj")                                models.append(new ModelOBJ(fileName, shaders[Model3D::TRIANGLES], boxShader));
-
-        //connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
-        //connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
-        //connect(models.last(), SIGNAL(modelChanged()), this, SIGNAL(askUpdate()));
-        //connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SIGNAL(askUpdate()));
-        //connect(models.last(), SIGNAL(modelDestroyed()), this, SIGNAL(askUpdate()));
 
         connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
         connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
@@ -1052,6 +1059,27 @@ namespace MIS
             makeCurrent();
             shaders[Model3D::TRIANGLES]->bind();
             shaders[Model3D::TRIANGLES]->setUniformValue("globalIllumination", globalIllumination);
+            shaders[Model3D::TRIANGLES]->release();
+            doneCurrent();
+            emit askUpdate();
+        }
+    }
+
+    /**
+     * @brief      Sets the default texture color.
+     *
+     * @param[in]  defaultFaceColor  The default texture color
+     */
+    void Engine3D::setDefaultFaceColor(vec3 defaultFaceColor)
+    {
+        if (QThread::currentThread() != thread())
+            emit askDefaultFaceColor(defaultFaceColor);
+        else
+        {
+            this->defaultFaceColor = defaultFaceColor;
+            makeCurrent();
+            shaders[Model3D::TRIANGLES]->bind();
+            glUniform3fv(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "defaultFaceColor"), 1, value_ptr(defaultFaceColor));
             shaders[Model3D::TRIANGLES]->release();
             doneCurrent();
             emit askUpdate();
