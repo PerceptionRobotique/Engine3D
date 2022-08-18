@@ -50,6 +50,9 @@ namespace MIS
 		QVector<QVector<vec2>> vt;
 		QVector<QVector<vec3>> vn;
 		QVector<QVector<QVector<vec3>>> f;
+		QVector<QString> materialsNames;
+		QVector<QString*> materialFileNameByObject;
+		QVector<int> materialIndexByObject;
 		QVector<QString> textureNames;
 
 		static unsigned int computeLines(const QString& text);

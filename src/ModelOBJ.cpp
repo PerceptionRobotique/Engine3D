@@ -92,6 +92,7 @@ namespace MIS
 				{
 					QString name = line;
 					name.remove("map_Kd ");
+					name = name.split("\\\\").last().split("/").last();
 					map_Kd[this->name[index - 1]] = QFileInfo(fileName).path() + "/" + name;
 				}
 			}
@@ -107,7 +108,7 @@ namespace MIS
 		primitives = TRIANGLES;
 		liveLoading = true;
 		prepareFuture = QtConcurrent::run(&ModelOBJ::prepare, this);
-		prepareFuture.waitForFinished();
+		//prepareFuture.waitForFinished();
 	}
 
 	ModelOBJ::~ModelOBJ()
@@ -182,6 +183,7 @@ namespace MIS
 			objectNumber = 0;
 			unsigned int currentLineNumber = 0;
 			unsigned int nbLines = 0;
+			QString* currentMaterialName = nullptr;
 			
 			QVector<QString> text;
 			QString last = "";
@@ -215,7 +217,9 @@ namespace MIS
 				if (element == "mtllib")
 				{
 					ls >> element;
-					materials[element.split(".")[0]] = Material(fileInfo.path() + "/" + element);
+					materialsNames.append(element.split(".")[0]);
+					currentMaterialName = &materialsNames.last();
+					materials[materialsNames.last()] = Material(fileInfo.path() + "/" + element);
 				}
 				else if (element == "o")
 				{
@@ -226,6 +230,7 @@ namespace MIS
 					vt.resize(objectNumber);
 					vn.resize(objectNumber);
 					f.resize(objectNumber);
+					materialFileNameByObject.append(currentMaterialName);
 				}
 				else if (element == "v")
 				{
@@ -292,6 +297,7 @@ namespace MIS
 				{
 					QString tn;
 					ls >> tn;
+					materialIndexByObject.append(materials[*currentMaterialName].name.indexOf(tn));
 					textureNames.append(tn);
 				}
 			}
@@ -340,8 +346,9 @@ namespace MIS
 				shader->setAttributeArray("in_uv", GL_FLOAT, 0, 2);
 				uvBuffer[i].release();
 			}
-
+			
 			shader->setUniformValue("hasTexture", texturesBuffers.keys().contains(textureNames[i]));
+			f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "defaultFaceColor"), 1, value_ptr(materials[*materialFileNameByObject[i]].Kd[materialIndexByObject[i]]));
 			if (texturesBuffers.keys().contains(textureNames[i]))
 				f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[textureNames[i]]->textureId());
 			else
