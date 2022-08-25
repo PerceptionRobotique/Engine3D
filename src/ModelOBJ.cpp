@@ -276,22 +276,36 @@ namespace MIS
 				{
 					QStringList indexes = ls.readLine().split(" ");
 					indexes.removeAll("");
-					QVector<vec3> separated(indexes.count());
-					for (unsigned int t = 1; t < indexes.count() - 1; t++)
+					QVector<vec3> separated;
+					for (unsigned int i = 0; i < indexes.count(); i++)
 					{
-						separated.clear();
-						separated.resize(3);
-						unsigned int si = 0;
-						QVector<unsigned int> indices = { 0, t, t + 1 };
-						for (unsigned int i : indices)
-						{
-							QStringList fl = indexes[i].split("/");
-							for (unsigned int j = 0; j < 3; j++)
-								separated[si][j] = fl[j].toInt();
-							si++;
-						}
-						f[objectNumber - 1].append(separated);
+						QStringList fl = indexes[i].split("/");
+						vec3 vector;
+						for (unsigned j = 0; j < 3; j++)
+							vector[j] = fl[j].toInt();
+						separated.append(vector);
 					}
+					f[objectNumber - 1].append(separated);
+					
+					//NON TRIANGLES
+					//QStringList indexes = ls.readLine().split(" ");
+					//indexes.removeAll("");
+					//QVector<vec3> separated(indexes.count());
+					//for (unsigned int t = 1; t < indexes.count() - 1; t++)
+					//{
+					//	separated.clear();
+					//	separated.resize(indexes.count());
+					//	unsigned int si = 0;
+					//	QVector<unsigned int> indices = { 0, t, t + 1};
+					//	for (unsigned int i = 0 ; i < indexes.count() ; i++)
+					//	{
+					//		QStringList fl = indexes[i].split("/");
+					//		for (unsigned int j = 0; j < 3; j++)
+					//			separated[si][j] = fl[j].toInt();
+					//		si++;
+					//	}
+					//	f[objectNumber - 1].append(separated);
+					//}
 				}
 				else if (element == "usemtl")
 				{

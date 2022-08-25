@@ -37,7 +37,7 @@ void main()
         lightPos = vec4(eMo * oMw * vec4(lightPosition, 1.0)).xyz;
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(lightPos - gl_FragColor.xyz);
-    float diff = max(dot(norm, lightDir), 0.0);
+    float diff = max(dot(norm, lightDir), dot(-norm, lightDir));
     vec3 diffuse = diff * vec3(1.0, 1.0, 1.0);
     vec3 result;
     if(hasTexture)

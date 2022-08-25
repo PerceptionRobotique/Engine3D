@@ -480,7 +480,6 @@ namespace MIS
             if (!boxShader->link()) qDebug() << "Can't link box shader.";
 
 #ifndef ANDROID
-            glEnable(GL_DEPTH_TEST);
             glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
 #endif
             doneCurrent();
