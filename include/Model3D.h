@@ -236,15 +236,15 @@ namespace MIS
         QOpenGLBuffer colorBuffer;
         QOpenGLBuffer intensityBuffer;
 
-        QVector<QOpenGLBuffer> pointBuffer;
-        QVector<QOpenGLBuffer> normalBuffer;
-        QVector<QOpenGLBuffer> uvBuffer;
+        QVector<QVector<QOpenGLBuffer>> pointBuffer;
+        QVector<QVector<QOpenGLBuffer>> normalBuffer;
+        QVector<QVector<QOpenGLBuffer>> uvBuffer;
         QHash<QString, QOpenGLTexture*> texturesBuffers;
 
         // OBJ //
-        QVector<QVector<glm::vec3>> point;
-        QVector<QVector<glm::vec2>> uv;
-        QVector<QVector<glm::vec3>> normal;
+        QVector<QVector<QVector<glm::vec3>>> point;
+        QVector<QVector<QVector<glm::vec2>>> uv;
+        QVector<QVector<QVector<glm::vec3>>> normal;
         QHash<QString, QImage> textures;
 
     signals:

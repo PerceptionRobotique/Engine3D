@@ -136,15 +136,21 @@ namespace MIS
 			unsigned int vtOffset = 0;
 			unsigned int vnOffset = 0;
 			for (unsigned int index = 0; index < objectNumber; index++)
-			{ 
-				for (unsigned int i = 0; i < f[index].count(); i++)
+			{
+				point[index].resize(f[index].count());
+				uv[index].resize(f[index].count());
+				normal[index].resize(f[index].count());
+				for (unsigned int subBlock = 0; subBlock < f[index].count(); subBlock++)
 				{
-					for (unsigned int j = 0; j < 3; j++)
+					for (unsigned int triangle = 0; triangle < f[index][subBlock].count(); triangle++)
 					{
-						point[index].append(v[index][f[index][i][j][0] - vOffset - 1]);
-						if(f[index][i][j][1] - vtOffset - 1 >= 0)
-							uv[index].append(vt[index][f[index][i][j][1] - vtOffset - 1]);
-						normal[index].append(vn[index][f[index][i][j][2] - vnOffset - 1]);
+						for (unsigned int triplet = 0; triplet < 3; triplet++)
+						{
+							point[index][subBlock].append(v[index][f[index][subBlock][triangle][triplet][0] - vOffset - 1]);
+							if (f[index][subBlock][triangle][triplet][1] - vtOffset - 1 >= 0)
+								uv[index][subBlock].append(vt[index][f[index][subBlock][triangle][triplet][1] - vtOffset - 1]);
+							normal[index][subBlock].append(vn[index][f[index][subBlock][triangle][triplet][2] - vnOffset - 1]);
+						}
 					}
 				}
 				vOffset += v[index].count();
@@ -184,6 +190,7 @@ namespace MIS
 			unsigned int currentLineNumber = 0;
 			unsigned int nbLines = 0;
 			QString* currentMaterialName = nullptr;
+			unsigned int currentSubBlock = 0;
 			
 			QVector<QString> text;
 			QString last = "";
@@ -223,9 +230,8 @@ namespace MIS
 				}
 				else if (element == "o")
 				{
-					if (objectNumber > 0) subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
 					objectNumber++;
-					subVertexNumber.append(0);
+					currentSubBlock = 0;
 					v.resize(objectNumber);
 					vt.resize(objectNumber);
 					vn.resize(objectNumber);
@@ -285,7 +291,8 @@ namespace MIS
 							vector[j] = fl[j].toInt();
 						separated.append(vector);
 					}
-					f[objectNumber - 1].append(separated);
+					if (f[objectNumber - 1].count() < currentSubBlock) f[objectNumber - 1].resize(currentSubBlock);
+					f[objectNumber - 1][currentSubBlock - 1].append(separated);
 					
 					//NON TRIANGLES
 					//QStringList indexes = ls.readLine().split(" ");
@@ -313,15 +320,23 @@ namespace MIS
 					ls >> tn;
 					materialIndexByObject.append(materials[*currentMaterialName].name.indexOf(tn));
 					textureNames.append(tn);
+					currentSubBlock++;
 				}
 			}
 
 			if (!stopPrepare)
 			{
-				subVertexNumber[objectNumber - 1] = 3 * f[objectNumber - 1].count();
 				vertexNumber = 0;
-				for (unsigned long long& vNumber : subVertexNumber)
-					vertexNumber += vNumber;
+				subVertexNumber.resize(f.count());
+				for (unsigned int o = 0; o < f.count(); o++)
+				{
+					subVertexNumber[o].resize(f[o].count());
+					for (unsigned int sb = 0; sb < f[o].count(); sb++)
+					{
+						subVertexNumber[o][sb] = 3 * f[o][sb].count();
+						vertexNumber += subVertexNumber[o][sb];
+					}
+				}
 				aabb.gravity /= vertexNumber;
 				aabb.updateCenter();
 				setAABB(aabb);
@@ -335,44 +350,50 @@ namespace MIS
 
 	void ModelOBJ::render(QOpenGLFunctions* f)
 	{
+		unsigned int currentTextureNumber = 0;
 		for (unsigned int i = 0; i < objectNumber; i++)
 		{
-			if (pointBuffer[i].isCreated())
+			for (unsigned int j = 0; j < pointBuffer[i].count(); j++)
 			{
-				pointBuffer[i].bind();
-				shader->enableAttributeArray("in_vertex");
-				shader->setAttributeArray("in_vertex", GL_FLOAT, 0, 3);
-				pointBuffer[i].release();
+				if (pointBuffer[i][j].isCreated())
+				{
+					pointBuffer[i][j].bind();
+					shader->enableAttributeArray("in_vertex");
+					shader->setAttributeArray("in_vertex", GL_FLOAT, 0, 3);
+					pointBuffer[i][j].release();
+				}
+
+				if (normalBuffer[i][j].isCreated())
+				{
+					normalBuffer[i][j].bind();
+					shader->enableAttributeArray("in_normal");
+					shader->setAttributeArray("in_normal", GL_FLOAT, 0, 3);
+					normalBuffer[i][j].release();
+				}
+
+				if (uvBuffer[i][j].isCreated())
+				{
+					uvBuffer[i][j].bind();
+					shader->enableAttributeArray("in_uv");
+					shader->setAttributeArray("in_uv", GL_FLOAT, 0, 2);
+					uvBuffer[i][j].release();
+				}
+
+				shader->setUniformValue("hasTexture", texturesBuffers.keys().contains(textureNames[i]));
+				f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "defaultFaceColor"), 1, value_ptr(materials[*materialFileNameByObject[i]].Kd[materialIndexByObject[i]]));
+				if (texturesBuffers.keys().contains(textureNames[currentTextureNumber]))
+					f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[textureNames[currentTextureNumber]]->textureId());
+				else
+					f->glBindTexture(GL_TEXTURE_2D, 0);
+
+				f->glDrawArrays(primitives, 0, subVertexNumber[i][j]);
+
+				shader->disableAttributeArray("in_vertex");
+				shader->disableAttributeArray("in_normal");
+				shader->disableAttributeArray("in_uv");
+
+				currentTextureNumber++;
 			}
-
-			if (normalBuffer[i].isCreated())
-			{
-				normalBuffer[i].bind();
-				shader->enableAttributeArray("in_normal");
-				shader->setAttributeArray("in_normal", GL_FLOAT, 0, 3);
-				normalBuffer[i].release();
-			}
-
-			if (uvBuffer[i].isCreated())
-			{
-				uvBuffer[i].bind();
-				shader->enableAttributeArray("in_uv");
-				shader->setAttributeArray("in_uv", GL_FLOAT, 0, 2);
-				uvBuffer[i].release();
-			}
-			
-			shader->setUniformValue("hasTexture", texturesBuffers.keys().contains(textureNames[i]));
-			f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "defaultFaceColor"), 1, value_ptr(materials[*materialFileNameByObject[i]].Kd[materialIndexByObject[i]]));
-			if (texturesBuffers.keys().contains(textureNames[i]))
-				f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[textureNames[i]]->textureId());
-			else
-				f->glBindTexture(GL_TEXTURE_2D, 0);
-
-			f->glDrawArrays(primitives, 0, subVertexNumber[i]);
-
-			shader->disableAttributeArray("in_vertex");
-			shader->disableAttributeArray("in_normal");
-			shader->disableAttributeArray("in_uv");
 		}
 	}
 

@@ -83,15 +83,18 @@ namespace MIS
         if (posBuffer.isCreated()) posBuffer.destroy();
         if (colorBuffer.isCreated()) colorBuffer.destroy();
         if (intensityBuffer.isCreated()) intensityBuffer.destroy();
-        for(QOpenGLBuffer& pb : pointBuffer)
-            if(pb.isCreated())
-                pb.destroy();
-        for (QOpenGLBuffer& nb : normalBuffer)
-            if (nb.isCreated())
+        for(QVector<QOpenGLBuffer>& pbl : pointBuffer)
+            for(QOpenGLBuffer& pb : pbl)
+                if(pb.isCreated())
+                    pb.destroy();
+        for(QVector<QOpenGLBuffer>& nbl : normalBuffer)
+            for (QOpenGLBuffer& nb : nbl)
+                if (nb.isCreated())
                 nb.destroy();
-        for (QOpenGLBuffer& ub : uvBuffer)
-            if (ub.isCreated())
-                ub.destroy();
+        for(QVector<QOpenGLBuffer>& uvl : uvBuffer)
+            for (QOpenGLBuffer& ub : uvl)
+                if (ub.isCreated())
+                    ub.destroy();
 
         model3DNumber--;
         if (model3DNumber == 0) boxIndexBuffer.destroy();
@@ -438,10 +441,14 @@ namespace MIS
                     pointBuffer.resize(point.count());
                     for (unsigned int i = 0; i < point.count(); i++)
                     {
-                        if (!pointBuffer[i].isCreated()) pointBuffer[i].create();
-                        pointBuffer[i].bind();
-                        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * point[i].count() * sizeof(float), point[i].constData(), GL_STATIC_DRAW);
-                        pointBuffer[i].release();
+                        pointBuffer[i].resize(point[i].count());
+                        for (unsigned int j = 0; j < point[i].count(); j++)
+                        {
+                            if (!pointBuffer[i][j].isCreated()) pointBuffer[i][j].create();
+                            pointBuffer[i][j].bind();
+                            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * point[i][j].count() * sizeof(float), point[i][j].constData(), GL_STATIC_DRAW);
+                            pointBuffer[i][j].release();
+                        }
                     }
                 }
 
@@ -450,10 +457,14 @@ namespace MIS
                     normalBuffer.resize(normal.count());
                     for (unsigned int i = 0; i < normal.count(); i++)
                     {
-                        if (!normalBuffer[i].isCreated()) normalBuffer[i].create();
-                        normalBuffer[i].bind();
-                        QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * normal[i].count() * sizeof(float), normal[i].constData(), GL_STATIC_DRAW);
-                        normalBuffer[i].release();
+                        normalBuffer[i].resize(normal[i].count());
+                        for (unsigned int j = 0; j < normal[i].count(); j++)
+                        {
+                            if (!normalBuffer[i][j].isCreated()) normalBuffer[i][j].create();
+                            normalBuffer[i][j].bind();
+                            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 3 * normal[i][j].count() * sizeof(float), normal[i][j].constData(), GL_STATIC_DRAW);
+                            normalBuffer[i][j].release();
+                        }
                     }
                 }
 
@@ -462,12 +473,16 @@ namespace MIS
                     uvBuffer.resize(uv.count());
                     for (unsigned int i = 0; i < uv.count(); i++)
                     {
-                        if (!uv[i].isEmpty())
+                        uvBuffer[i].resize(uv[i].count());
+                        for (unsigned int j = 0; j < uv[i].count(); j++)
                         {
-                            if (!uvBuffer[i].isCreated()) uvBuffer[i].create();
-                            uvBuffer[i].bind();
-                            QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 2 * uv[i].count() * sizeof(float), uv[i].constData(), GL_STATIC_DRAW);
-                            uvBuffer[i].release();
+                            if (!uv[i].isEmpty())
+                            {
+                                if (!uvBuffer[i][j].isCreated()) uvBuffer[i][j].create();
+                                uvBuffer[i][j].bind();
+                                QOpenGLContext::currentContext()->functions()->glBufferData(GL_ARRAY_BUFFER, 2 * uv[i][j].count() * sizeof(float), uv[i][j].constData(), GL_STATIC_DRAW);
+                                uvBuffer[i][j].release();
+                            }
                         }
                     }
                 }
@@ -516,33 +531,42 @@ namespace MIS
                     intensityBuffer.release();
                 }
 
-                for (QOpenGLBuffer& buffer : pointBuffer)
+                for (QVector<QOpenGLBuffer>& bufferList : pointBuffer)
                 {
-                    if (buffer.isCreated())
+                    for (QOpenGLBuffer& buffer : bufferList)
                     {
-                        buffer.bind();
-                        buffer.allocate(0);
-                        buffer.release();
+                        if (buffer.isCreated())
+                        {
+                            buffer.bind();
+                            buffer.allocate(0);
+                            buffer.release();
+                        }
                     }
                 }
 
-                for (QOpenGLBuffer& buffer : normalBuffer)
+                for (QVector<QOpenGLBuffer>& bufferList : normalBuffer)
                 {
-                    if (buffer.isCreated())
+                    for (QOpenGLBuffer& buffer : bufferList)
                     {
-                        buffer.bind();
-                        buffer.allocate(0);
-                        buffer.release();
+                        if (buffer.isCreated())
+                        {
+                            buffer.bind();
+                            buffer.allocate(0);
+                            buffer.release();
+                        }
                     }
                 }
 
-                for (QOpenGLBuffer& buffer : uvBuffer)
+                for (QVector<QOpenGLBuffer>& bufferList : uvBuffer)
                 {
-                    if (buffer.isCreated())
+                    for (QOpenGLBuffer& buffer : bufferList)
                     {
-                        buffer.bind();
-                        buffer.allocate(0);
-                        buffer.release();
+                        if (buffer.isCreated())
+                        {
+                            buffer.bind();
+                            buffer.allocate(0);
+                            buffer.release();
+                        }
                     }
                 }
 

@@ -45,11 +45,11 @@ namespace MIS
 		bool stopPrepare;
 
 		unsigned int objectNumber;
-		QVector<unsigned long long> subVertexNumber;
+		QVector<QVector<unsigned long long>> subVertexNumber;
 		QVector<QVector<vec3>> v;
 		QVector<QVector<vec2>> vt;
 		QVector<QVector<vec3>> vn;
-		QVector<QVector<QVector<vec3>>> f;
+		QVector<QVector<QVector<QVector<vec3>>>> f; // object / sous-bloc / triangle / triplet / valeur
 		QVector<QString> materialsNames;
 		QVector<QString*> materialFileNameByObject;
 		QVector<int> materialIndexByObject;

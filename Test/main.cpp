@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 	{
 		settings.setValue("FileName", fileName);
 		settings.sync();
-		engine.getMainCamera()->setBackgroundColor(1, 1, 1);
+		//engine.getMainCamera()->setBackgroundColor(1, 1, 1);
 		engine.openModel(fileName);
 		engine.getModel(0)->setBoxVisible(true);
 		engine.getMainCamera()->translate(vec3(0, 0, 3));
