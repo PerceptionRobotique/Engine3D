@@ -42,7 +42,7 @@ namespace MIS
         , lightOnMainCamera(true)
         , lightPosition(0, 5, 0)
         , globalIllumination(0.1f)
-        , defaultFaceColor(0.5, 0.5, 0.5)
+        , faceColor(0.5, 0.5, 0.5)
         , renderAsked(false)
         , maxSamples(-1)
         , viewDistance(150.0f)
@@ -102,7 +102,7 @@ namespace MIS
         connect(this, SIGNAL(askLightOnMainCamera(bool)), this, SLOT(setLightOnMainCamera(bool)));
         connect(this, SIGNAL(askLightPosition(vec3)), this, SLOT(setLightPosition(vec3)));
         connect(this, SIGNAL(askGlobalIllumination(float)), this, SLOT(setGlobalIllumination(float)));
-        connect(this, SIGNAL(askDefaultFaceColor(vec3)), this, SLOT(setDefaultFaceColor(vec3)));
+        connect(this, SIGNAL(askFaceColor(vec3)), this, SLOT(setFaceColor(vec3)));
             
 #ifdef HAVE_VR
         connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
@@ -363,9 +363,9 @@ namespace MIS
      *
      * @return     The default face color parameter.
      */
-    vec3 Engine3D::getDefaultFaceColor() const
+    vec3 Engine3D::getFaceColor() const
     {
-        return defaultFaceColor;
+        return faceColor;
     }
 
     /**
@@ -493,7 +493,7 @@ namespace MIS
             setLightOnMainCamera(lightOnMainCamera);
             setLightPosition(lightPosition);
             setGlobalIllumination(globalIllumination);
-            setDefaultFaceColor(defaultFaceColor);
+            setFaceColor(faceColor);
 
             initialized = true;
             emit initializationFinished();
@@ -1067,18 +1067,18 @@ namespace MIS
     /**
      * @brief      Sets the default texture color.
      *
-     * @param[in]  defaultFaceColor  The default texture color
+     * @param[in]  faceColor  The default texture color
      */
-    void Engine3D::setDefaultFaceColor(vec3 defaultFaceColor)
+    void Engine3D::setFaceColor(vec3 faceColor)
     {
         if (QThread::currentThread() != thread())
-            emit askDefaultFaceColor(defaultFaceColor);
+            emit askFaceColor(faceColor);
         else
         {
-            this->defaultFaceColor = defaultFaceColor;
+            this->faceColor = faceColor;
             makeCurrent();
             shaders[Model3D::TRIANGLES]->bind();
-            glUniform3fv(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "defaultFaceColor"), 1, value_ptr(defaultFaceColor));
+            glUniform3fv(glGetUniformLocation(shaders[Model3D::TRIANGLES]->programId(), "faceColor"), 1, value_ptr(faceColor));
             shaders[Model3D::TRIANGLES]->release();
             doneCurrent();
             emit askUpdate();

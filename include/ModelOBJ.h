@@ -17,20 +17,18 @@ namespace MIS
 	{
 	public:
 		struct Material {
-			QVector<QString> name;
-			QVector<float> Ns;
-			QVector<vec3> Ka;
-			QVector<vec3> Kd;
-			QVector<vec3> Ks;
-			QVector<vec3> Ke;
-			QVector<float> Ni;
-			QVector<float> d;
-			QVector<int> illum;
-			QHash<QString, QString> map_Kd;
+			float Ns;
+			vec3 Ka;
+			vec3 Kd;
+			vec3 Ks;
+			vec3 Ke;
+			float Ni;
+			float d;
+			int illum;
+			QString map_Kd;
 
+			Material();
 			Material(const Material& m);
-			Material(QString fileName = "");
-			void openFile(QString fileName);
 		};
 
 		ModelOBJ(QString _fileName = "", QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
@@ -44,17 +42,14 @@ namespace MIS
 		QFuture<void> prepareFuture;
 		bool stopPrepare;
 
-		unsigned int objectNumber;
-		QVector<QVector<unsigned long long>> subVertexNumber;
-		QVector<QVector<vec3>> v;
-		QVector<QVector<vec2>> vt;
-		QVector<QVector<vec3>> vn;
-		QVector<QVector<QVector<QVector<vec3>>>> f; // object / sous-bloc / triangle / triplet / valeur
-		QVector<QString> materialsNames;
-		QVector<QString*> materialFileNameByObject;
-		QVector<int> materialIndexByObject;
-		QVector<QString> textureNames;
+		QVector<QString> objectNames;
+		QHash<QString, QVector<vec3>> v;
+		QHash<QString, QVector<vec2>> vt;
+		QHash<QString, QVector<vec3>> vn;
+		QHash<QString, QHash<QString, QVector<QVector<vec3>>>> f; // object / usemtl / triangle / triplet / valeur
+		QHash<QString, QVector<QString>> materialUsed;
 
+		void openMaterial(QString fileName);
 		static unsigned int computeLines(const QString& text);
 		void prepare();
 		void render(QOpenGLFunctions* f) override;

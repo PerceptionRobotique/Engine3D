@@ -7,7 +7,7 @@ precision mediump float;
 vec3 lightPos;
 
 uniform bool hasTexture;
-uniform vec3 defaultFaceColor;
+uniform vec3 faceColor;
 uniform sampler2D textureData;
 uniform bool lightOnCamera;
 uniform vec3 lightPosition;
@@ -43,6 +43,6 @@ void main()
     if(hasTexture)
         result =  (diffuse + globalIllumination) * texture2D(textureData, texCoord).xyz;
     else
-        result =  (diffuse + globalIllumination) * defaultFaceColor;
+        result =  (diffuse + globalIllumination) * faceColor;
     gl_FragColor = vec4(result, opacity);
 }

@@ -79,7 +79,7 @@ namespace MIS
         bool getWaitLoading() const;
         bool isViewDistanceEnabled() const;
         bool isMaxVertexLimitEnabled() const;
-        vec3 getDefaultFaceColor() const;
+        vec3 getFaceColor() const;
 
         void lockDraw();
         void unlockDraw();
@@ -123,7 +123,7 @@ namespace MIS
         void setLightOnMainCamera(bool enabled);
         void setLightPosition(vec3 _lightPosition);
         void setGlobalIllumination(float globalIllumination);
-        void setDefaultFaceColor(vec3 defaultFaceColor);
+        void setFaceColor(vec3 faceColor);
 
         //Optimization
         void setViewDistance(double _viewDistance);
@@ -169,7 +169,7 @@ namespace MIS
         bool lightOnMainCamera;
         vec3 lightPosition;
         float globalIllumination;
-        vec3 defaultFaceColor;
+        vec3 faceColor;
 
         bool renderAsked;
         QMutex renderAskedMutex;
@@ -237,7 +237,7 @@ namespace MIS
         void askLightOnMainCamera(bool);
         void askLightPosition(vec3);
         void askGlobalIllumination(float);
-        void askDefaultFaceColor(vec3);
+        void askFaceColor(vec3);
         void renderModeChanged();
 #ifdef HAVE_VR
         void vrStarted();
