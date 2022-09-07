@@ -89,6 +89,8 @@ namespace MIS
         connect(mainCamera, SIGNAL(cameraMoved()), this, SIGNAL(askUpdate()));
         connect(this, SIGNAL(askRender()), this, SLOT(render()));
         connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
+        connect(this, SIGNAL(askDepth(unsigned int, unsigned int)), this, SLOT(getDepth(unsigned int, unsigned int)));
+        connect(this, SIGNAL(askDepthMap()), this, SLOT(takeDepthMap()));
 #ifdef HAVE_VISP
         connect(this, SIGNAL(askPFM()), this, SLOT(takePFM()));
 #endif
@@ -652,11 +654,203 @@ namespace MIS
         }
     }
 
+    float Engine3D::getDepth(unsigned int h, unsigned int w)
+    {
+        bool wasWaitLoading = getWaitLoading();
+        setWaitLoading(true);
+        if (QThread::currentThread() != thread())
+        {
+            QEventLoop loop;
+            connect(this, SIGNAL(pictureTaken()), &loop, SLOT(quit()));
+            emit askDepth(h, w);
+            loop.exec();
+            setWaitLoading(wasWaitLoading);
+            return depthAsked;
+        }
+        else
+        {
+            unsigned int samples = mainCamera->getSamples();
+            mainCamera->setSamples(0);
+            render();
+            setWaitLoading(wasWaitLoading);
+
+            makeCurrent();
+            mainCamera->bind();
+
+            QVector<float> buffer;
+            buffer.resize(1);
+
+            glReadPixels(w, mainCamera->getHeight() - h - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, buffer.data());
+            depthAsked = buffer[0];
+
+            mainCamera->release();
+            doneCurrent();
+
+            mainCamera->setSamples(samples);
+
+            emit pictureTaken();
+            return depthAsked;
+        }
+    }
+
+    float Engine3D::getDepthMeter(unsigned int h, unsigned int w)
+    {
+        float depth = getDepth(h, w);
+        float depthMeter;
+
+        float zNear = mainCamera->getNearPlane();
+        float zFar = mainCamera->getFarPlane();
+        if (depth > 0 && depth < 1)
+        {
+            switch (mainCamera->getProjectionType())
+            {
+            case Camera::PERSPECTIVE:
+                depthMeter = 2.0f * zFar * zNear / ((zFar + zNear) - (depth * (zFar - zNear)));
+                break;
+
+            case Camera::ORTHOGRAPHIC:
+                break;
+
+            case Camera::EQUIRECTANGULAR:
+            {
+                depthMeter = depth * (zFar - zNear) + zNear;
+                break;
+            }
+
+            default:
+                break;
+            }
+        }
+        else
+            depthMeter = -1;
+
+        return depthMeter;
+    }
+
+    QVector<QVector<float>> Engine3D::takeDepthMap()
+    {
+        bool wasWaitLoading = getWaitLoading();
+        setWaitLoading(true);
+        if (QThread::currentThread() != thread())
+        {
+            QEventLoop loop;
+            connect(this, SIGNAL(pictureTaken()), &loop, SLOT(quit()));
+            emit askDepthMap();
+            loop.exec();
+            setWaitLoading(wasWaitLoading);
+            return depthMapAsked;
+        }
+        else
+        {
+            unsigned int samples = mainCamera->getSamples();
+            mainCamera->setSamples(0);
+            render();
+            setWaitLoading(wasWaitLoading);
+
+            makeCurrent();
+            mainCamera->bind();
+
+            QVector<float> buffer;
+            buffer.resize(mainCamera->getWidth() * mainCamera->getHeight());
+
+            glReadPixels(0, 0, mainCamera->getWidth(), mainCamera->getHeight(), GL_DEPTH_COMPONENT, GL_FLOAT, buffer.data());
+
+            depthMapAsked.clear();
+            depthMapAsked.resize(mainCamera->getHeight());
+            for (unsigned int h = 0; h < mainCamera->getHeight(); h++)
+            {
+                for (unsigned int w = 0; w < mainCamera->getWidth(); w++)
+                {
+                    depthMapAsked[mainCamera->getHeight() - h - 1].resize(mainCamera->getWidth());
+                    depthMapAsked[mainCamera->getHeight() - h - 1][w] = buffer[w + h * mainCamera->getWidth()];
+                }
+            }
+
+            mainCamera->release();
+            doneCurrent();
+
+            mainCamera->setSamples(samples);
+
+            emit pictureTaken();
+            return depthMapAsked;
+        }
+    }
+
+    QVector<QVector<float>> Engine3D::takeDepthMeterMap()
+    {
+        QVector<QVector<float>> depthMeterMap = takeDepthMap();
+        float zNear = mainCamera->getNearPlane();
+        float zFar = mainCamera->getFarPlane();
+
+        for (unsigned int h = 0; h < (unsigned int)mainCamera->getHeight(); h++)
+        {
+            for (unsigned int w = 0; w < (unsigned int)mainCamera->getWidth(); w++)
+            {
+                if (depthMeterMap[h][w] < 1)
+                {
+                    switch (mainCamera->getProjectionType())
+                    {
+                    case Camera::PERSPECTIVE:
+                        depthMeterMap[h][w] = 2.0f * zFar * zNear / ((zFar + zNear) - (depthMeterMap[h][w] * (zFar - zNear)));
+                        break;
+
+                    case Camera::ORTHOGRAPHIC:
+                        break;
+
+                    case Camera::EQUIRECTANGULAR:
+                    {
+                        depthMeterMap[h][w] = depthMeterMap[h][w] * (zFar - zNear) + zNear;
+                        break;
+                    }
+
+                    default:
+                        break;
+                    }
+                }
+                else
+                    depthMeterMap[h][w] = -1;
+            }
+        }
+
+        return depthMeterMap;
+    }
+
+    QImage Engine3D::takeDepthPicture()
+    {
+        QVector<QVector<float>> depthMap = takeDepthMap();
+
+        float zMin = 1, zMax = 0;
+        for (unsigned int h = 0; h < mainCamera->getHeight(); h++)
+        {
+            for (unsigned int w = 0; w < mainCamera->getWidth(); w++)
+            {
+                if (depthMap[h][w] < 1)
+                {
+                    zMin = qMin(zMin, depthMap[h][w]);
+                    zMax = qMax(zMax, depthMap[h][w]);
+                }
+                else depthMap[h][w] = 0;
+            }
+        }
+
+        QImage depthPicture = QImage(mainCamera->getWidth(), mainCamera->getHeight(), QImage::Format_Grayscale8);
+        for (unsigned int h = 0; h < mainCamera->getHeight(); h++)
+        {
+            for (unsigned int w = 0; w < mainCamera->getWidth(); w++)
+            {
+                int value = qBound(0.0, 255.0 * (depthMap[h][w] - zMin) / (zMax - zMin), 255.0);
+                depthPicture.setPixelColor(w, h, QColor(value, value, value));
+            }
+        }
+
+        return depthPicture;
+    }
+
 #ifdef HAVE_VISP
     /**
      * @brief      Asks a full depth render in a vpImage.
      *
-     * @return     The image.
+     * @return     The image where each pixel is depth in meter.
      */
     vpImage<float> Engine3D::takePFM()
     {
@@ -693,7 +887,7 @@ namespace MIS
             {
                 for (unsigned int w = 0; w < (unsigned int)mainCamera->getWidth(); w++)
                 {
-                    if (buffer[h * mainCamera->getWidth() + w] > 0 && buffer[h * mainCamera->getWidth() + w] < 1)
+                    if (buffer[h * mainCamera->getWidth() + w] < 1)
                     {
                         switch (mainCamera->getProjectionType())
                         {

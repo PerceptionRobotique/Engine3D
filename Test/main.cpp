@@ -29,10 +29,14 @@ int main(int argc, char* argv[])
 		settings.sync();
 		//engine.getMainCamera()->setBackgroundColor(1, 1, 1);
 		engine.openModel(fileName);
-		engine.getModel(0)->setBoxVisible(true);
-		engine.getMainCamera()->translate(vec3(0, 100, 3));
-		engine.getMainCamera()->setView(engine.getModel(0), Camera::CENTER);
+		//engine.getModel(0)->setBoxVisible(true);
+		//engine.getMainCamera()->translate(vec3(0, 100, 3));
+		//engine.getMainCamera()->setView(engine.getModel(0), Camera::CENTER);
+		//engine.getMainCamera()->setProjectionType(Camera::EQUIRECTANGULAR);
+		engine.getMainCamera()->translate(vec3(0, 15, 0));
+		//engine.getMainCamera()->setView(engine.getModel(0), Camera::CENTER);
 		engine.takePicture().save("capture.png");
+		engine.takeDepthPicture().save("captureDepth.png");
 	}
 
 	engine.destroy();

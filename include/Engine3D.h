@@ -98,6 +98,11 @@ namespace MIS
         void closeModel(Model3D* model);
         void update();
         QImage takePicture();
+        QVector<QVector<float>> takeDepthMap();
+        float getDepth(unsigned int h, unsigned int w);
+        float getDepthMeter(unsigned int h, unsigned int w);
+        QVector<QVector<float>> takeDepthMeterMap();
+        QImage takeDepthPicture();
 #ifdef HAVE_VISP
         vpImage<float> takePFM();
 #endif
@@ -176,6 +181,8 @@ namespace MIS
         QImage frame;
         QMutex frameMutex;
         QImage pictureAsked;
+        float depthAsked;
+        QVector<QVector<float>> depthMapAsked;
 #ifdef HAVE_VISP
         vpImage<float> pfmAsked;
 #endif
@@ -221,6 +228,8 @@ namespace MIS
         void askRender();
         void askUpdate();
         void askPicture();
+        void askDepth(unsigned int h, unsigned int w);
+        void askDepthMap();
 #ifdef HAVE_VISP
         void askPFM();
 #endif
