@@ -105,6 +105,7 @@ namespace MIS
 
         Primitives getPrimitives() const;
         virtual float getScale() const;
+        virtual float getPointSize() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
         bool isPointInAABB(vec3 point) const;
@@ -167,6 +168,7 @@ namespace MIS
         virtual bool drawBox();
 
         virtual void setScale(double _scale);
+        virtual void setPointSize(double pointSize);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
@@ -226,6 +228,7 @@ namespace MIS
 
         unsigned long long vertexNumber;
         float scale;
+        float pointSize;
         QVector<glm::vec3> pos;
         QVector<unsigned char> color;
         QVector<unsigned char> intensity;

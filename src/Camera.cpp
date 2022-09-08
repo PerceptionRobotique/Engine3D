@@ -481,6 +481,11 @@ namespace MIS
         return getProjection();
     }
 
+    mat4 Camera::getcMi() const
+    {
+        return inverse(getiMc());
+    }
+
     mat4 Camera::getcMw() const
     {
         return inverse(getPose());

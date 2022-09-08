@@ -237,6 +237,16 @@ namespace MIS
         return context;
     }
 
+    QHash<Model3D::Primitives, QOpenGLShaderProgram*> Engine3D::getShaders()
+    {
+        return shaders;
+    }
+
+    QOpenGLShaderProgram* Engine3D::getBoxShader()
+    {
+        return boxShader;
+    }
+
     /**
      * @brief      Gets the last frame generated.
      *
@@ -546,6 +556,21 @@ namespace MIS
         removeCamera(cameras.indexOf(camera));
     }
 
+    void Engine3D::addModel(Model3D* model)
+    {
+        models.append(model);
+        connect(models.last(), SIGNAL(modelLoaded()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelUnloaded()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelChanged()), this, SLOT(nextModelsUpdate()));
+        connect(models.last(), SIGNAL(modelRenderChanged()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelMoved()), this, SIGNAL(askUpdate()));
+        connect(models.last(), SIGNAL(modelMoved()), this, SLOT(nextModelsUpdate()));
+        connect(models.last(), SIGNAL(modelLoadingDelayed()), this, SLOT(nextModelsUpdate()));
+        connect(models.last(), SIGNAL(modelDestroyed()), this, SLOT(nextModelsUpdate()));
+
+        nextModelsUpdate();
+    }
+
     /**
      * @brief      Opens a model.
      *
@@ -700,7 +725,7 @@ namespace MIS
 
         float zNear = mainCamera->getNearPlane();
         float zFar = mainCamera->getFarPlane();
-        if (depth > 0 && depth < 1)
+        if (depth < 1)
         {
             switch (mainCamera->getProjectionType())
             {
@@ -774,6 +799,110 @@ namespace MIS
             emit pictureTaken();
             return depthMapAsked;
         }
+    }
+
+    vec4 Engine3D::getNearestPoint(unsigned int h, unsigned int w, unsigned int maxDist)
+    {
+        QVector<QVector<float>> depthMap = takeDepthMeterMap();
+        vec4 point(0, 0, 0, 1);
+        vec4 pixel(h, w, 0, 1);
+        float z = depthMap[pixel.x][pixel.y];
+        unsigned int dist = 1;
+        unsigned int face = 0; //face du carré de contour
+        int ow = 0;
+        int oh = -(z == -1);
+        while (z == -1 && dist <= maxDist && dist <= qMax(mainCamera->getWidth(), mainCamera->getHeight()))
+        {
+            //qDebug() << dist << " : " << pixel.x + oh << " x " << pixel.y + ow;
+            if(pixel.x + oh >= 0 && pixel.x + oh < mainCamera->getHeight() && pixel.y + ow >= 0 && pixel.y + ow < mainCamera->getWidth())
+                z = depthMap[pixel.x + oh][pixel.y + ow];
+            if (z == -1)
+            {
+                switch (face)
+                {
+                case 0:
+                    if (ow == dist)
+                    {
+                        face++;
+                        oh++;
+                    }
+                    else ow++;
+                    break;
+
+                case 1:
+                    if (oh == dist)
+                    {
+                        face++;
+                        ow--;
+                    }
+                    else oh++;
+                    break;
+
+                case 2:
+                    if (ow == -dist)
+                    {
+                        face++;
+                        oh--;
+                    }
+                    else ow--;
+                    break;
+
+                case 3:
+                    if (oh == -dist)
+                    {
+                        face++;
+                        ow++;
+                    }
+                    else oh--;
+                    break;
+
+                case 4:
+                    if (ow >= -1)
+                    {
+                        ow = 0;
+                        oh--;
+                        face = 0;
+                        dist++;
+                    }
+                    else ow++;
+                    break;
+                }
+            }
+        }
+
+        if (dist > maxDist || dist > qMax(mainCamera->getWidth(), mainCamera->getHeight())) point = vec4(0, 0, 0, -1);
+        else
+        {
+            pixel.x += oh;
+            pixel.y += ow;
+            pixel.z = getDepth(pixel.x, pixel.y);
+
+            pixel.w = pixel.x;
+            pixel.x = pixel.y;
+            pixel.y = mainCamera->getHeight() - pixel.w;
+            pixel.w = 1;
+            pixel.x = 2 * pixel.x / mainCamera->getWidth() - 1;
+            pixel.y = 2 * pixel.y / mainCamera->getHeight() - 1;
+            pixel.z = 2 * pixel.z - 1;
+            if (mainCamera->getProjectionType() == Camera::EQUIRECTANGULAR)
+            {
+                point = mainCamera->getwMc() * mainCamera->getcMi() * pixel;
+                point.x += M_PI_2;
+                //point.z = pixel.z;
+            }
+            else
+            {
+                point = mainCamera->getwMc() * mainCamera->getcMi() * pixel;
+            }
+            point /= point.w;
+
+            //pixel.w = pixel.x;
+            //pixel.x = pixel.y;
+            //pixel.y = mainCamera->getHeight() - pixel.w;
+            //pixel.w = 1;
+            //point = vec4(glm::unProject(vec3(pixel), mainCamera->getcMw(), mainCamera->getiMc(), vec4(0, 0, mainCamera->getWidth(), mainCamera->getHeight())), 1);
+        }
+        return point;
     }
 
     QVector<QVector<float>> Engine3D::takeDepthMeterMap()

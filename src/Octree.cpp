@@ -178,6 +178,11 @@ namespace MIS
 		return main->Model3D::getScale();
 	}
 
+	float Octree::getPointSize() const
+	{
+		return main->Model3D::getPointSize();
+	}
+
 	mat4 Octree::getwMo() const
 	{
 		return main->Model3D::getwMo();

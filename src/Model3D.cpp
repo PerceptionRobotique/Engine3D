@@ -15,6 +15,7 @@ namespace MIS
     Model3D::Model3D(QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
         : vertexNumber(0)
         , scale(1.0f)
+        , pointSize(1.0f)
         , prepared(false)
         , liveLoading(true)
         , showIntensity(false)
@@ -171,6 +172,11 @@ namespace MIS
     float Model3D::getScale() const
     {
         return scale;
+    }
+
+    float Model3D::getPointSize() const
+    {
+        return pointSize;
     }
 
     mat4 Model3D::getwMo() const
@@ -786,6 +792,12 @@ namespace MIS
     {
         scale = _scale;
         emit modelMoved();
+    }
+
+    void Model3D::setPointSize(double pointSize)
+    {
+        this->pointSize = pointSize;
+        emit modelChanged();
     }
 
     void Model3D::setwMo(mat4 wMo)

@@ -34,6 +34,7 @@ namespace MIS
 		unsigned long long getTotalVertexNumber() const;
 
 		float getScale() const override;
+		float getPointSize() const override;
 		mat4 getwMo() const override;
 		bool hasIntensity() const override;
 		bool getShowIntensity() const override;

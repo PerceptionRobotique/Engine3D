@@ -68,6 +68,8 @@ namespace MIS
 
         RenderMode getRenderMode() const;
         QOpenGLContext* getContext();
+        QHash<Model3D::Primitives, QOpenGLShaderProgram*> getShaders();
+        QOpenGLShaderProgram* getBoxShader();
         QImage getFrame();
         Camera* getMainCamera();
         QVector<Camera*>& getCameras();
@@ -93,6 +95,7 @@ namespace MIS
         void addCamera(Camera* camera);
         void removeCamera(unsigned int index);
         void removeCamera(Camera* camera);
+        void addModel(Model3D* model);
         void openModel(QString fileName);
         void closeModel(unsigned int index);
         void closeModel(Model3D* model);
@@ -101,6 +104,7 @@ namespace MIS
         QVector<QVector<float>> takeDepthMap();
         float getDepth(unsigned int h, unsigned int w);
         float getDepthMeter(unsigned int h, unsigned int w);
+        vec4 getNearestPoint(unsigned int h, unsigned int w, unsigned int maxDist = 20);
         QVector<QVector<float>> takeDepthMeterMap();
         QImage takeDepthPicture();
 #ifdef HAVE_VISP

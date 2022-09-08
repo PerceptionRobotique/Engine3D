@@ -200,6 +200,7 @@ list(APPEND HEADERS
     include/ModelBIN.h
     include/ModelOBJ.h
     include/Octree.h
+    include/ModelCustom.h
     include/Model3DWriter.h
     include/Engine3D_global.h
     include/Engine3D.h
@@ -218,6 +219,7 @@ list(APPEND SOURCES
     src/ModelBIN.cpp
     src/ModelOBJ.cpp
     src/Octree.cpp
+    src/ModelCustom.cpp
     src/Model3DWriter.cpp
     src/Engine3D.cpp
 

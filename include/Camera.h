@@ -82,6 +82,7 @@ namespace MIS
         Camera::ViewPoint getViewPoint() const;
         mat4 getProjection() const;
         mat4 getiMc() const;
+        mat4 getcMi() const;
         mat4 getcMw() const;
         mat4 getwMc() const;
         bool isModelVisible(const Model3D* model) const;
