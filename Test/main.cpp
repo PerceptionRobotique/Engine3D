@@ -33,32 +33,26 @@ int main(int argc, char* argv[])
 		ModelCustom* model = new ModelCustom(Model3D::POINTS, true, engine.getShaders()[Model3D::POINTS], engine.getBoxShader());
 
 		QVector<vec3> pos = {
-			//vec3(-1, -1, -1)
-			//vec3(0, 0, 0)
-			//vec3(1, 1, 1)
-			vec3(50, -30, 20)
+			vec3(-1, -1, -1),
+			vec3(0, 0, 0),
+			vec3(1, 1, 1)
 		};
 		QVector<unsigned char> color = {
-			255, 0, 0
-			//0, 255, 0,
-			//0, 0, 255
+			255, 0, 0,
+			0, 255, 0,
+			0, 0, 255
 		};
 
 		model->addVertex(pos, color);
+		model->setPointSize(10);
 		
 		engine.addModel(model);
 		engine.getMainCamera()->translate(vec3(0, 0, 2.1));
 		//engine.getMainCamera()->setProjectionType(Camera::EQUIRECTANGULAR);
-		//engine.takePicture().save("capture.png");
-		//engine.takeDepthPicture().save("captureDepth.png");
-		vec4 point = engine.getNearestPoint(0, 0, -1);
-		vec4 error = glm::abs(point - vec4(pos[0], 1));
-		qDebug() << "point : " << QString::fromStdString(to_string(point));
-		qDebug() << "error : " << error.x + error.y + error.z;
-
-		model->addVertex(point, QVector<unsigned char>{0, 255, 0});
-		model->setPointSize(10);
 		engine.takePicture().save("capture.png");
+		//engine.takeDepthPicture().save("captureDepth.png");
+		model->removeVertex(0);
+		engine.takePicture().save("capture2.png");
 	//}
 
 	engine.destroy();

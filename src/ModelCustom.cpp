@@ -96,6 +96,7 @@ namespace MIS
 
         updateAABB();
         emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void ModelCustom::clear()

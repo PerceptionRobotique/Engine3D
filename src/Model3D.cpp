@@ -808,13 +808,13 @@ namespace MIS
     void Model3D::setGlobalColorEnabled(bool enabled)
     {
         globalColorEnabled = enabled;
-        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setGlobalColor(QColor color)
     {
         globalColor = color;
-        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     bool Model3D::addStoredPose(const QString& name, mat4 pose)
