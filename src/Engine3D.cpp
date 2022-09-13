@@ -49,7 +49,7 @@ namespace MIS
         , viewDistanceEnabled(true)
         , waitLoading(false)
         , maxDepth(-1)
-        , maxMovingDepth(-1)
+        , maxMovingDepth(0)
         , isMoving(false)
         , maxVertexLimitEnabled(true)
         , maxVertexLimit(100000000)
@@ -1081,6 +1081,7 @@ namespace MIS
                     vrCameras[i]->setCustomProjection(i ? vr.rmatMVP : vr.lmatMVP);
                     vrCameras[i]->setProjectionType(Camera::CUSTOM);
                     vrCameras[i]->setSamples(getMaxSamples());
+                    vrCameras[i]->setBackgroundColor(mainCamera->getBackgroundColor());
                 }
 
                 vrTimer.start(1000.0f / vr.m_frequency);
@@ -1285,19 +1286,26 @@ namespace MIS
                     shader->bind();
                     shader->setUniformValue("opacity", opacity);
                     shader->release();
-                    boxShader->bind();
-                    boxShader->setUniformValue("opacity", opacity);
-                    boxShader->release();
                 }
                 else
                 {
                     shader->bind();
                     shader->setUniformValue("opacity", 1.0f);
                     shader->release();
-                    boxShader->bind();
-                    boxShader->setUniformValue("opacity", 1.0f);
-                    boxShader->release();
                 }
+            }
+
+            if (opacityEnabled)
+            {
+                boxShader->bind();
+                boxShader->setUniformValue("opacity", opacity);
+                boxShader->release();
+            }
+            else
+            {
+                boxShader->bind();
+                boxShader->setUniformValue("opacity", 1.0f);
+                boxShader->release();
             }
             doneCurrent();
             emit askUpdate();
@@ -1736,15 +1744,9 @@ namespace MIS
                             if (camera->isModelVisible(model)) model->drawBox();
                             Octree* octree = dynamic_cast<Octree*>(model);
                             if (octree)
-                            {
                                 for (unsigned int i = 1; i <= octree->getMaxDepth(); i++)
-                                {
                                     for (Octree* child : octree->getDepthChildren(i))
-                                    {
                                         child->drawBox();
-                                    }
-                                }
-                            }
                         }
                         camera->release();
                     }

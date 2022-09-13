@@ -1,5 +1,7 @@
 #include <QApplication>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QSettings>
 #include <Engine3D.h>
 #include <ModelCustom.h>
@@ -23,37 +25,19 @@ int main(int argc, char* argv[])
 	diskRoot = "/mnt/c/";
 #endif
 
-	//QString fileName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle 3D", settings.value("FileName").toString(), "Modèle 3D (*.pts *.bin *.bini *.oct *.octi *.obj)");
-	//if (!fileName.isEmpty())
-	//{
-	//	settings.setValue("FileName", fileName);
-	//	settings.sync();
-	//	engine.openModel(fileName);
-		
-		ModelCustom* model = new ModelCustom(Model3D::POINTS, true, engine.getShaders()[Model3D::POINTS], engine.getBoxShader());
-
-		QVector<vec3> pos = {
-			vec3(-1, -1, -1),
-			vec3(0, 0, 0),
-			vec3(1, 1, 1)
-		};
-		QVector<unsigned char> color = {
-			255, 0, 0,
-			0, 255, 0,
-			0, 0, 255
-		};
-
-		model->addVertex(pos, color);
-		model->setPointSize(10);
-		
-		engine.addModel(model);
-		engine.getMainCamera()->translate(vec3(0, 0, 2.1));
-		//engine.getMainCamera()->setProjectionType(Camera::EQUIRECTANGULAR);
-		engine.takePicture().save("capture.png");
-		//engine.takeDepthPicture().save("captureDepth.png");
-		model->removeVertex(0);
-		engine.takePicture().save("capture2.png");
-	//}
+	QString fileName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle 3D", settings.value("FileName").toString(), "Modèle 3D (*.pts *.bin *.bini *.oct *.octi *.obj)");
+	if (!fileName.isEmpty())
+	{
+		settings.setValue("FileName", fileName);
+		settings.sync();
+		engine.openModel(fileName);	
+		QMessageBox stopBox;
+		stopBox.setText("VR is running.");
+		stopBox.setStandardButtons(QMessageBox::Close);
+		engine.startVR();
+		stopBox.exec();
+		engine.stopVR();
+	}
 
 	engine.destroy();
 	return 0;

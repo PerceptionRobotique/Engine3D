@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.6.0)
+project(Engine3D VERSION 2.6.1)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -25,7 +25,7 @@ endif()
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
 ### QT ###
-set(QT_VERSION "6.3.1" CACHE STRING "Currently installed Qt version")
+set(QT_VERSION "6.3.2" CACHE STRING "Currently installed Qt version")
 if(WIN32)
     set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
 elseif(UNIX)
