@@ -153,6 +153,10 @@ namespace MIS
 #endif
                             camera->rotate((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * r.x() / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
                             camera->rotate(rotationSensitivity * r.y() / 50.0f, vec3(1.0f, 0.0f, 0.0f), verticalAxisEnabled);
+#ifdef HAVE_VR
+                            if (vr->isActive())
+                                vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * r.x() / 5000.0f), glm::vec3(0, 1, 0));
+#endif
 #ifdef ANDROID
                         }
 #endif
@@ -224,6 +228,10 @@ namespace MIS
 
                     camera->rotate((abs(camera->getRoll()) == 180.0f ? -1.0f : 1.0f) * rotationSensitivity * rx / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
                     camera->rotate(rotationSensitivity * ry / 50.0f, vec3(1.0f, 0.0f, 0.0f), verticalAxisEnabled);
+#ifdef HAVE_VR
+                    if (vr->isActive())
+                        vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * rx / 5000.0f), glm::vec3(0, 1, 0));
+#endif
 
                     touchPoints = points;
                 }
@@ -295,6 +303,10 @@ namespace MIS
             case K_Q:
                 keysDown[K_Q] = true;
                 camera->rotate(rotationSensitivity, vec3(0, 1, 0), verticalAxisEnabled);
+#ifdef HAVE_VR
+                if (vr->isActive())
+                    vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity / 100.0f), glm::vec3(0, 1, 0));
+#endif
                 break;
 
             case K_S:
@@ -305,6 +317,10 @@ namespace MIS
             case K_D:
                 keysDown[K_D] = true;
                 camera->rotate(-rotationSensitivity, vec3(0, 1, 0), verticalAxisEnabled);
+#ifdef HAVE_VR
+                if (vr->isActive())
+                    vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity / 100.0f), glm::vec3(0, 1, 0));
+#endif
                 break;
 
             case K_A:
@@ -582,6 +598,10 @@ namespace MIS
 
                 case ROTATE_Y:
                     camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 5.0f, vec3(0, 1, 0), verticalAxisEnabled);
+#ifdef HAVE_VR
+                    if (vr->isActive())
+                        vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 5000.0f), glm::vec3(0, 1, 0));
+#endif
                     break;
 
                 case ROTATE_Z:
