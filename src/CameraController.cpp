@@ -568,6 +568,12 @@ namespace MIS
     {
         Controller::update();
         bool controllerMoving = false;
+        bool onGround;
+#ifdef HAVE_VR
+        onGround = onGroundEnabled || vr->isActive();
+#else
+        onGround = onGroundEnabled;
+#endif
 
         for (Action action : controllerProfiles[currentControllerProfile].keys())
         {
@@ -577,30 +583,30 @@ namespace MIS
                 switch (action)
                 {
                 case TRANSLATE_X:
-                    camera->translate(vec3(translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_X]) / 10.0f, 0.0f, 0.0f), onGroundEnabled);
+                    camera->translate(vec3(translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_X]) / 10.0f, 0.0f, 0.0f), onGround);
                     break;
 
                 case TRANSLATE_Y_PLUS:
-                    camera->translate(vec3(0.0f, translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Y_PLUS]) / 10.0f, 0.0f), onGroundEnabled);
+                    camera->translate(vec3(0.0f, translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Y_PLUS]) / 10.0f, 0.0f), onGround);
                     break;
 
                 case TRANSLATE_Y_MINUS:
-                    camera->translate(vec3(0.0f, -translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Y_MINUS]) / 10.0f, 0.0f), onGroundEnabled);
+                    camera->translate(vec3(0.0f, -translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Y_MINUS]) / 10.0f, 0.0f), onGround);
                     break;
 
                 case TRANSLATE_Z:
-                    camera->translate(vec3(0.0f, 0.0f, -translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Z]) / 10.0f), onGroundEnabled);
+                    camera->translate(vec3(0.0f, 0.0f, -translationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][TRANSLATE_Z]) / 10.0f), onGround);
                     break;
 
                 case ROTATE_X:
-                    camera->rotate(rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_X]) / 5.0f, vec3(1, 0, 0), verticalAxisEnabled);
+                    camera->rotate(rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_X]) / 2.0f, vec3(1, 0, 0), verticalAxisEnabled);
                     break;
 
                 case ROTATE_Y:
-                    camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 5.0f, vec3(0, 1, 0), verticalAxisEnabled);
+                    camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 2.0f, vec3(0, 1, 0), verticalAxisEnabled);
 #ifdef HAVE_VR
                     if (vr->isActive())
-                        vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 5000.0f), glm::vec3(0, 1, 0));
+                        vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 100.0f), glm::vec3(0, 1, 0));
 #endif
                     break;
 

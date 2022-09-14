@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <Engine3D.h>
 #include <ModelCustom.h>
+#include <CameraController.h>
 
 using namespace MIS;
 
@@ -17,6 +18,8 @@ int main(int argc, char* argv[])
 
 	Engine3D engine(Engine3D::DIRECT);
 	engine.initialize();
+
+	CameraController cameraController(&engine);
 
 	QString diskRoot;
 #ifdef _WIN32

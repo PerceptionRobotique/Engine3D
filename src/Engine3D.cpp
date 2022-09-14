@@ -107,7 +107,8 @@ namespace MIS
         connect(this, SIGNAL(askFaceColor(vec3)), this, SLOT(setFaceColor(vec3)));
             
 #ifdef HAVE_VR
-        connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
+        if(renderMode == NONE) connect(&vrTimer, SIGNAL(timeout()), this, SIGNAL(askUpdate()));
+        else connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
         connect(this, SIGNAL(askStopVR()), this, SLOT(stopVR()));
 #endif
     }
@@ -633,17 +634,13 @@ namespace MIS
      */
     void Engine3D::update()
     {
-        if (initialized)
+        if (isInitialized())
         {
             if (!getRenderAsked())
             {
                 setRenderAsked(true);
 #ifdef HAVE_VR
-                if (vr.isActive())
-                {
-                    disconnect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
-                    emit updateVRInputs();
-                }
+                if (vr.isActive()) emit updateVRInputs();
 #endif
                 emit askRender();
             }
@@ -1875,7 +1872,7 @@ namespace MIS
                         }
                     }
                 }
-                connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
+                //connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
 #endif
                 setFrame();
 
