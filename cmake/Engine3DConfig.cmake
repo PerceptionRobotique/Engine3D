@@ -1,5 +1,5 @@
 ### QT ###
-set(QT_VERSION "6.3.0" CACHE STRING "Currently installed Qt version")
+set(QT_VERSION "6.3.2" CACHE STRING "Currently installed Qt version")
 if(WIN32)
     set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
 elseif(UNIX)
