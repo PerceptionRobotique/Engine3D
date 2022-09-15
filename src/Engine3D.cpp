@@ -1097,9 +1097,12 @@ namespace MIS
     {
         if (vr.isActive())
         {
+            static bool drawLocked = false;
             if (vrTimer.isActive() && vrTimer.thread() == QThread::currentThread()) vrTimer.stop();
             if (QThread::currentThread() != thread())
             {
+                drawMutex.lock();
+                drawLocked = true;
                 disconnect(&vrTimer);
                 QEventLoop loop;
                 connect(this, SIGNAL(vrStopped()), &loop, SLOT(quit()));
@@ -1108,6 +1111,7 @@ namespace MIS
             }
             else
             {
+                if(!drawLocked) drawMutex.lock();
                 vr.shutdown();
                 QThreadPool::globalInstance()->setMaxThreadCount(QThreadPool::globalInstance()->maxThreadCount());
 
@@ -1122,6 +1126,8 @@ namespace MIS
 
                 mainCamera->setActive(true);
                 emit vrStopped();
+                drawLocked = false;
+                drawMutex.unlock();
             }
         }
     }
@@ -1244,7 +1250,7 @@ namespace MIS
             if (opacityEnabled)
             {
                 makeCurrent();
-                glDisable(GL_DEPTH_TEST);
+                if(blendFunction == BLEND_2) glDisable(GL_DEPTH_TEST);
                 glEnable(GL_BLEND);
                 doneCurrent();
                 setOpacity(opacity);
@@ -1322,7 +1328,12 @@ namespace MIS
         {
             blendFunction = _blendFunction;
             makeCurrent();
-            if (opacityEnabled) glBlendFunc(GL_SRC_ALPHA, blendFunction);
+            if (opacityEnabled)
+            {
+                if (blendFunction == BLEND_1) glEnable(GL_DEPTH_TEST);
+                else if (blendFunction == BLEND_2) glDisable(GL_DEPTH_TEST);
+                glBlendFunc(GL_SRC_ALPHA, blendFunction);
+            }
             else glBlendFunc(GL_ONE, GL_ZERO);
             doneCurrent();
             emit askUpdate();
@@ -1652,7 +1663,7 @@ namespace MIS
      */
     void Engine3D::render()
     {
-        if (initialized)
+        if (isInitialized())
         {
             if (drawMutex.tryLock())
             {
@@ -1882,15 +1893,17 @@ namespace MIS
                 while ((err = glGetError()) != GL_NO_ERROR) qDebug() << err;
 
                 doneCurrent();
-                setRenderAsked(false);
                 drawMutex.unlock();
-                if (updateNextAsked)
-                {
-                    updateNextAsked = false;
-                    emit askUpdate();
-                }
             }
             else updateNextAsked = true;
+        }
+        else updateNextAsked = true;
+
+        setRenderAsked(false);
+        if (updateNextAsked)
+        {
+            updateNextAsked = false;
+            emit askUpdate();
         }
     }
 
