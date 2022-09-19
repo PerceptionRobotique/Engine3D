@@ -259,9 +259,14 @@ namespace MIS
             vec3 position = getPosition();
             vec3 vAxis(0, 1, 0);
             if (abs(getRotation().x) == 90) vAxis = vec3(0, 0, -1);
-            setcMw(glm::lookAt(getPosition(), _point, vAxis));
-            setPosition(position);
-            if (viewPoint == THIRD_PERSON_VIEW) target = _point;
+            mat4 pose = glm::lookAt(getPosition(), _point, vAxis);
+            if (transpose(pose)[3] == vec4(0, 0, 0, 1) && !QString::fromStdString(to_string(pose)).contains("nan"))
+            {
+                setcMw(pose);
+                setPosition(position);
+                if (viewPoint == THIRD_PERSON_VIEW) target = _point;
+            }
+            else qDebug() << "invalid matrix : " << QString::fromStdString(to_string(pose));
         }
     }
 
@@ -509,26 +514,31 @@ namespace MIS
                 return true;
             else
             {
-                QVector<vec3> box = model->getBox();
-                QVector<vec4> boxImage;
-                for (vec3 point : box)
+                if (model->isPointInAABB(getPosition()))
+                    return true;
+                else
                 {
-                    boxImage.append(getiMc() * getcMw() * model->getwMo() * vec4(point, 1.0));
-                    boxImage.last() /= boxImage.last().w;
-                    boxImage.last().z = -(getcMw() * model->getwMo() * vec4(point, 1.0)).z;
+                    QVector<vec3> box = model->getBox();
+                    QVector<vec4> boxImage;
+                    for (vec3 point : box)
+                    {
+                        boxImage.append(getiMc() * getcMw() * model->getwMo() * vec4(point, 1.0));
+                        boxImage.last() /= boxImage.last().w;
+                        boxImage.last().z = -(getcMw() * model->getwMo() * vec4(point, 1.0)).z;
+                    }
+                    vec3 min2D = boxImage.first();
+                    vec3 max2D = boxImage.first();
+                    for (vec3 dot : boxImage)
+                    {
+                        min2D.x = min(min2D.x, dot.x);
+                        min2D.y = min(min2D.y, dot.y);
+                        min2D.z = min(min2D.z, dot.z);
+                        max2D.x = max(max2D.x, dot.x);
+                        max2D.y = max(max2D.y, dot.y);
+                        max2D.z = max(max2D.z, dot.z);
+                    }
+                    return min2D.x <= 1 && min2D.y <= 1 && min2D.z <= getFarPlane() && max2D.x >= -1 && max2D.y >= -1 && max2D.z >= getNearPlane();
                 }
-                vec3 min2D = boxImage.first();
-                vec3 max2D = boxImage.first();
-                for (vec3 dot : boxImage)
-                {
-                    min2D.x = min(min2D.x, dot.x);
-                    min2D.y = min(min2D.y, dot.y);
-                    min2D.z = min(min2D.z, dot.z);
-                    max2D.x = max(max2D.x, dot.x);
-                    max2D.y = max(max2D.y, dot.y);
-                    max2D.z = max(max2D.z, dot.z);
-                }
-                return min2D.x <= 1 && min2D.y <= 1 && min2D.z <= getFarPlane() && max2D.x >= -1 && max2D.y >= -1 && max2D.z >= getNearPlane();
             }
         }
         else return false;

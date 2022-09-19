@@ -103,7 +103,7 @@ namespace MIS
 		, stopPrepare(false)
 	{
 		primitives = TRIANGLES;
-		liveLoading = false;
+		liveLoading = true;
 		prepareFuture = QtConcurrent::run(&ModelOBJ::prepare, this);
 		//prepareFuture.waitForFinished();
 	}

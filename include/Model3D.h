@@ -223,7 +223,6 @@ namespace MIS
         QMutex vertexLoader; //avoids load and unload at the same time
         bool onRAM;
         virtual void loadRamThread() = 0;
-        void unloadRAMthread();
         virtual void render(QOpenGLFunctions* f) = 0;
 
         unsigned long long vertexNumber;

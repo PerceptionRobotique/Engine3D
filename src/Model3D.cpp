@@ -326,6 +326,7 @@ namespace MIS
     {
         visible = _visible;
         emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setBoxVisible(bool _boxVisible)
@@ -386,6 +387,7 @@ namespace MIS
         {
             if (onRAM)
             {
+                onRAM = false;
                 pos.clear();
                 pos.squeeze();
                 color.clear();
@@ -399,11 +401,8 @@ namespace MIS
                 normal.squeeze();
                 uv.clear();
                 uv.squeeze();
-                textures.clear();
-                textures.squeeze();
 
                 removeVertexOnRAM();
-                onRAM = false;
                 emit modelUnloaded();
             }
             vertexLoader.unlock();
@@ -839,19 +838,4 @@ namespace MIS
         settings->remove(name);
         settings->endGroup();
     }
-
-    void Model3D::unloadRAMthread()
-    {
-        pos.clear();
-        pos.squeeze();
-        color.clear();
-        color.squeeze();
-        intensity.clear();
-        intensity.squeeze();
-
-        removeVertexOnRAM();
-        onRAM = false;
-        vertexLoader.unlock();
-    }
-
 }

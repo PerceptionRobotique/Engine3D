@@ -37,12 +37,6 @@ namespace MIS
 				+ (hasIntensity() ? vertexNumber * sizeof(unsigned char) : 0)
 			);
 			*totalVertexNumber += vertexNumber;
-
-			//connect(this, SIGNAL(modelChanged()), parent, SIGNAL(modelChanged()));
-			//connect(this, SIGNAL(modelLoadingDelayed()), parent, SIGNAL(modelLoadingDelayed()));
-			//connect(this, SIGNAL(modelLoaded()), parent, SIGNAL(modelLoaded()));
-			//connect(this, SIGNAL(vertexOnRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnRAMChanged(unsigned long long)));
-			//connect(this, SIGNAL(vertexOnVRAMChanged(unsigned long long)), parent, SIGNAL(vertexOnVRAMChanged(unsigned long long)));
 		}
 		else
 		{
