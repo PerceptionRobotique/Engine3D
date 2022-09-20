@@ -24,8 +24,6 @@ namespace MIS
 
     void ModelCustom::addVertex(const QVector<vec3>& pos, const QVector<unsigned char>& color, const QVector<unsigned char>& intensity)
     {
-        prepared = !p.isEmpty() || !pos.isEmpty();
-
         clearMemory();
 
         p.append(pos);
@@ -55,8 +53,6 @@ namespace MIS
             m_hasIntensity = true;
         }
 
-        prepared = !p.isEmpty();
-
         vertexNumber = p.count();
 
         updateAABB();
@@ -66,8 +62,6 @@ namespace MIS
 
     void ModelCustom::setVertex(const QVector<vec3>& pos, const QVector<unsigned char>& color, const QVector<unsigned char>& intensity)
     {
-        prepared = !pos.isEmpty();
-
         clearMemory();
 
         p = pos;
@@ -101,8 +95,6 @@ namespace MIS
 
     void ModelCustom::clear()
     {
-        prepared = false;
-
         clearMemory();
 
         p.clear();
@@ -185,7 +177,9 @@ namespace MIS
             }
 
             aabb.gravity /= p.count();
+            prepared = true;
         }
+        else prepared = false;
 
         aabb.updateCenter();
         setAABB(aabb);

@@ -54,17 +54,14 @@ void main()
         gl_Position.z = gl_Position.w*cP.z/cP.w;
     }
     else
-    {
         gl_Position = iMc * cMw * wMo * vec4(vertex, 1.0);
-    }
 
     if (customColor) color = vec4(R,G,B, opacity);
     else
     {
         if(showIntensity)
-        {
             color = vec4(in_intensity, in_intensity, in_intensity, opacity);
-        }
-        else color = vec4(in_color, opacity);
+        else
+            color = vec4(in_color, opacity);
     }
 }

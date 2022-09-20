@@ -723,68 +723,72 @@ namespace MIS
 
     bool Model3D::drawBox()
     {
-        if (boxShader)
+        if (isPrepared())
         {
-            if (boxShader->bind())
+            if (boxShader)
             {
-                QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
-                bool drawn = false;
-                if (isPrepared())
+                if (boxShader->bind())
                 {
-                    if (isBoxVisible())
+                    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+                    bool drawn = false;
+                    if (isPrepared())
                     {
-                        QColor boxColor = Qt::gray;
-                        if (isOnRAM())
+                        if (isBoxVisible())
                         {
-                            if (isOnVRAM()) boxColor = Qt::green;
-                            else boxColor = Qt::darkGreen;
-                        }
-
-                        loadBoxRAM();
-                        loadBoxVRAM();
-                        if (boxOnVRAM)
-                        {
-                            mat4 wMo = getwMo();
-                            glm::vec3 color = glm::vec3(boxColor.redF(), boxColor.greenF(), boxColor.blueF());
-                            f->glUniformMatrix4fv(f->glGetUniformLocation(boxShader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
-                            boxShader->setUniformValue("scale", getScale());
-                            f->glUniform3fv(f->glGetUniformLocation(boxShader->programId(), "color"), 1, value_ptr(color));
-
-                            boxBuffer.bind();
-                            boxShader->enableAttributeArray("in_vertex");
-                            boxShader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
-                            boxBuffer.release();
-
-                            if (!boxIndexBuffer.isCreated())
+                            QColor boxColor = Qt::gray;
+                            if (isOnRAM())
                             {
-                                boxIndexBuffer.create();
-                                boxIndexBuffer.bind();
-                                boxIndexBuffer.allocate(boxIndex.constData(), boxIndex.count() * (int)sizeof(unsigned int));
-                                boxIndexBuffer.release();
+                                if (isOnVRAM()) boxColor = Qt::green;
+                                else boxColor = Qt::darkGreen;
                             }
-                            boxIndexBuffer.bind();
-                            f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
-                            boxIndexBuffer.release();
-                            boxShader->disableAttributeArray("in_vertex");
 
-                            drawn = true;
+                            loadBoxRAM();
+                            loadBoxVRAM();
+                            if (boxOnVRAM)
+                            {
+                                mat4 wMo = getwMo();
+                                glm::vec3 color = glm::vec3(boxColor.redF(), boxColor.greenF(), boxColor.blueF());
+                                f->glUniformMatrix4fv(f->glGetUniformLocation(boxShader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
+                                boxShader->setUniformValue("scale", getScale());
+                                f->glUniform3fv(f->glGetUniformLocation(boxShader->programId(), "color"), 1, value_ptr(color));
+
+                                boxBuffer.bind();
+                                boxShader->enableAttributeArray("in_vertex");
+                                boxShader->setAttributeBuffer("in_vertex", GL_FLOAT, 0, 3);
+                                boxBuffer.release();
+
+                                if (!boxIndexBuffer.isCreated())
+                                {
+                                    boxIndexBuffer.create();
+                                    boxIndexBuffer.bind();
+                                    boxIndexBuffer.allocate(boxIndex.constData(), boxIndex.count() * (int)sizeof(unsigned int));
+                                    boxIndexBuffer.release();
+                                }
+                                boxIndexBuffer.bind();
+                                f->glDrawElements(GL_LINES, boxIndex.count(), GL_UNSIGNED_INT, 0);
+                                boxIndexBuffer.release();
+                                boxShader->disableAttributeArray("in_vertex");
+
+                                drawn = true;
+                            }
                         }
                     }
+                    boxShader->release();
+                    return drawn;
                 }
-                boxShader->release();
-                return drawn;
+                else
+                {
+                    qDebug() << "Can't bind box shader.";
+                    return false;
+                }
             }
             else
             {
-                qDebug() << "Can't bind box shader.";
+                qDebug() << "No box shader defined.";
                 return false;
             }
         }
-        else
-        {
-            qDebug() << "No box shader defined.";
-            return false;
-        }
+        else return false;
     }
 
     void Model3D::setScale(double _scale)
@@ -796,7 +800,7 @@ namespace MIS
     void Model3D::setPointSize(double pointSize)
     {
         this->pointSize = pointSize;
-        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setwMo(mat4 wMo)
