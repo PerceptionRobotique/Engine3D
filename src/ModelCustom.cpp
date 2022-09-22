@@ -88,6 +88,8 @@ namespace MIS
         if (!i.isEmpty())
             i.remove(index);
 
+        vertexNumber--;
+
         updateAABB();
         emit modelChanged();
         emit modelRenderChanged();
