@@ -41,8 +41,11 @@ namespace MIS
 		glm::mat4  m_mat4ProjectionLeft;
 		glm::mat4  m_mat4ProjectionRight;
 		glm::mat4  m_mat4EyeRotOffset;
+		float m_handsSecondPrediction = 2.0f;
 		glm::mat4  m_mat4eyePosLeft;
 		glm::mat4  m_mat4eyePosRight;
+		glm::mat4  m_mat4handPoseLeft;
+		glm::mat4  m_mat4handPoseRight;
 		glm::mat4  lmatMVP;
 		glm::mat4  rmatMVP;
 		glm::mat4  m_matosLeft;

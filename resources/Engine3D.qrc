@@ -8,5 +8,11 @@
         <file>Shaders/SimpleOBJ.vert</file>
         <file>Shaders/AdvancedOBJ.frag</file>
         <file>Shaders/AdvancedOBJ.vert</file>
+        <file>Models/floor.mtl</file>
+        <file>Models/floor.obj</file>
+        <file>Models/oculus_controller_L.mtl</file>
+        <file>Models/oculus_controller_L.obj</file>
+        <file>Models/oculus_controller_R.mtl</file>
+        <file>Models/oculus_controller_R.obj</file>
     </qresource>
 </RCC>

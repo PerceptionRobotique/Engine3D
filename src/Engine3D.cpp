@@ -32,13 +32,11 @@ namespace MIS
 #ifdef HAVE_VR
         , vrCameras(2, nullptr)
         , eyesFBO(nullptr)
+        , hands(2, nullptr)
+        , floor(nullptr)
 #endif
         , frameCounter(false)
-        , pointSize(1.0f)
         , lineWidth(3.0f)
-        , opacityEnabled(false)
-        , opacity(1.0f)
-        , blendFunction(BLEND_1)
         , lightOnMainCamera(true)
         , lightPosition(0, 5, 0)
         , globalIllumination(0.1f)
@@ -95,12 +93,7 @@ namespace MIS
         connect(this, SIGNAL(askPFM()), this, SLOT(takePFM()));
 #endif
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
-        connect(this, SIGNAL(askPointSizeEnabled(bool)), this, SLOT(setPointSizeEnabled(bool)));
-        connect(this, SIGNAL(askPointSize(double)), this, SLOT(setPointSize(double)));
         connect(this, SIGNAL(askLineWidth(float)), this, SLOT(setLineWidth(float)));
-        connect(this, SIGNAL(askOpacityEnabled(bool)), this, SLOT(setOpacityEnabled(bool)));
-        connect(this, SIGNAL(askOpacity(float)), this, SLOT(setOpacity(float)));
-        connect(this, SIGNAL(askBlendFunction(BlendFunction)), this, SLOT(setBlendFunction(BlendFunction)));
         connect(this, SIGNAL(askLightOnMainCamera(bool)), this, SLOT(setLightOnMainCamera(bool)));
         connect(this, SIGNAL(askLightPosition(vec3)), this, SLOT(setLightPosition(vec3)));
         connect(this, SIGNAL(askGlobalIllumination(float)), this, SLOT(setGlobalIllumination(float)));
@@ -304,6 +297,15 @@ namespace MIS
         return models[index];
     }
 
+    Model3D* Engine3D::getModel(const QString& name)
+    {
+        Model3D* modelFound = nullptr;
+        for (Model3D* model : models)
+            if (model->getName() == name)
+                modelFound = model;
+        return modelFound;
+    }
+
     /**
      * @brief      Gets the index from the model.
      *
@@ -329,16 +331,6 @@ namespace MIS
     QVector<Model3D*>& Engine3D::getModels()
     {
         return models;
-    }
-
-    /**
-     * @brief      Gets the opacity.
-     *
-     * @return     The opacity.
-     */
-    float Engine3D::getOpacity() const
-    {
-        return opacity;
     }
 
     /**
@@ -497,16 +489,19 @@ namespace MIS
 #endif
             doneCurrent();
 
-            setPointSizeEnabled(true);
-            setPointSize(pointSize);
             setLineWidth(lineWidth);
-            setOpacityEnabled(opacityEnabled);
-            setOpacity(opacity);
-            setBlendFunction(blendFunction);
             setLightOnMainCamera(lightOnMainCamera);
             setLightPosition(lightPosition);
             setGlobalIllumination(globalIllumination);
             setFaceColor(faceColor);
+
+#ifdef HAVE_VR
+            hands[0] = new ModelOBJ(":/Models/oculus_controller_L.obj", shaders[Model3D::TRIANGLES], boxShader);
+            hands[1] = new ModelOBJ(":/Models/oculus_controller_R.obj", shaders[Model3D::TRIANGLES], boxShader);
+            floor = new ModelOBJ(":/Models/floor.obj", shaders[Model3D::TRIANGLES], boxShader);
+            floor->setOpacityEnabled(true);
+            floor->setOpacity(0.2f);
+#endif
 
             initialized = true;
             emit initializationFinished();
@@ -1175,48 +1170,6 @@ namespace MIS
     }
 
     /**
-     * @brief      Sets the point size enabled.
-     *
-     * @param[in]  enabled  Indicates if enabled
-     */
-    void Engine3D::setPointSizeEnabled(bool enabled)
-    {
-        if (QThread::currentThread() != thread())
-            emit askPointSizeEnabled(enabled);
-        else
-        {
-#ifndef ANDROID
-            makeCurrent();
-            if (enabled) glEnable(GL_PROGRAM_POINT_SIZE);
-            else glDisable(GL_PROGRAM_POINT_SIZE);
-            doneCurrent();
-#endif
-            emit askUpdate();
-        }
-    }
-
-    /**
-     * @brief      Sets the point size (OpenGL context required).
-     *
-     * @param[in]  _pointSize  The point size
-     */
-    void Engine3D::setPointSize(double _pointSize)
-    {
-        if (QThread::currentThread() != thread())
-            emit askPointSize(_pointSize);
-        else
-        {
-            makeCurrent();
-            pointSize = _pointSize;
-            shaders[Model3D::POINTS]->bind();
-            shaders[Model3D::POINTS]->setUniformValue("pointSize", pointSize);
-            shaders[Model3D::POINTS]->release();
-            doneCurrent();
-            emit askUpdate();
-        }
-    }
-
-    /**
      * @brief      Sets the line width (OpenGL context required).
      *
      * @param[in]  _lineWidth  The line width
@@ -1230,111 +1183,6 @@ namespace MIS
             makeCurrent();
             lineWidth = _lineWidth;
             glLineWidth(lineWidth);
-            doneCurrent();
-            emit askUpdate();
-        }
-    }
-
-    /**
-     * @brief      Sets the opacity enabled (OpenGL context required).
-     *
-     * @param[in]  enabled  Indicates if enabled
-     */
-    void Engine3D::setOpacityEnabled(bool enabled)
-    {
-        if (QThread::currentThread() != thread())
-            emit askOpacityEnabled(enabled);
-        else
-        {
-            opacityEnabled = enabled;
-            if (opacityEnabled)
-            {
-                makeCurrent();
-                if(blendFunction == BLEND_2) glDisable(GL_DEPTH_TEST);
-                glEnable(GL_BLEND);
-                doneCurrent();
-                setOpacity(opacity);
-                setBlendFunction(blendFunction);
-            }
-            else
-            {
-                makeCurrent();
-                glEnable(GL_DEPTH_TEST);
-                glDisable(GL_BLEND);
-                doneCurrent();
-                setOpacity(opacity);
-                setBlendFunction(blendFunction);
-            }
-            emit askUpdate();
-        }
-    }
-
-    /**
-     * @brief      Sets the opacity (OpenGL context required).
-     *
-     * @param[in]  _opacity  The opacity
-     */
-    void Engine3D::setOpacity(float _opacity)
-    {
-        if (QThread::currentThread() != thread())
-            emit askOpacity(_opacity);
-        else
-        {
-            opacity = _opacity;
-            makeCurrent();
-            for (QOpenGLShaderProgram* shader : shaders)
-            {
-                if (opacityEnabled)
-                {
-                    shader->bind();
-                    shader->setUniformValue("opacity", opacity);
-                    shader->release();
-                }
-                else
-                {
-                    shader->bind();
-                    shader->setUniformValue("opacity", 1.0f);
-                    shader->release();
-                }
-            }
-
-            if (opacityEnabled)
-            {
-                boxShader->bind();
-                boxShader->setUniformValue("opacity", opacity);
-                boxShader->release();
-            }
-            else
-            {
-                boxShader->bind();
-                boxShader->setUniformValue("opacity", 1.0f);
-                boxShader->release();
-            }
-            doneCurrent();
-            emit askUpdate();
-        }
-    }
-
-    /**
-     * @brief      Sets the blend function (OpenGL context required).
-     *
-     * @param[in]  _blendFunction  The blend function
-     */
-    void Engine3D::setBlendFunction(BlendFunction _blendFunction)
-    {
-        if (QThread::currentThread() != thread())
-            emit askBlendFunction(_blendFunction);
-        else
-        {
-            blendFunction = _blendFunction;
-            makeCurrent();
-            if (opacityEnabled)
-            {
-                if (blendFunction == BLEND_1) glEnable(GL_DEPTH_TEST);
-                else if (blendFunction == BLEND_2) glDisable(GL_DEPTH_TEST);
-                glBlendFunc(GL_SRC_ALPHA, blendFunction);
-            }
-            else glBlendFunc(GL_ONE, GL_ZERO);
             doneCurrent();
             emit askUpdate();
         }
@@ -1854,6 +1702,29 @@ namespace MIS
                                     }
                                 }
                             }
+
+                            vr.getHandTransformations();
+                            for (unsigned int i = 0; i < 2; i++)
+                            {
+                                if (hands[i]->isPrepared())
+                                {
+                                    mat4 hp = i == 0 ? vr.m_mat4handPoseLeft : vr.m_mat4handPoseRight;
+                                    hands[i]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + hp[3]);
+                                    hands[i]->setRotation(hp);
+                                    if (!hands[i]->isOnRAM()) hands[i]->loadRAM();
+                                    if (!hands[i]->isOnVRAM()) hands[i]->loadVRAM();
+                                    hands[i]->draw();
+                                    hands[i]->drawBox();
+                                }
+                            }
+                            if (floor->isPrepared())
+                            {
+                                floor->setPosition(vec4(mainCamera->getPosition(), 1.0f));
+                                if (!floor->isOnRAM()) floor->loadRAM();
+                                if (!floor->isOnVRAM()) floor->loadVRAM();
+                                floor->draw();
+                                floor->drawBox();
+                            }
                             vrCameras[i]->release();
                             
                             if (eyesFBO)
@@ -1965,6 +1836,19 @@ namespace MIS
             makeCurrent();
 #ifdef HAVE_VR
             if (vr.isActive()) stopVR();
+            for(ModelOBJ* hand : hands)
+            {
+                if (hand)
+                {
+                    delete hand;
+                    hand = nullptr;
+                }
+            }
+            if (floor)
+            {
+                delete floor;
+                floor = nullptr;
+            }
 #endif
             for (Camera* camera : cameras) delete camera;
             for (QOpenGLShaderProgram* shader : shaders) delete shader;

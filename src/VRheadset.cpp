@@ -244,43 +244,59 @@ namespace MIS
 
 	void VRheadset::getHandTransformations()
 	{
-		m_mat4HandPos = glm::vec3(0.0, 0.0, 0.0);
-		for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-		{
-			vr::VRControllerState_t state;
-			if (m_pHMD->GetTrackedDeviceClass(unDevice) == vr::TrackedDeviceClass_Controller)
-			{
-				if (m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
-				{
-					if (getHMDString(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String) == "oculus")
-					{
-						if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
-						{
-							m_mat4HandPos.x = 0.1f * state.rAxis[0].y;
-							m_mat4HandPos.y = -0.1f * state.rAxis[0].x;
-						}
-						else if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
-						{
-							m_mat4HandPos.z = 0.1f * state.rAxis[0].y;
-						}
-					}
-					else
-					{
-						if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand && state.ulButtonPressed != 0)
-						{
+		//m_mat4HandPos = glm::vec3(0.0, 0.0, 0.0);
+		//for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+		//{
+		//	vr::VRControllerState_t state;
+		//	if (m_pHMD->GetTrackedDeviceClass(unDevice) == vr::TrackedDeviceClass_Controller)
+		//	{
+		//		if (m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
+		//		{
+		//			if (getHMDString(vr::k_unTrackedDeviceIndex_Hmd, vr::Prop_TrackingSystemName_String) == "oculus")
+		//			{
+		//				if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+		//				{
+		//					m_mat4HandPos.x = 0.1f * state.rAxis[0].y;
+		//					m_mat4HandPos.y = -0.1f * state.rAxis[0].x;
+		//				}
+		//				else if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
+		//				{
+		//					m_mat4HandPos.z = 0.1f * state.rAxis[0].y;
+		//				}
+		//			}
+		//			else
+		//			{
+		//				if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand && state.ulButtonPressed != 0)
+		//				{
+		//					m_mat4HandPos.x = 0.5f * state.rAxis[0].y;
+		//					m_mat4HandPos.y = -0.5f * state.rAxis[0].x;
+		//				}
+		//				else if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand && state.ulButtonPressed != 0)
+		//				{
+		//					m_mat4HandPos.z = 0.5f * state.rAxis[0].y;
+		//				}
+		//				//	axis_value = Vector2(state.rAxis[0].x, state.rAxis[0].y;
+		//			}
+		//		}
+		//	}
+		//}
 
-							m_mat4HandPos.x = 0.5f * state.rAxis[0].y;
-							m_mat4HandPos.y = -0.5f * state.rAxis[0].x;
-						}
-						else if (m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand && state.ulButtonPressed != 0)
-						{
-							m_mat4HandPos.z = 0.5f * state.rAxis[0].y;
-						}
-						//	axis_value = Vector2(state.rAxis[0].x, state.rAxis[0].y;
-					}
-				}
+		m_mat4handPoseLeft = glm::mat4(1.0);
+		m_mat4handPoseRight = glm::mat4(1.0);
+		std::vector<vr::TrackedDevicePose_t> poseArray(3);
+		m_pHMD->GetDeviceToAbsoluteTrackingPose(vr::TrackingUniverseStanding, m_handsSecondPrediction, poseArray.data(), poseArray.size());
+		const vr::HmdMatrix34_t lH = poseArray[1].mDeviceToAbsoluteTracking;
+		const vr::HmdMatrix34_t rH = poseArray[2].mDeviceToAbsoluteTracking;
+		for (int r = 0; r < 3; ++r)
+		{
+			for (int c = 0; c < 4; ++c)
+			{
+				m_mat4handPoseLeft[c][r] = lH.m[r][c];
+				m_mat4handPoseRight[c][r] = rH.m[r][c];
 			}
 		}
+		m_mat4handPoseLeft = m_mat4EyeRotOffset * m_mat4handPoseLeft;
+		m_mat4handPoseRight = m_mat4EyeRotOffset * m_mat4handPoseRight;
 	}
 
 	glm::mat4 VRheadset::GetHMDssf(vr::Hmd_Eye nEye)

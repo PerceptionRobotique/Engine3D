@@ -52,11 +52,6 @@ namespace MIS
             THREADED = 2
         };
 
-        enum BlendFunction {
-            BLEND_1 = GL_ONE_MINUS_SRC_ALPHA,
-            BLEND_2 = GL_ONE
-        };
-
         Engine3D(RenderMode _renderMode = DIRECT, QObject* parent = nullptr);
         ~Engine3D();
 
@@ -75,9 +70,9 @@ namespace MIS
         QVector<Camera*>& getCameras();
         int getMaxSamples();
         Model3D* getModel(unsigned int index);
+        Model3D* getModel(const QString& name);
         int getModelIndex(const Model3D* _model) const;
         QVector<Model3D*>& getModels();
-        float getOpacity() const;
         bool getWaitLoading() const;
         bool isViewDistanceEnabled() const;
         bool isMaxVertexLimitEnabled() const;
@@ -123,12 +118,7 @@ namespace MIS
         void setFrameCounterEnabled(bool enabled);
 
         //Render
-        void setPointSizeEnabled(bool enabled);
-        void setPointSize(double _pointSize);
         void setLineWidth(float _lineWidth);
-        void setOpacityEnabled(bool enabled);
-        void setOpacity(float _opacity);
-        void setBlendFunction(BlendFunction _blendFunction);
         void setLightOnMainCamera(bool enabled);
         void setLightPosition(vec3 _lightPosition);
         void setGlobalIllumination(float globalIllumination);
@@ -163,6 +153,8 @@ namespace MIS
         QVector<Camera*> vrCameras;
         QTimer vrTimer;
         QOpenGLFramebufferObject* eyesFBO;
+        QVector<ModelOBJ*> hands;
+        ModelOBJ* floor;
 #endif
         QVector<Model3D*> models;
 
@@ -170,11 +162,7 @@ namespace MIS
         bool frameCounter;
 
         //Render
-        float pointSize;
         float lineWidth;
-        bool opacityEnabled;
-        float opacity;
-        BlendFunction blendFunction;
         bool lightOnMainCamera;
         vec3 lightPosition;
         float globalIllumination;
@@ -241,12 +229,7 @@ namespace MIS
         void frameReady(QImage);
         void askDestroy();
         void destructionFinished();
-        void askPointSizeEnabled(bool);
-        void askPointSize(double);
         void askLineWidth(float);
-        void askOpacityEnabled(bool);
-        void askOpacity(float);
-        void askBlendFunction(BlendFunction);
         void askLightOnMainCamera(bool);
         void askLightPosition(vec3);
         void askGlobalIllumination(float);

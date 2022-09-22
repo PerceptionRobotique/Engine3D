@@ -379,6 +379,8 @@ namespace MIS
 				else
 					f->glBindTexture(GL_TEXTURE_2D, 0);
 
+				if(pointSizeEnabled)
+					f->glDrawArrays(GL_POINTS, 0, point[i][j].count());
 				f->glDrawArrays(primitives, 0, point[i][j].count());
 
 				shader->disableAttributeArray("in_vertex");

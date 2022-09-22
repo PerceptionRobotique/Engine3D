@@ -49,8 +49,6 @@ namespace MIS
 
 	void ModelBIN::render(QOpenGLFunctions* f)
 	{
-		shader->setUniformValue("pointSize", getPointSize());
-
         if (posBuffer.isCreated())
         {
             posBuffer.bind();

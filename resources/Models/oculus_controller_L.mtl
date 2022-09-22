@@ -1,0 +1,14 @@
+# Blender MTL File: 'oculus_controller_L.blend'
+# Material Count: 1
+
+newmtl skel:controller_materials:controllerMTL
+Ns 199.999995
+Ka 0.500000 0.500000 0.500000
+Kd 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 3
+map_Kd C:\\Users\\nvill\\Downloads\\oculus-controller-art-v1.4[UPDATED]\\Oculus Touch for Quest & Rift S\\controller_bc.tga
+map_d C:\\Users\\nvill\\Downloads\\oculus-controller-art-v1.4[UPDATED]\\Oculus Touch for Quest & Rift S\\controller_bc.tga

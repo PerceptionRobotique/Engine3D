@@ -111,8 +111,6 @@ namespace MIS
 
 	void ModelCustom::render(QOpenGLFunctions* f)
 	{
-		shader->setUniformValue("pointSize", getPointSize());
-
         if (posBuffer.isCreated())
         {
             posBuffer.bind();

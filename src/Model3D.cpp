@@ -15,6 +15,7 @@ namespace MIS
     Model3D::Model3D(QString _fileName, QOpenGLShaderProgram* shader, QOpenGLShaderProgram* boxShader)
         : vertexNumber(0)
         , scale(1.0f)
+        , pointSizeEnabled(false)
         , pointSize(1.0f)
         , prepared(false)
         , liveLoading(true)
@@ -24,6 +25,9 @@ namespace MIS
         , boxOnRAM(false)
         , boxOnVRAM(false)
         , onVRAM(false)
+        , opacityEnabled(false)
+        , opacity(1.0f)
+        , blendFunction(BLEND_1)
         , box(8, glm::vec3(0, 0, 0))
         , shader(shader)
         , boxShader(boxShader)
@@ -174,6 +178,11 @@ namespace MIS
         return scale;
     }
 
+    bool Model3D::isPointSizeEnabled() const
+    {
+        return pointSizeEnabled;
+    }
+
     float Model3D::getPointSize() const
     {
         return pointSize;
@@ -260,6 +269,21 @@ namespace MIS
             return res;
         }
         else return 0;
+    }
+
+    bool Model3D::isOpacityEnabled() const
+    {
+        return opacityEnabled;
+    }
+
+    float Model3D::getOpacity() const
+    {
+        return opacity;
+    }
+
+    Model3D::BlendFunction Model3D::getBlendFunction() const
+    {
+        return blendFunction;
     }
 
     bool Model3D::hasIntensity() const
@@ -705,6 +729,28 @@ namespace MIS
                             shader->setUniformValue("G", getGlobalColor().greenF());
                             shader->setUniformValue("B", getGlobalColor().blueF());
                             shader->setUniformValue("showIntensity", getShowIntensity());
+                            if (isOpacityEnabled())
+                            {
+                                f->glEnable(GL_BLEND);
+                                if (getBlendFunction() == BLEND_1) f->glEnable(GL_DEPTH_TEST);
+                                else if (getBlendFunction() == BLEND_2) f->glDisable(GL_DEPTH_TEST);
+                                f->glBlendFunc(GL_SRC_ALPHA, getBlendFunction());
+                                shader->setUniformValue("opacity", getOpacity());
+                            }
+                            else
+                            {
+                                f->glDisable(GL_BLEND);
+                                f->glEnable(GL_DEPTH_TEST);
+                                f->glBlendFunc(GL_ONE, GL_ZERO);
+                                shader->setUniformValue("opacity", 1.0f);
+                            }
+                            if (isPointSizeEnabled())
+                            {
+                                f->glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+                                shader->setUniformValue("pointSize", getPointSize());
+                            }
+                            else
+                                f->glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
                             render(f);
 
@@ -797,10 +843,23 @@ namespace MIS
         emit modelMoved();
     }
 
-    void Model3D::setPointSize(double pointSize)
+    void Model3D::setPointSizeEnabled(bool enabled)
     {
-        this->pointSize = pointSize;
-        emit modelRenderChanged();
+        if (pointSizeEnabled != enabled)
+        {
+            pointSizeEnabled = enabled;
+            emit modelRenderChanged();
+        }
+    }
+
+    void Model3D::setPointSize(float pointSize)
+    {
+        if (this->pointSize != pointSize)
+        {
+            this->pointSize = pointSize;
+            if(pointSizeEnabled)
+                emit modelRenderChanged();
+        }
     }
 
     void Model3D::setwMo(mat4 wMo)
@@ -818,6 +877,33 @@ namespace MIS
     {
         globalColor = color;
         emit modelRenderChanged();
+    }
+
+    void Model3D::setOpacityEnabled(bool enabled)
+    {
+        if (opacityEnabled != enabled)
+        {
+            opacityEnabled = enabled;
+            emit modelRenderChanged();
+        }
+    }
+
+    void Model3D::setOpacity(float value)
+    {
+        if (opacity != value)
+        {
+            opacity = value;
+            emit modelRenderChanged();
+        }
+    }
+
+    void Model3D::setBlendFunction(BlendFunction function)
+    {
+        if (blendFunction != function)
+        {
+            blendFunction = function;
+            emit modelRenderChanged();
+        }
     }
 
     bool Model3D::addStoredPose(const QString& name, mat4 pose)

@@ -20,6 +20,8 @@ int main(int argc, char* argv[])
 	engine.initialize();
 
 	CameraController cameraController(&engine);
+	cameraController.setTranslationSensitivity(10);
+	cameraController.setRotationSensitivity(10);
 
 	QString diskRoot;
 #ifdef _WIN32
@@ -28,7 +30,8 @@ int main(int argc, char* argv[])
 	diskRoot = "/mnt/c/";
 #endif
 
-	QString fileName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle 3D", settings.value("FileName").toString(), "Modèle 3D (*.pts *.bin *.bini *.oct *.octi *.obj)");
+	//QString fileName = QFileDialog::getOpenFileName(nullptr, "Ouvrir un modèle 3D", settings.value("FileName").toString(), "Modèle 3D (*.pts *.bin *.bini *.oct *.octi *.obj)");
+	QString fileName = settings.value("FileName").toString();
 	if (!fileName.isEmpty())
 	{
 		settings.setValue("FileName", fileName);
@@ -38,6 +41,7 @@ int main(int argc, char* argv[])
 		stopBox.setText("VR is running.");
 		stopBox.setStandardButtons(QMessageBox::Close);
 		engine.startVR();
+		cameraController.setVRInputsUpdaterEnabled(true);
 		stopBox.exec();
 		engine.stopVR();
 	}

@@ -12,6 +12,7 @@ uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
 uniform float scale;
+uniform float pointSize;
 
 uniform bool equirectangular;
 
@@ -22,6 +23,8 @@ varying vec2 texCoord;
 void main()
 {
     vertex = in_vertex * scale;
+    gl_PointSize = pointSize;
+
     if(equirectangular)
     {
         // changement de repere objet -> camera

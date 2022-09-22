@@ -42,6 +42,11 @@ namespace MIS
             TRIANGLES = GL_TRIANGLES
         };
 
+        enum BlendFunction {
+            BLEND_1 = GL_ONE_MINUS_SRC_ALPHA,
+            BLEND_2 = GL_ONE
+        };
+
         struct AABB {
             vec3 min = vec3(0, 0, 0);
             vec3 max = vec3(0, 0, 0);
@@ -105,6 +110,7 @@ namespace MIS
 
         Primitives getPrimitives() const;
         virtual float getScale() const;
+        virtual bool isPointSizeEnabled() const;
         virtual float getPointSize() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
@@ -117,6 +123,9 @@ namespace MIS
         virtual glm::vec3 getPosAt(unsigned long long index);
         virtual QVector<unsigned char> getColorAt(unsigned long long index);
         virtual unsigned char getIntensityAt(unsigned long long index);
+        virtual bool isOpacityEnabled() const;
+        virtual float getOpacity() const;
+        virtual BlendFunction getBlendFunction() const;
 
         virtual bool hasIntensity() const;
         virtual bool getShowIntensity() const;
@@ -168,10 +177,14 @@ namespace MIS
         virtual bool drawBox();
 
         virtual void setScale(double _scale);
-        virtual void setPointSize(double pointSize);
+        virtual void setPointSizeEnabled(bool enabled);
+        virtual void setPointSize(float pointSize);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
+        void setOpacityEnabled(bool enabled);
+        void setOpacity(float value);
+        void setBlendFunction(BlendFunction function);
 
         //Poses
         bool addStoredPose(const QString &name, mat4 pose);
@@ -196,6 +209,10 @@ namespace MIS
         bool boxOnRAM;
         bool boxOnVRAM;
         bool onVRAM;
+
+        bool opacityEnabled;
+        float opacity;
+        BlendFunction blendFunction;
 
         bool globalColorEnabled;
         QColor globalColor;
@@ -227,6 +244,7 @@ namespace MIS
 
         unsigned long long vertexNumber;
         float scale;
+        bool pointSizeEnabled;
         float pointSize;
         QVector<glm::vec3> pos;
         QVector<unsigned char> color;

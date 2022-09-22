@@ -34,6 +34,7 @@ namespace MIS
 		unsigned long long getTotalVertexNumber() const;
 
 		float getScale() const override;
+		bool isPointSizeEnabled() const override;
 		float getPointSize() const override;
 		mat4 getwMo() const override;
 		bool hasIntensity() const override;
@@ -46,6 +47,9 @@ namespace MIS
 		glm::vec3 getPosAt(unsigned long long index) override;
 		QVector<unsigned char> getColorAt(unsigned long long index) override;
 		unsigned char getIntensityAt(unsigned long long index) override;
+		bool isOpacityEnabled() const override;
+		float getOpacity() const override;
+		BlendFunction getBlendFunction() const override;
 
 		Octree* operator[](std::size_t index);
 

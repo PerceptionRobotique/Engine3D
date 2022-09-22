@@ -169,47 +169,52 @@ namespace MIS
 
 	float Octree::getScale() const
 	{
-		return main->Model3D::getScale();
+		return main->ModelBIN::getScale();
+	}
+
+	bool Octree::isPointSizeEnabled() const
+	{
+		return main->ModelBIN::isPointSizeEnabled();
 	}
 
 	float Octree::getPointSize() const
 	{
-		return main->Model3D::getPointSize();
+		return main->ModelBIN::getPointSize();
 	}
 
 	mat4 Octree::getwMo() const
 	{
-		return main->Model3D::getwMo();
+		return main->ModelBIN::getwMo();
 	}
 
 	bool Octree::hasIntensity() const
 	{
-		return main->Model3D::hasIntensity();
+		return main->ModelBIN::hasIntensity();
 	}
 
 	bool Octree::getShowIntensity() const
 	{
-		return main->Model3D::getShowIntensity();
+		return main->ModelBIN::getShowIntensity();
 	}
 
 	bool Octree::isVisible() const
 	{
-		return main->Model3D::isVisible();
+		return main->ModelBIN::isVisible();
 	}
 
 	bool Octree::isBoxVisible() const
 	{
-		return main->Model3D::isBoxVisible();
+		return main->ModelBIN::isBoxVisible();
 	}
 
 	bool Octree::isGlobalColorEnabled() const
 	{
-		return main->Model3D::isGlobalColorEnabled();
+		return main->ModelBIN::isGlobalColorEnabled();
 	}
 
 	QColor Octree::getGlobalColor() const
 	{
-		return main->Model3D::getGlobalColor();
+		return main->ModelBIN::getGlobalColor();
 	}
 
 	glm::vec3 Octree::getPosAt(unsigned long long index)
@@ -226,12 +231,12 @@ namespace MIS
 			}
 			else
 			{
-				return Model3D::getPosAt(index);
+				return ModelBIN::getPosAt(index);
 			}
 		}
 		else
 		{
-			return Model3D::getPosAt(index);
+			return ModelBIN::getPosAt(index);
 		}
 	}
 
@@ -249,12 +254,12 @@ namespace MIS
 			}
 			else
 			{
-				return Model3D::getColorAt(index);
+				return ModelBIN::getColorAt(index);
 			}
 		}
 		else
 		{
-			return Model3D::getColorAt(index);
+			return ModelBIN::getColorAt(index);
 		}
 	}
 
@@ -274,15 +279,30 @@ namespace MIS
 				}
 				else
 				{
-					return Model3D::getIntensityAt(index);
+					return ModelBIN::getIntensityAt(index);
 				}
 			}
 			else
 			{
-				return Model3D::getIntensityAt(index);
+				return ModelBIN::getIntensityAt(index);
 			}
 		}
 		else return 0;
+	}
+
+	bool Octree::isOpacityEnabled() const
+	{
+		return main->ModelBIN::isOpacityEnabled();
+	}
+
+	float Octree::getOpacity() const
+	{
+		return main->ModelBIN::getOpacity();
+	}
+
+	ModelBIN::BlendFunction Octree::getBlendFunction() const
+	{
+		return main->ModelBIN::getBlendFunction();
 	}
 
 	Octree* Octree::operator[](std::size_t index)
@@ -309,8 +329,8 @@ namespace MIS
 
 	bool Octree::drawBox()
 	{
-		if (depth == 0) return Model3D::drawBox();
-		else if (parent->isOnVRAM()) return Model3D::drawBox();
+		if (depth == 0) return ModelBIN::drawBox();
+		else if (parent->isOnVRAM()) return ModelBIN::drawBox();
 		else return false;
 	}
 }
