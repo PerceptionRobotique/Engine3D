@@ -746,11 +746,15 @@ namespace MIS
                             }
                             if (isPointSizeEnabled())
                             {
+#ifndef ANDROID
                                 f->glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+#endif
                                 shader->setUniformValue("pointSize", getPointSize());
                             }
+#ifndef ANDROID
                             else
                                 f->glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+#endif
 
                             render(f);
 
