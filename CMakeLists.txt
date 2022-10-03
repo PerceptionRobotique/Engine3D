@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.6.2)
+project(Engine3D VERSION 2.6.3)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -25,64 +25,10 @@ endif()
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
 ### QT ###
-set(QT_VERSION "6.3.2" CACHE STRING "Currently installed Qt version")
-if(WIN32)
-    set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
-elseif(UNIX)
-    if(IS_DIRECTORY "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6")
-        set(QT_DIR "$ENV{HOME}/Qt/${QT_VERSION}/gcc_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
-    elseif(IS_DIRECTORY "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6")
-        set(QT_DIR "/usr/local/Qt-${QT_VERSION}/lib/cmake/Qt6" CACHE PATH "Qt directory")
-    else()
-        set(QT_DIR "QT_DIR-NOTFOUND" CACHE PATH "Qt directory")
-    endif()
-
-    if(IS_DIRECTORY ${QT_DIR})
-        set(Qt6DBusTools_DIR "${QT_DIR}DBusTools")
-        set(Qt6BundledPcre2_DIR "${QT_DIR}BundledPcre2")
-        set(Qt6BundledHarfbuzz_DIR "${QT_DIR}BundledHarfbuzz")
-        set(Qt6BundledLibjpeg_DIR "${QT_DIR}BundledLibjpeg")
-    endif()
-endif()
-
-if(IS_DIRECTORY ${QT_DIR})
-    set(Qt6_DIR "${QT_DIR}")
-    set(Qt6CoreTools_DIR "${QT_DIR}CoreTools")
-    set(Qt6GuiTools_DIR "${QT_DIR}GuiTools")
-    set(Qt6WidgetsTools_DIR "${QT_DIR}WidgetsTools")
-endif()
-
-list(APPEND QT_COMPONENTS Core Gui Widgets OpenGL Concurrent)
-foreach (qt_component ${QT_COMPONENTS})
-    list(APPEND QT_LINKS
-        Qt${QT_VERSION_MAJOR}::${qt_component}
-    )
-endforeach()
-if(ANDROID)
-    list(APPEND QT_LINKS Qt${QT_VERSION_MAJOR}::CorePrivate)
-endif()
-
-list(APPEND QT_PLUGINS
-    platforms/qminimal
-    platforms/qoffscreen
-    platforms/qwindows
-    styles/qwindowsvistastyle
-    imageformats/qjpeg
-)
-
-find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
-find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
+include(cmake/FindQt.cmake)
 
 ### GLM ###
 find_package(glm REQUIRED)
-# if(WIN32)
-#     find_package(GLM REQUIRED)
-#     if(GLM_FOUND)
-#             set(GLM_INCLUDE_DIRS ${GLM_DIR}/../../../include)
-#     endif(GLM_FOUND)
-# elseif(UNIX)
-#     find_package(glm REQUIRED)
-# endif()
 
 ### CONTROLLER ###
 set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
@@ -98,85 +44,22 @@ if(ANDROID)
     set(OpenCV_DIR "" CACHE PATH "OpenCV directory")
 endif()
 if(WITH_OPENCV)
-    list(APPEND OpenCV_COMPONENTS
-        core
-        calib3d
-        dnn
-        features2d
-        flann
-        highgui
-        imgcodecs
-        imgproc
-        video
-        videoio
-    )
-
-    list(APPEND OpenCV_EXTRA_DLL
-        inference_engine$<$<CONFIG:Debug>:d>
-        inference_engine_transformations$<$<CONFIG:Debug>:d>
-        ngraph$<$<CONFIG:Debug>:d>
-        tbb$<$<CONFIG:Debug>:_debug>
-    )
-    find_package(OpenCV COMPONENTS ${OpenCV_COMPONENTS} REQUIRED)
-    add_compile_definitions(HAVE_OPENCV)
+    include(cmake/FindOpenCV.cmake)
 endif()
 
 ### ViSP ###
-set(WITH_VISP OFF CACHE BOOL "ViSP")
+set(WITH_ViSP OFF CACHE BOOL "ViSP")
 if(ANDROID)
     set(VISP_DIR "" CACHE PATH "ViSP directory")
 endif()
-if(WITH_VISP)
-    if(NOT WITH_OPENCV)
-        message(FATAL_ERROR "ViSP needs OpenCV to work !")
-    endif()
-
-    if(ANDROID)
-        list(APPEND VISP_COMPONENTS ar)
-    endif()
-
-    list(APPEND VISP_COMPONENTS
-        blob
-        core
-        gui
-        io
-        klt
-        mbt
-        me
-        vision
-        visual_features
-    )
-
-    find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
-    if(VISP_FOUND)
-        add_compile_definitions(HAVE_VISP)
-    else()
-        message(FATAL_ERROR Can't find ViSP.)
-    endif()
-    if(ANDROID)
-        set(VISP_INCLUDE_DIRS ${VISP_DIR}/include)
-    endif()
+if(WITH_ViSP)
+    include(cmake/FindViSP.cmake)
 endif()
 
 ### VR ###
-set(WITH_VR OFF CACHE BOOL "Include VR functions")
-if(WITH_VR)
-    if(WIN32)
-        set(OPENVR_DIR "OPENVR_DIR-NOTFOUND" CACHE PATH "Install directory of OpenVR")
-        if(IS_DIRECTORY ${OPENVR_DIR})
-            list(APPEND OPENVR_INCLUDE_DIRS ${OPENVR_DIR}/include)
-            set(OPENVR_LIBRARIES ${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib)
-        else()
-            message(FATAL_ERROR "OpenVR is missing.")
-        endif()
-    elseif(UNIX)
-        set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
-    endif()
-
-    list(APPEND HEADERS include/VRheadset.h)
-    list(APPEND SOURCES src/VRheadset.cpp)
-
-    add_compile_definitions(HAVE_VR)
+set(WITH_OpenVR OFF CACHE BOOL "Include OpenVR functions")
+if(WITH_OpenVR)
+    include(cmake/FindOpenVR.cmake)
 endif()
 
 ### DOXYGEN ###
@@ -298,69 +181,11 @@ if(WIN32)
 
     install(FILES ${HEADERS} DESTINATION include)
 
-    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ DESTINATION .)
-
-    ### QT ###
-    foreach (qt_component ${QT_COMPONENTS})
-        list(APPEND QT_DLL "${Qt${QT_VERSION_MAJOR}_DIR}/../../../bin/Qt${QT_VERSION_MAJOR}${qt_component}$<$<CONFIG:Debug>:d>.dll")
-        # list(APPEND QT_LIBS "${Qt${QT_VERSION_MAJOR}_DIR}/../../../lib/Qt${QT_VERSION_MAJOR}${qt_component}$<$<CONFIG:Debug>:d>.lib")
-        # install(DIRECTORY ${Qt${QT_VERSION_MAJOR}_DIR}/../../../include/Qt${qt_component} DESTINATION include/3rdParty/Qt)
-    endforeach()
-    install(FILES ${QT_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
-    # install(FILES ${QT_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/Qt)
-
-    foreach (qt_plugin ${QT_PLUGINS})
-        string(FIND ${qt_plugin} "/" slash)
-        string(SUBSTRING ${qt_plugin} 0 ${slash} folder)
-        install(FILES "${Qt${QT_VERSION_MAJOR}_DIR}/../../../plugins/${qt_plugin}$<$<CONFIG:Debug>:d>.dll" DESTINATION bin/$<CONFIG>/3rdParty/${folder})
-    endforeach()
-    file(GLOB QT_INCLUDE_FILES ${Qt${QT_VERSION_MAJOR}_DIR}/../../../include/*.h)
-    # install(FILES ${QT_INCLUDE_FILES} DESTINATION include/3rdParty/Qt)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Engine3DConfig.cmake DESTINATION cmake)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/engine3d-config.cmake DESTINATION .)
 
     ### GLM ###
     install(DIRECTORY ${GLM_INCLUDE_DIRS}/glm DESTINATION include/3rdParty/glm)
-
-    if(WITH_OPENCV)
-        foreach (OpenCV_COMPONENT ${OpenCV_COMPONENTS})
-            list(APPEND OpenCV_INSTALL_LIBS
-                "${OpenCV_INSTALL_PATH}/lib/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.lib"
-            )
-            list(APPEND OpenCV_INSTALL_DLL
-                "${OpenCV_DIR}/../bin/opencv_${OpenCV_COMPONENT}${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
-            )
-        endforeach()
-
-        foreach (OpenCV_EXTRA ${OpenCV_EXTRA_DLL})
-            list(APPEND OpenCV_INSTALL_DLL
-                "${OpenCV_DIR}/../bin/${OpenCV_EXTRA}.dll"
-            )
-        endforeach()
-        install(FILES ${OpenCV_INSTALL_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
-        install(DIRECTORY ${OpenCV_INCLUDE_DIRS}/ DESTINATION include/3rdParty/OpenCV)
-        install(FILES ${OpenCV_INSTALL_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/OpenCV)
-    endif()
-
-    if(WITH_VISP)
-        foreach (visp_component ${VISP_COMPONENTS})
-            list(APPEND VISP_EXTRA_LIBS
-                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/lib/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>.lib"
-            )
-            list(APPEND VISP_EXTRA_DLL
-                "${VISP_DIR}/${VISP_ARCH}/${VISP_RUNTIME}/bin/visp_${visp_component}${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH}$<$<CONFIG:Debug>:d>.dll"
-            )
-        endforeach()
-        install(FILES ${VISP_EXTRA_DLL} DESTINATION bin/$<CONFIG>/3rdParty)
-        # install(DIRECTORY ${VISP_DIR}/include/ DESTINATION include/3rdParty/ViSP)
-        # install(FILES ${VISP_EXTRA_LIBS} DESTINATION lib/$<CONFIG>/3rdParty/ViSP)
-
-        install(DIRECTORY ${VISP_DIR}/ DESTINATION 3rdParty/ViSP)
-    endif()
-
-    if(WITH_VR)
-        install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.dll" DESTINATION bin/$<CONFIG>/3rdParty)
-        install(DIRECTORY ${OPENVR_INCLUDE_DIRS}/ DESTINATION include/3rdParty/OpenVR)
-        install(FILES "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.lib" DESTINATION lib/$<CONFIG>/3rdParty/OpenVR)
-    endif()
 
     if(GENERATE_DOXYGEN)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
@@ -371,6 +196,7 @@ if(WIN32)
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(Engine3D_VERSION_MINOR ${Engine3D_VERSION_MINOR})\n")
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(Engine3D_VERSION_PATCH ${Engine3D_VERSION_PATCH})\n")
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "add_compile_definitions(\"ENGINE3D_VERSION=\\\"${Engine3D_VERSION}\\\"\")\n")
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(QT_REQUIRED_VERSION \"${QT_VERSION}\")\n")
     if(WITH_CONTROLLER)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")
     endif()
@@ -379,16 +205,17 @@ if(WIN32)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(OpenCV_VERSION ${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH})\n")
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "list(APPEND OpenCV_COMPONENTS ${OpenCV_COMPONENTS})\n")
     endif()
-    if(WITH_VISP)
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_VISP ON)\n")
+    if(WITH_ViSP)
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_ViSP ON)\n")
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(VISP_VERSION ${VISP_VERSION_MAJOR}${VISP_VERSION_MINOR}${VISP_VERSION_PATCH})\n")
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "list(APPEND VISP_COMPONENTS ${VISP_COMPONENTS})\n")
     endif()
-    if(WITH_VR)
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_VR ON)")
+    if(WITH_OpenVR)
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_OpenVR ON)")
     endif()
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake DESTINATION .)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake DESTINATION cmake)
 
+    # Needed to install multiple configuration (Debug + Release)
     install(DIRECTORY ${CMAKE_INSTALL_PREFIX}/ DESTINATION .)
 
     set(CPACK_PACKAGE_NAME Engine3D)
@@ -397,7 +224,9 @@ if(WIN32)
     set(CPACK_PACKAGE_VERSION_MINOR ${TARGET_VERSION_MINOR})
     set(CPACK_PACKAGE_VERSION_PATCH ${TARGET_VERSION_PATCH})
     set(CPACK_PACKAGE_INSTALL_DIRECTORY Engine3D)
-    set(CPACK_NSIS_MENU_LINKS doc/index.html "Engine3D documentation")
+    if(GENERATE_DOXYGEN)
+        set(CPACK_NSIS_MENU_LINKS doc/index.html "Engine3D documentation")
+    endif()
     include(CPack)
 elseif(UNIX)
     find_program(LSB_RELEASE_EXEC lsb_release)
@@ -443,13 +272,13 @@ elseif(UNIX)
         endif()
         string(APPEND Engine3D_DEPENDENCIES ", libopencv-dev")
     endif()
-    if(WITH_VISP)
+    if(WITH_ViSP)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "list(APPEND VISP_COMPONENTS ${VISP_COMPONENTS})\n")
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_VISP ON)\n")
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_ViSP ON)\n")
         string(APPEND Engine3D_DEPENDENCIES ", libvisp-dev")
     endif()
-    if(WITH_VR)
-        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_VR ON)\n")
+    if(WITH_OpenVR)
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_OpenVR ON)\n")
         string(APPEND Engine3D_DEPENDENCIES ", libopenvr-dev")
     endif()
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(Engine3D_DEPENDENCIES \"${Engine3D_DEPENDENCIES}\")\n")

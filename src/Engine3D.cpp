@@ -29,7 +29,7 @@ namespace MIS
         , boxShader(nullptr)
         , cameras(1, new Camera)
         , mainCamera(cameras.first())
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         , vrCameras(2, nullptr)
         , eyesFBO(nullptr)
         , hands(2, nullptr)
@@ -89,7 +89,7 @@ namespace MIS
         connect(this, SIGNAL(askPicture()), this, SLOT(takePicture()));
         connect(this, SIGNAL(askDepth(unsigned int, unsigned int)), this, SLOT(getDepth(unsigned int, unsigned int)));
         connect(this, SIGNAL(askDepthMap()), this, SLOT(takeDepthMap()));
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
         connect(this, SIGNAL(askPFM()), this, SLOT(takePFM()));
 #endif
         connect(this, SIGNAL(askDestroy()), this, SLOT(destroy()));
@@ -99,7 +99,7 @@ namespace MIS
         connect(this, SIGNAL(askGlobalIllumination(float)), this, SLOT(setGlobalIllumination(float)));
         connect(this, SIGNAL(askFaceColor(vec3)), this, SLOT(setFaceColor(vec3)));
             
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         if(renderMode == NONE) connect(&vrTimer, SIGNAL(timeout()), this, SIGNAL(askUpdate()));
         else connect(&vrTimer, SIGNAL(timeout()), this, SLOT(update()));
         connect(this, SIGNAL(askStopVR()), this, SLOT(stopVR()));
@@ -137,7 +137,7 @@ namespace MIS
         bool visible = false;
         for (Camera* camera : cameras)
             visible |= camera->isModelVisible(model);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         if (vr.isActive()) for (Camera* vrCamera : vrCameras) visible |= vrCamera->isModelVisible(model);
 #endif
         return visible;
@@ -189,7 +189,7 @@ namespace MIS
         if (!maxVertexLimitEnabled || currentVertexNumber + model->getVertexNumber() <= maxVertexLimit)
         {
             bool onScreen = false;
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
             if (vr.isActive())
             {
                 for (Camera* vrCamera : vrCameras)
@@ -202,7 +202,7 @@ namespace MIS
                 for (Camera* camera : cameras)
                     onScreen |= isOnCamera(model, camera);
                 if (onScreen) currentVertexNumber += model->getVertexNumber();
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
             }
 #endif
             return onScreen;
@@ -495,7 +495,7 @@ namespace MIS
             setGlobalIllumination(globalIllumination);
             setFaceColor(faceColor);
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
             hands[0] = new ModelOBJ(":/Models/oculus_controller_L.obj", shaders[Model3D::TRIANGLES], boxShader);
             hands[1] = new ModelOBJ(":/Models/oculus_controller_R.obj", shaders[Model3D::TRIANGLES], boxShader);
             floor = new ModelOBJ(":/Models/floor.obj", shaders[Model3D::TRIANGLES], boxShader);
@@ -634,7 +634,7 @@ namespace MIS
             if (!getRenderAsked())
             {
                 setRenderAsked(true);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                 if (vr.isActive()) emit updateVRInputs();
 #endif
                 emit askRender();
@@ -967,7 +967,7 @@ namespace MIS
         return depthPicture;
     }
 
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
     /**
      * @brief      Asks a full depth render in a vpImage.
      *
@@ -1048,7 +1048,7 @@ namespace MIS
     }
 #endif
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
     /**
      * @brief      Starts VR.
      *
@@ -1608,7 +1608,7 @@ namespace MIS
                     }
                 }
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                 if (vr.isActive())
                 {
                     vr.getEyeTransformations();
@@ -1794,7 +1794,7 @@ namespace MIS
      */
     void Engine3D::setFrame()
     {
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         if (vr.isActive())
         {
             frameMutex.lock();
@@ -1812,7 +1812,7 @@ namespace MIS
                 frameMutex.unlock();
                 emit frameReady(frame);
             }
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         }
 #endif
     }
@@ -1834,7 +1834,7 @@ namespace MIS
         {
             modelsUpdaterMutex.lock();
             makeCurrent();
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
             if (vr.isActive()) stopVR();
             for(ModelOBJ* hand : hands)
             {

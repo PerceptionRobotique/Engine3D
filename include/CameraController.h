@@ -12,7 +12,7 @@
 #include "Camera.h"
 #include "Engine3D.h"
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
 #include "VRheadset.h"
 #endif
 
@@ -111,7 +111,7 @@ namespace MIS
         void setCurrentControllerProfile(QString newProfile);
 #endif
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         void setVRheadset(VRheadset* vrHeadset);
         void setVRInputsUpdaterEnabled(bool enabled);
         void updateVRInputs(VRheadset* vrHeadset = nullptr);
@@ -154,7 +154,7 @@ namespace MIS
         QHash<QString, QHash<Action, Controller::Input>> controllerProfiles;
 #endif
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         QTimer vrInputsUpdater;
         VRheadset* vr;
 #endif

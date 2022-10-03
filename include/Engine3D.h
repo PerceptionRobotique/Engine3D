@@ -16,12 +16,12 @@
 #include <QFuture>
 #include <QFutureWatcher>
 
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
 #include <visp/vpImage.h>
 #include <visp/vpImageTools.h>
 #endif
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
 #include <VRheadset.h>
 #endif
 
@@ -102,10 +102,10 @@ namespace MIS
         vec4 getNearestPoint(unsigned int h, unsigned int w, unsigned int maxDist = 20);
         QVector<QVector<float>> takeDepthMeterMap();
         QImage takeDepthPicture();
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
         vpImage<float> takePFM();
 #endif
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         bool startVR();
         void stopVR();
         VRheadset* getVRheadset();
@@ -148,7 +148,7 @@ namespace MIS
         QOpenGLShaderProgram* boxShader;
         QVector<Camera*> cameras;
         Camera* mainCamera;
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         VRheadset vr;
         QVector<Camera*> vrCameras;
         QTimer vrTimer;
@@ -175,7 +175,7 @@ namespace MIS
         QImage pictureAsked;
         float depthAsked;
         QVector<QVector<float>> depthMapAsked;
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
         vpImage<float> pfmAsked;
 #endif
 
@@ -222,7 +222,7 @@ namespace MIS
         void askPicture();
         void askDepth(unsigned int h, unsigned int w);
         void askDepthMap();
-#ifdef HAVE_VISP
+#ifdef HAVE_ViSP
         void askPFM();
 #endif
         void pictureTaken();
@@ -235,7 +235,7 @@ namespace MIS
         void askGlobalIllumination(float);
         void askFaceColor(vec3);
         void renderModeChanged();
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         void vrStarted();
         void askStopVR();
         void vrStopped();

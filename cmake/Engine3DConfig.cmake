@@ -1,5 +1,6 @@
+include(${Engine3D_DIR}/cmake/Engine3DExtras.cmake)
+
 ### QT ###
-set(QT_VERSION "6.3.2" CACHE STRING "Currently installed Qt version")
 if(WIN32)
     set(QT_DIR "C:/Qt/${QT_VERSION}/msvc2019_64/lib/cmake/Qt6" CACHE PATH "Qt directory")
 elseif(UNIX)
@@ -39,6 +40,10 @@ endif()
 find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
+if(NOT QT_VERSION STREQUAL QT_REQUIRED_VERSION)
+    message(FATAL_ERROR "Found Qt version ${QT_VERSION} doesn't match Qt required version ${QT_REQUIRED_VERSION}")
+endif()
+
 list(APPEND Engine3D_LIBRARIES ${QT_LINKS})
 
 ### GLM ###
@@ -50,7 +55,6 @@ else()
 endif()
 
 if(WIN32)
-    include(${Engine3D_DIR}/Engine3DExtras.cmake)
     ### CONTROLLER ###
     if(WITH_CONTROLLER)
         add_compile_definitions(HAVE_CONTROLLER)
@@ -71,9 +75,9 @@ if(WIN32)
     endif()
 
     ### ViSP ###
-    if(WITH_VISP)
-        set(WITH_VISP true)
-        add_compile_definitions(HAVE_VISP)
+    if(WITH_ViSP)
+        set(WITH_ViSP true)
+        add_compile_definitions(HAVE_ViSP)
 
         set(VISP_DIR ${Engine3D_DIR}/3rdParty/ViSP)
         find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
@@ -92,9 +96,9 @@ if(WIN32)
     endif()
 
     ### OpenVR ###
-    if(WITH_VR)
-        set(WITH_VR true)
-        add_compile_definitions(HAVE_VR)
+    if(WITH_OpenVR)
+        set(WITH_OpenVR true)
+        add_compile_definitions(HAVE_OpenVR)
 
         list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/OpenVR)
         list(APPEND Engine3D_LIBRARIES_DIRS ${Engine3D_DIR}/lib/$<CONFIG>/3rdParty/OpenVR)
@@ -111,8 +115,8 @@ elseif(UNIX)
         find_package(OpenCV REQUIRED)
         list(APPEND Engine3D_INCLUDE_DIRS ${OpenCV_INCLUDE_DIRS})
     endif()
-    if(WITH_VISP)
-        add_compile_definitions(HAVE_VISP)
+    if(WITH_ViSP)
+        add_compile_definitions(HAVE_ViSP)
         find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
         if(ANDROID)
             set(VISP_INCLUDE_DIRS ${VISP_DIR}/include)
@@ -120,8 +124,8 @@ elseif(UNIX)
         list(APPEND Engine3D_INCLUDE_DIRS ${VISP_INCLUDE_DIRS})
         list(APPEND Engine3D_LIBRARIES ${VISP_LIBRARIES})
     endif()
-    if(WITH_VR)
-        add_compile_definitions(HAVE_VR)
+    if(WITH_OpenVR)
+        add_compile_definitions(HAVE_OpenVR)
         list(APPEND Engine3D_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
     endif()
 endif()

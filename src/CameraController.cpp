@@ -19,7 +19,7 @@ namespace MIS
         , controllerIsMoving(false)
         , currentControllerProfile("Standard")
 #endif
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         , vr(nullptr)
 #endif
     {
@@ -46,7 +46,7 @@ namespace MIS
         controllerUpdater.start(10);
 #endif
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         connect(&vrInputsUpdater, SIGNAL(timeout()), this, SLOT(updateVRInputs()));
 #endif
     }
@@ -54,7 +54,7 @@ namespace MIS
     CameraController::CameraController(Engine3D* _engine, QWidget* _parent)
         : CameraController(_engine->getMainCamera(), _parent)
     {
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         vr = _engine->getVRheadset();
 #endif
 
@@ -153,7 +153,7 @@ namespace MIS
 #endif
                             camera->rotate((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * r.x() / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
                             camera->rotate(rotationSensitivity * r.y() / 50.0f, vec3(1.0f, 0.0f, 0.0f), verticalAxisEnabled);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                             if (vr->isActive())
                                 vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * r.x() / 5000.0f), glm::vec3(0, 1, 0));
 #endif
@@ -228,7 +228,7 @@ namespace MIS
 
                     camera->rotate((abs(camera->getRoll()) == 180.0f ? -1.0f : 1.0f) * rotationSensitivity * rx / 50.0f, vec3(0.0f, 1.0f, 0.0f), verticalAxisEnabled);
                     camera->rotate(rotationSensitivity * ry / 50.0f, vec3(1.0f, 0.0f, 0.0f), verticalAxisEnabled);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                     if (vr->isActive())
                         vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * rx / 5000.0f), glm::vec3(0, 1, 0));
 #endif
@@ -303,7 +303,7 @@ namespace MIS
             case K_Q:
                 keysDown[K_Q] = true;
                 camera->rotate(rotationSensitivity, vec3(0, 1, 0), verticalAxisEnabled);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                 if (vr->isActive())
                     vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)((abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity / 100.0f), glm::vec3(0, 1, 0));
 #endif
@@ -317,7 +317,7 @@ namespace MIS
             case K_D:
                 keysDown[K_D] = true;
                 camera->rotate(-rotationSensitivity, vec3(0, 1, 0), verticalAxisEnabled);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                 if (vr->isActive())
                     vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity / 100.0f), glm::vec3(0, 1, 0));
 #endif
@@ -403,7 +403,7 @@ namespace MIS
         }
     }
 
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
     void CameraController::setVRheadset(VRheadset* vrHeadset)
     {
         vr = vrHeadset;
@@ -569,7 +569,7 @@ namespace MIS
         Controller::update();
         bool controllerMoving = false;
         bool onGround;
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
         onGround = onGroundEnabled || vr->isActive();
 #else
         onGround = onGroundEnabled;
@@ -604,7 +604,7 @@ namespace MIS
 
                 case ROTATE_Y:
                     camera->rotate(-rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 2.0f, vec3(0, 1, 0), verticalAxisEnabled);
-#ifdef HAVE_VR
+#ifdef HAVE_OpenVR
                     if (vr->isActive())
                         vr->m_mat4EyeRotOffset = glm::rotate(vr->m_mat4EyeRotOffset, (float)(-(abs(camera->getRoll()) == 180.0f ? 1.0f : 1.0f) * rotationSensitivity * Controller::getInput(controllerProfiles[currentControllerProfile][ROTATE_Y]) / 100.0f), glm::vec3(0, 1, 0));
 #endif
