@@ -357,6 +357,16 @@ namespace MIS
     }
 
     /**
+     * @brief      Determines if view distance is enabled.
+     *
+     * @return     True if view distance is enabled, False otherwise.
+     */
+    float Engine3D::getViewDistance() const
+    {
+        return viewDistance;
+    }
+
+    /**
      * @brief      Determines if maximum vertex limit enabled.
      *
      * @return     True if maximum vertex limit enabled, False otherwise.
@@ -1583,7 +1593,7 @@ namespace MIS
                             camera->getBackgroundColor().blueF(),
                             camera->getBackgroundColor().alphaF());
                         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+                        
                         for (QOpenGLShaderProgram* shader : shaders)
                         {
                             shader->bind();

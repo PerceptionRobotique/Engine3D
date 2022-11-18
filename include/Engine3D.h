@@ -75,6 +75,7 @@ namespace MIS
         QVector<Model3D*>& getModels();
         bool getWaitLoading() const;
         bool isViewDistanceEnabled() const;
+        float getViewDistance() const;
         bool isMaxVertexLimitEnabled() const;
         float getMaxVertexLimit() const;
         vec3 getFaceColor() const;

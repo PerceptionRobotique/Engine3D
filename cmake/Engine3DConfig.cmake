@@ -66,7 +66,6 @@ if(WIN32)
     
     ### OpenCV ###
     if(WITH_OPENCV)
-        set(WITH_OPENCV true)
         add_compile_definitions(HAVE_OPENCV)
 
         list(APPEND Engine3D_INCLUDE_DIRS ${Engine3D_DIR}/include/3rdParty/OpenCV)
