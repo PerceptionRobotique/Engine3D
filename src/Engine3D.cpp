@@ -32,8 +32,11 @@ namespace MIS
 #ifdef HAVE_OpenVR
         , vrCameras(2, nullptr)
         , eyesFBO(nullptr)
+        , vrHandsEnabled(true)
         , hands(2, nullptr)
+        , vrFloorEnabled(true)
         , floor(nullptr)
+        , headLocked(false)
 #endif
         , frameCounter(false)
         , lineWidth(3.0f)
@@ -190,7 +193,7 @@ namespace MIS
         {
             bool onScreen = false;
 #ifdef HAVE_OpenVR
-            if (vr.isActive())
+            if (vr.isActive() && !headLocked)
             {
                 for (Camera* vrCamera : vrCameras)
                     onScreen |= isOnCamera(model, vrCamera);
@@ -361,6 +364,11 @@ namespace MIS
     bool Engine3D::isMaxVertexLimitEnabled() const
     {
         return maxVertexLimitEnabled;
+    }
+
+    float Engine3D::getMaxVertexLimit() const
+    {
+        return maxVertexLimit / 1000000;
     }
 
     /**
@@ -635,7 +643,10 @@ namespace MIS
             {
                 setRenderAsked(true);
 #ifdef HAVE_OpenVR
-                if (vr.isActive()) emit updateVRInputs();
+                if (vr.isActive())
+                {
+                    emit updateVRInputs();
+                }
 #endif
                 emit askRender();
             }
@@ -1157,6 +1168,42 @@ namespace MIS
     {
         return eyesFBO;
     }
+
+    void Engine3D::setVRHandsEnabled(bool enabled)
+    {
+        vrHandsEnabled = enabled;
+    }
+
+    void Engine3D::setVRFloorEnabled(bool enabled)
+    {
+        vrFloorEnabled = enabled;
+    }
+
+    void Engine3D::lockHead(bool enabled)
+    {
+        static bool wasViewDistanceEnabled = viewDistanceEnabled;
+        static bool wasMaxVertexLimitEnabled = maxVertexLimitEnabled;
+        headLocked = enabled;
+        if (headLocked)
+        {
+            wasViewDistanceEnabled = viewDistanceEnabled;
+            wasMaxVertexLimitEnabled = maxVertexLimitEnabled;
+            setViewDistanceEnabled(false);
+            setMaxVertexLimitEnabled(false);
+            mainCamera->setActive(true);
+        }
+        else
+        {
+            setViewDistanceEnabled(wasViewDistanceEnabled);
+            setMaxVertexLimitEnabled(wasMaxVertexLimitEnabled);
+            mainCamera->setActive(false);
+        }
+    }
+
+    bool Engine3D::isHeadLocked() const
+    {
+        return headLocked;
+    }
 #endif
 
     /**
@@ -1612,11 +1659,14 @@ namespace MIS
                 if (vr.isActive())
                 {
                     vr.getEyeTransformations();
-                    mainCamera->setRotation(vr.m_mat4eyePosLeft);
-                    vrCameras[0]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosLeft[3]);
-                    vrCameras[1]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosRight[3]);
-                    vrCameras[0]->setRotation(vr.m_mat4eyePosLeft);
-                    vrCameras[1]->setRotation(vr.m_mat4eyePosRight);
+                    if (!headLocked)
+                    {
+                        mainCamera->setRotation(vr.m_mat4eyePosLeft);
+                        vrCameras[0]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosLeft[3]);
+                        vrCameras[1]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + vr.m_mat4eyePosRight[3]);
+                        vrCameras[0]->setRotation(vr.m_mat4eyePosLeft);
+                        vrCameras[1]->setRotation(vr.m_mat4eyePosRight);
+                    }
 
                     for (unsigned int i = 0 ; i < 2 ; i++)
                     {
@@ -1704,26 +1754,32 @@ namespace MIS
                             }
 
                             vr.getHandTransformations();
-                            for (unsigned int i = 0; i < 2; i++)
+                            if (vrHandsEnabled)
                             {
-                                if (hands[i]->isPrepared())
+                                for (unsigned int i = 0; i < 2; i++)
                                 {
-                                    mat4 hp = i == 0 ? vr.m_mat4handPoseLeft : vr.m_mat4handPoseRight;
-                                    hands[i]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + hp[3]);
-                                    hands[i]->setRotation(hp);
-                                    if (!hands[i]->isOnRAM()) hands[i]->loadRAM();
-                                    if (!hands[i]->isOnVRAM()) hands[i]->loadVRAM();
-                                    hands[i]->draw();
-                                    hands[i]->drawBox();
+                                    if (hands[i]->isPrepared())
+                                    {
+                                        mat4 hp = i == 0 ? vr.m_mat4handPoseLeft : vr.m_mat4handPoseRight;
+                                        hands[i]->setPosition(vec4(mainCamera->getPosition(), 1.0f) + hp[3]);
+                                        hands[i]->setRotation(hp);
+                                        if (!hands[i]->isOnRAM()) hands[i]->loadRAM();
+                                        if (!hands[i]->isOnVRAM()) hands[i]->loadVRAM();
+                                        hands[i]->draw();
+                                        hands[i]->drawBox();
+                                    }
                                 }
                             }
-                            if (floor->isPrepared())
+                            if (vrFloorEnabled)
                             {
-                                floor->setPosition(vec4(mainCamera->getPosition(), 1.0f));
-                                if (!floor->isOnRAM()) floor->loadRAM();
-                                if (!floor->isOnVRAM()) floor->loadVRAM();
-                                floor->draw();
-                                floor->drawBox();
+                                if (floor->isPrepared())
+                                {
+                                    floor->setPosition(vec4(mainCamera->getPosition(), 1.0f));
+                                    if (!floor->isOnRAM()) floor->loadRAM();
+                                    if (!floor->isOnVRAM()) floor->loadVRAM();
+                                    floor->draw();
+                                    floor->drawBox();
+                                }
                             }
                             vrCameras[i]->release();
                             

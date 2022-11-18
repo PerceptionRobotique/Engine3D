@@ -41,7 +41,6 @@ namespace MIS
 		pos.resize(vertexNumber);
 		color.resize(3 * vertexNumber);
 		if (hasIntensity()) intensity.resize(vertexNumber);
-
 		file->read((char*)pos.data(), vertexNumber * sizeof(glm::vec3));
 		file->read((char*)color.data(), 3 * vertexNumber * sizeof(unsigned char));
 		if (hasIntensity()) file->read((char*)intensity.data(), vertexNumber * sizeof(unsigned char));

@@ -1,18 +1,21 @@
-# list(APPEND OpenCV_COMPONENTS
-#     core
-#     calib3d
-#     dnn
-#     features2d
-#     flann
-#     highgui
-#     imgcodecs
-#     imgproc
-#     video
-#     videoio
-# )
-list(APPEND OpenCV_COMPONENTS
-    world
-)
+if(WIN32)
+    list(APPEND OpenCV_COMPONENTS
+        world
+    )
+elseif(UNIX)
+    list(APPEND OpenCV_COMPONENTS
+        core
+        calib3d
+        dnn
+        features2d
+        flann
+        highgui
+        imgcodecs
+        imgproc
+        video
+        videoio
+    )
+endif()
 
 # list(APPEND OpenCV_EXTRA_DLL
 #     inference_engine$<$<CONFIG:Debug>:d>

@@ -1,4 +1,8 @@
-include(${Engine3D_DIR}/cmake/Engine3DExtras.cmake)
+if(WIN32)
+    include(${Engine3D_DIR}/cmake/Engine3DExtras.cmake)
+elseif(UNIX)
+    include(${Engine3D_DIR}/Engine3DExtras.cmake)
+endif()
 
 ### QT ###
 if(WIN32)
@@ -41,7 +45,7 @@ find_package(QT NAMES Qt6 COMPONENTS ${QT_COMPONENTS} REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS ${QT_COMPONENTS} REQUIRED)
 
 if(NOT QT_VERSION STREQUAL QT_REQUIRED_VERSION)
-    message(FATAL_ERROR "Found Qt version ${QT_VERSION} doesn't match Qt required version ${QT_REQUIRED_VERSION}")
+    message(FATAL_ERROR "Found Qt version \"${QT_VERSION}\" doesn't match Qt required version \"${QT_REQUIRED_VERSION}\"")
 endif()
 
 list(APPEND Engine3D_LIBRARIES ${QT_LINKS})
@@ -106,7 +110,6 @@ if(WIN32)
         list(APPEND Engine3D_LIBRARIES ${OPENVR_LIBS})
     endif()
 elseif(UNIX)
-    include(${Engine3D_DIR}/Engine3DExtras.cmake)
     if(WITH_CONTROLLER)
         add_compile_definitions(HAVE_CONTROLLER)
     endif()

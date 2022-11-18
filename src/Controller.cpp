@@ -235,4 +235,47 @@ QHash<Controller::Input, short> Controller::values;
         return value;
     }
 
+#ifdef HAVE_OpenVR
+    float Controller::getVRInput(VRheadset* vr, Input input)
+    {
+        float inputValue = 0;
+        if (vr->isActive())
+        {
+            for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
+            {
+                vr::VRControllerState_t state;
+                if (vr->m_pHMD->GetControllerState(unDevice, &state, sizeof(state)))
+                {
+                    switch (input)
+                    {
+                    case A:
+                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
+                            inputValue = (float)((state.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_A)) > 0);
+                        break;
+
+                    case B:
+                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_RightHand)
+                            inputValue = (float)((state.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) > 0);
+                        break;
+
+                    case X:
+                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                            inputValue = (float)((state.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_A)) > 0);
+                        break;
+
+                    case Y:
+                        if (vr->m_pHMD->GetInt32TrackedDeviceProperty(unDevice, vr::Prop_ControllerRoleHint_Int32) == vr::TrackedControllerRole_LeftHand)
+                            inputValue = (float)((state.ulButtonPressed & vr::ButtonMaskFromId(vr::k_EButton_ApplicationMenu)) > 0);
+                        break;
+
+                    default:
+                        break;
+                    }
+                }
+            }
+        }
+        return inputValue;
+    }
+#endif
+
 }

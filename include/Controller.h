@@ -16,6 +16,10 @@
 #endif
 #include <cmath>
 
+#ifdef HAVE_OpenVR
+#include <VRheadset.h>
+#endif
+
 namespace MIS
 {
 
@@ -50,6 +54,9 @@ namespace MIS
 
         static void update();
         static float getInput(Input input);
+#ifdef HAVE_OpenVR
+        static float getVRInput(VRheadset* vr, Input input);
+#endif
 
     private:
 #if defined _WIN32 || defined _WIN64

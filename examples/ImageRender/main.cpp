@@ -1,11 +1,13 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <Engine3D.h>
+
+#include <QFileDialog>
 
 using namespace MIS;
 
 int main(int argc, char* argv[])
 {
-	QGuiApplication app(argc, argv);
+	QApplication app(argc, argv);
 	Q_UNUSED(app);
 
 	Engine3D engine(Engine3D::DIRECT);

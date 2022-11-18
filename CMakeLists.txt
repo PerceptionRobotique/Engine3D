@@ -203,6 +203,9 @@ if(WIN32)
     if(WITH_OPENCV)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_OPENCV ON)\n")
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(OpenCV_VERSION ${OpenCV_VERSION_MAJOR}${OpenCV_VERSION_MINOR}${OpenCV_VERSION_PATCH})\n")
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "add_compile_definitions(\"CV_VERSION_MAJOR=${OpenCV_VERSION_MAJOR}\")\n")
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "add_compile_definitions(\"CV_VERSION_MINOR=${OpenCV_VERSION_MINOR}\")\n")
+        file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "add_compile_definitions(\"CV_VERSION_REVISION=${OpenCV_VERSION_PATCH}\")\n")
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "list(APPEND OpenCV_COMPONENTS ${OpenCV_COMPONENTS})\n")
     endif()
     if(WITH_ViSP)
@@ -229,15 +232,17 @@ if(WIN32)
     endif()
     include(CPack)
 elseif(UNIX)
-    find_program(LSB_RELEASE_EXEC lsb_release)
-    execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
-        OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-    execute_process(COMMAND ${LSB_RELEASE_EXEC} -rs
-        OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+    if(NOT ANDROID)
+        find_program(LSB_RELEASE_EXEC lsb_release)
+        execute_process(COMMAND ${LSB_RELEASE_EXEC} -is
+            OUTPUT_VARIABLE LSB_RELEASE_ID_SHORT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+        execute_process(COMMAND ${LSB_RELEASE_EXEC} -rs
+            OUTPUT_VARIABLE LSB_RELEASE_VERSION_SHORT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
 
     install(TARGETS Engine3D DESTINATION lib)
     if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/libEngine3Dd.so)
@@ -259,6 +264,7 @@ elseif(UNIX)
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(Engine3D_VERSION_MINOR ${Engine3D_VERSION_MINOR})\n")
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(Engine3D_VERSION_PATCH ${Engine3D_VERSION_PATCH})\n")
     file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "add_compile_definitions(\"ENGINE3D_VERSION=\\\"${Engine3D_VERSION}\\\"\")\n")
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(QT_REQUIRED_VERSION \"${QT_VERSION}\")\n")
     set(Engine3D_DEPENDENCIES "qt6-base-dev, ffmpeg")
     if(WITH_CONTROLLER)
         file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake "set(WITH_CONTROLLER ON)\n")

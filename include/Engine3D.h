@@ -76,6 +76,7 @@ namespace MIS
         bool getWaitLoading() const;
         bool isViewDistanceEnabled() const;
         bool isMaxVertexLimitEnabled() const;
+        float getMaxVertexLimit() const;
         vec3 getFaceColor() const;
 
         void lockDraw();
@@ -111,6 +112,10 @@ namespace MIS
         VRheadset* getVRheadset();
         Camera* getVRCamera(unsigned int index);
         QOpenGLFramebufferObject* getEyesFBO();
+        void setVRHandsEnabled(bool enabled);
+        void setVRFloorEnabled(bool enabled);
+        void lockHead(bool enabled);
+        bool isHeadLocked() const;
 #endif
         void destroy();
 
@@ -153,8 +158,11 @@ namespace MIS
         QVector<Camera*> vrCameras;
         QTimer vrTimer;
         QOpenGLFramebufferObject* eyesFBO;
+        bool vrHandsEnabled;
         QVector<ModelOBJ*> hands;
+        bool vrFloorEnabled;
         ModelOBJ* floor;
+        bool headLocked;
 #endif
         QVector<Model3D*> models;
 

@@ -18,6 +18,10 @@ list(APPEND VISP_COMPONENTS
     visual_features
 )
 
+if(WIN32)
+    list(APPEND VISP_COMPONENTS vs)
+endif()
+
 find_package(VISP COMPONENTS ${VISP_COMPONENTS} REQUIRED)
 if(VISP_FOUND)
     add_compile_definitions(HAVE_ViSP)

@@ -36,14 +36,16 @@ int main(int argc, char* argv[])
 	{
 		settings.setValue("FileName", fileName);
 		settings.sync();
-		engine.openModel(fileName);	
-		QMessageBox stopBox;
-		stopBox.setText("VR is running.");
-		stopBox.setStandardButtons(QMessageBox::Close);
-		engine.startVR();
-		cameraController.setVRInputsUpdaterEnabled(true);
-		stopBox.exec();
-		engine.stopVR();
+		engine.openModel(fileName);
+		engine.getMainCamera()->lookAt(engine.getModel(0));
+		engine.update();
+		//QMessageBox stopBox;
+		//stopBox.setText("VR is running.");
+		//stopBox.setStandardButtons(QMessageBox::Close);
+		//engine.startVR();
+		//cameraController.setVRInputsUpdaterEnabled(true);
+		//stopBox.exec();
+		//engine.stopVR();
 	}
 
 	engine.destroy();

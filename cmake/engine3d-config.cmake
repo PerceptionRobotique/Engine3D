@@ -1,1 +1,5 @@
-include(${Engine3D_DIR}/cmake/Engine3DConfig.cmake)
+if(WIN32)
+	include(${Engine3D_DIR}/cmake/Engine3DConfig.cmake)
+elseif(UNIX)
+	include(${Engine3D_DIR}/Engine3DConfig.cmake)
+endif()

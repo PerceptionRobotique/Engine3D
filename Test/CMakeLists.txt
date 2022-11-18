@@ -39,7 +39,7 @@ if(WIN32)
     endforeach()
 
     if(WITH_OpenVR)
-        add_custom_command(TARGET TEST POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENVR_DIR}/lib/openvr_api64$<$<CONFIG:Debug>:d>.dll" $<TARGET_FILE_DIR:TEST>)
+        add_custom_command(TARGET TEST POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${OPENVR_DIR}/bin/win64/$<CONFIG>/openvr_api64$<$<CONFIG:Debug>:d>.dll" $<TARGET_FILE_DIR:TEST>)
     endif()
 
     foreach(qt_plugin ${QT_PLUGINS})

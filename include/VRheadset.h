@@ -2,7 +2,11 @@
 #define __VRHEADSET_H__
 
 #include <Engine3D_global.h>
+#ifdef _WIN32
+#include <openvr.h>
+#elif __linux__
 #include <openvr/openvr.h>
+#endif
 
 #include <string>
 #include <vector>
