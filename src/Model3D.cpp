@@ -17,6 +17,7 @@ namespace MIS
         , scale(1.0f)
         , pointSizeEnabled(false)
         , pointSize(1.0f)
+        , axisModifier(1, 1, 1)
         , prepared(false)
         , liveLoading(true)
         , showIntensity(false)
@@ -188,6 +189,11 @@ namespace MIS
         return pointSize;
     }
 
+    vec3 Model3D::getAxisModifier() const
+    {
+        return axisModifier;
+    }
+
     mat4 Model3D::getwMo() const
     {
         return getPose();
@@ -195,7 +201,7 @@ namespace MIS
 
     Model3D::AABB Model3D::getAABB() const
     {
-        return getScale() * aabb;
+        return getScale() * getAxisModifier() * aabb;
     }
 
     bool Model3D::isPointInAABB(vec3 point) const
@@ -214,7 +220,7 @@ namespace MIS
     {
         QVector<vec3> b;
         for (vec3 point : box)
-            b.append(getScale() * point);
+            b.append(getScale() * getAxisModifier() * point);
         return b;
     }
 
@@ -755,6 +761,7 @@ namespace MIS
                             else
                                 f->glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
 #endif
+                            f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "axisModifier"), 1, value_ptr(getAxisModifier()));
 
                             render(f);
 
@@ -801,6 +808,9 @@ namespace MIS
                                 f->glUniformMatrix4fv(f->glGetUniformLocation(boxShader->programId(), "wMo"), 1, GL_FALSE, value_ptr(wMo));
                                 boxShader->setUniformValue("scale", getScale());
                                 f->glUniform3fv(f->glGetUniformLocation(boxShader->programId(), "color"), 1, value_ptr(color));
+                                if (isOpacityEnabled()) boxShader->setUniformValue("opacity", getOpacity());
+                                else boxShader->setUniformValue("opacity", 1.0f);
+                                f->glUniform3fv(f->glGetUniformLocation(boxShader->programId(), "axisModifier"), 1, value_ptr(getAxisModifier()));
 
                                 boxBuffer.bind();
                                 boxShader->enableAttributeArray("in_vertex");
@@ -864,6 +874,13 @@ namespace MIS
             if(pointSizeEnabled)
                 emit modelRenderChanged();
         }
+    }
+
+    void Model3D::setAxisModifier(vec3 axisModifier)
+    {
+        this->axisModifier = axisModifier;
+        emit modelChanged();
+        emit modelRenderChanged();
     }
 
     void Model3D::setwMo(mat4 wMo)

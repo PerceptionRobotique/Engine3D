@@ -36,6 +36,7 @@ namespace MIS
 		float getScale() const override;
 		bool isPointSizeEnabled() const override;
 		float getPointSize() const override;
+		vec3 getAxisModifier() const override;
 		mat4 getwMo() const override;
 		bool hasIntensity() const override;
 		bool getShowIntensity() const override;

@@ -112,6 +112,7 @@ namespace MIS
         virtual float getScale() const;
         virtual bool isPointSizeEnabled() const;
         virtual float getPointSize() const;
+        virtual vec3 getAxisModifier() const;
         virtual mat4 getwMo() const;
         AABB getAABB() const;
         bool isPointInAABB(vec3 point) const;
@@ -179,6 +180,7 @@ namespace MIS
         virtual void setScale(double _scale);
         virtual void setPointSizeEnabled(bool enabled);
         virtual void setPointSize(float pointSize);
+        virtual void setAxisModifier(vec3 axisModifier);
         void setwMo(mat4 wMo);
         void setGlobalColorEnabled(bool enabled);
         void setGlobalColor(QColor color);
@@ -246,6 +248,7 @@ namespace MIS
         float scale;
         bool pointSizeEnabled;
         float pointSize;
+        vec3 axisModifier;
         QVector<glm::vec3> pos;
         QVector<unsigned char> color;
         QVector<unsigned char> intensity;
@@ -317,6 +320,22 @@ namespace MIS
         _aabb.gravity = vec3(vec4(vec4(aabb.gravity, 1.0f) * matrix) / vec4(vec4(aabb.gravity, 1.0f) * matrix).w);
         _aabb.fix();
         return _aabb;
+    }
+
+    inline Model3D::AABB operator*(const vec3& v, const Model3D::AABB& aabb)
+    {
+        Model3D::AABB _aabb;
+        _aabb.min = v * aabb.min;
+        _aabb.max = v * aabb.max;
+        _aabb.center = v * aabb.center;
+        _aabb.gravity = v * aabb.gravity;
+        _aabb.fix();
+        return _aabb;
+    }
+
+    inline Model3D::AABB operator*(const Model3D::AABB& aabb, const vec3& v)
+    {
+        return v * aabb;
     }
 
     inline QDebug operator<<(QDebug os, const Model3D::AABB& aabb)

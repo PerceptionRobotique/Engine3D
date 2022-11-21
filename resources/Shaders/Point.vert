@@ -9,6 +9,7 @@ attribute vec3 in_vertex;
 attribute vec3 in_color;
 attribute float in_intensity;
 
+uniform vec3 axisModifier;
 uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
@@ -28,7 +29,7 @@ varying vec4 color;
 
 void main()
 {
-    vec3 vertex = in_vertex * scale;
+    vec3 vertex = scale * axisModifier * in_vertex;
     gl_PointSize = pointSize;
 
     if(equirectangular)

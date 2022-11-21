@@ -38,7 +38,8 @@ int main(int argc, char* argv[])
 		settings.sync();
 		engine.openModel(fileName);
 		engine.getMainCamera()->lookAt(engine.getModel(0));
-		engine.update();
+		engine.getModels().last()->setBoxVisible(true);
+		engine.takePicture().save("frame.png");
 		//QMessageBox stopBox;
 		//stopBox.setText("VR is running.");
 		//stopBox.setStandardButtons(QMessageBox::Close);

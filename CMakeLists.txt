@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(Engine3D VERSION 2.6.3)
+project(Engine3D VERSION 2.6.4)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)

@@ -182,6 +182,11 @@ namespace MIS
 		return main->ModelBIN::getPointSize();
 	}
 
+	vec3 Octree::getAxisModifier() const
+	{
+		return main->ModelBIN::getAxisModifier();
+	}
+
 	mat4 Octree::getwMo() const
 	{
 		return main->ModelBIN::getwMo();

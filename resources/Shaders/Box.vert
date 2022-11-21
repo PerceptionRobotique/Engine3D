@@ -9,6 +9,7 @@ uniform mat4 wMo;
 uniform mat4 cMw;
 uniform mat4 iMc;
 uniform float scale;
+uniform vec3 axisModifier;
 
 uniform bool equirectangular;
 
@@ -16,7 +17,7 @@ attribute vec3 in_vertex;
 
 void main()
 {
-    vec3 vertex = in_vertex * scale;
+    vec3 vertex = scale * axisModifier * in_vertex;
     if(equirectangular)
     {
         // changement de repere objet -> camera
