@@ -16,6 +16,12 @@ namespace MIS
         emit objectMoved();
     }
 
+    void Object3DQt::translate(const float& tx, const float& ty, const float& tz, const bool& onGround)
+    {
+        Object3D::translate(tx, ty, tz, onGround);
+        emit objectMoved();
+    }
+
     void Object3DQt::rotate(const float& _angle, const vec3& _axis, const bool& _verticalAxis)
     {
         Object3D::rotate(_angle, _axis, _verticalAxis);
@@ -25,6 +31,24 @@ namespace MIS
     void Object3DQt::rotate(const mat4& _rotation, const bool& _verticalAxis)
     {
         Object3D::rotate(_rotation, _verticalAxis);
+        emit objectMoved();
+    }
+
+    void Object3DQt::rotateXYZ(const vec3& rotation, const bool& verticalAxis)
+    {
+        Object3D::rotateXYZ(rotation, verticalAxis);
+        emit objectMoved();
+    }
+
+    void Object3DQt::rotateYXZ(const vec3& rotation, const bool& verticalAxis)
+    {
+        Object3D::rotateYXZ(rotation, verticalAxis);
+        emit objectMoved();
+    }
+
+    void Object3DQt::rotateZYX(const vec3& rotation, const bool& verticalAxis)
+    {
+        Object3D::rotateZYX(rotation, verticalAxis);
         emit objectMoved();
     }
 
@@ -95,6 +119,12 @@ namespace MIS
     void Object3DQt::setPosition(const vec3& _position)
     {
         Object3D::setPosition(_position);
+        emit objectMoved();
+    }
+
+    void Object3DQt::setPosition(const float& tx, const float& ty, const float& tz)
+    {
+        Object3D::setPosition(tx, ty, tz);
         emit objectMoved();
     }
 

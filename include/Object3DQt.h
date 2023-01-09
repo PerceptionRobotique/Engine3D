@@ -21,8 +21,12 @@ namespace MIS
     public slots:
         //TRANSFORMS
         void translate(const vec3& _translation, const bool& _onGround = false);
+        void translate(const float& tx, const float& ty, const float& tz, const bool& onGround = false);
         void rotate(const float& _angle, const vec3& _axis, const bool& _verticalAxis = false);
         void rotate(const mat4& _rotation, const bool& _verticalAxis = false);
+        void rotateXYZ(const vec3& rotation, const bool& verticalAxis = false);
+        void rotateYXZ(const vec3& rotation, const bool& verticalAxis = false);
+        void rotateZYX(const vec3& rotation, const bool& verticalAxis = false);
         void yaw(const float& _yaw);
         void pitch(const float& _pitch);
         void roll(const float& _roll);
@@ -30,6 +34,7 @@ namespace MIS
         //SETTERS
         void setPose(const mat4& _pose);
         void setPosition(const vec3& _position);
+        void setPosition(const float& tx, const float& ty, const float& tz);
         void setPositionX(const float& _tx);
         void setPositionY(const float& _ty);
         void setPositionZ(const float& _tz);

@@ -27,6 +27,11 @@ namespace MIS
         }
     }
 
+    void Object3D::translate(const float& tx, const float& ty, const float& tz, const bool& onGround)
+    {
+        translate(vec3(tx, ty, tz), onGround);
+    }
+
     void Object3D::rotate(float _angle, const vec3& _axis, const bool& _verticalAxis)
     {
         if (_axis.y && _verticalAxis) _angle *= (1 - abs(getPitch()) / 90.0f);
@@ -57,6 +62,36 @@ namespace MIS
         pose = glm::rotate(pose, rot.y, vec3(0.0f, 1.0f, 0.0f));
         pose = glm::rotate(pose, rot.z, vec3(0.0f, 0.0f, 1.0f));
         if (_verticalAxis) setPitch(pitch);
+    }
+
+    void Object3D::rotateXYZ(const vec3& rotation, const bool& verticalAxis)
+    {
+        vec3 r = radians(rotation);
+        mat4 mrot(1.0);
+        mrot = glm::rotate(mrot, r.x, vec3(1.0f, 0.0f, 0.0f));
+        mrot = glm::rotate(mrot, r.y, vec3(0.0f, 1.0f, 0.0f));
+        mrot = glm::rotate(mrot, r.z, vec3(0.0f, 0.0f, 1.0f));
+        rotate(mrot, verticalAxis);
+    }
+
+    void Object3D::rotateYXZ(const vec3& rotation, const bool& verticalAxis)
+    {
+        vec3 r = radians(rotation);
+        mat4 mrot(1.0);
+        mrot = glm::rotate(mrot, r.y, vec3(0.0f, 1.0f, 0.0f));
+        mrot = glm::rotate(mrot, r.x, vec3(1.0f, 0.0f, 0.0f));
+        mrot = glm::rotate(mrot, r.z, vec3(0.0f, 0.0f, 1.0f));
+        rotate(mrot, verticalAxis);
+    }
+
+    void Object3D::rotateZYX(const vec3& rotation, const bool& verticalAxis)
+    {
+        vec3 r = radians(rotation);
+        mat4 mrot(1.0);
+        mrot = glm::rotate(mrot, r.z, vec3(0.0f, 0.0f, 1.0f));
+        mrot = glm::rotate(mrot, r.y, vec3(0.0f, 1.0f, 0.0f));
+        mrot = glm::rotate(mrot, r.x, vec3(1.0f, 0.0f, 0.0f));
+        rotate(mrot, verticalAxis);
     }
 
     void Object3D::setYawPitchRoll(const float& _yaw, const float& _pitch, const float& _roll)
@@ -110,6 +145,11 @@ namespace MIS
     void Object3D::setPosition(const vec3& _position)
     {
         pose[3] = vec4(_position, 1.0f);
+    }
+
+    void Object3D::setPosition(const float& tx, const float& ty, const float& tz)
+    {
+        setPosition(vec3(tx, ty, tz));
     }
 
     void Object3D::setPositionX(const float& _tx)

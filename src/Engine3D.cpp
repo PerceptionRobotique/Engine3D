@@ -1437,12 +1437,12 @@ namespace MIS
      */
     void Engine3D::sortModelsByDepthAndDistance(QHash<unsigned int, QMap<float, QList<Model3D*>>>& modelsByDepthAndDistance, QList<Model3D*>& modelsToUnload)
     {
-        QMap<unsigned int, QMap<float, QList<Model3D*>>> totlaModelsByDepthAndDistance;
+        QMap<unsigned int, QMap<float, QList<Model3D*>>> totalModelsByDepthAndDistance;
         for (Model3D* model : models)
         {
             float minDist = cameras[0]->distanceWith(model);
             for (Camera* camera : cameras) minDist = (camera->distanceWith(model) < minDist ? camera->distanceWith(model) : minDist);
-            totlaModelsByDepthAndDistance[0][minDist].append(model);
+            totalModelsByDepthAndDistance[0][minDist].append(model);
 
             Octree* octree = dynamic_cast<Octree*>(model);
             if (octree)
@@ -1453,7 +1453,7 @@ namespace MIS
                     {
                         minDist = cameras[0]->distanceWith(child);
                         for (Camera* camera : cameras) minDist = (camera->distanceWith(child) < minDist ? camera->distanceWith(child) : minDist);
-                        totlaModelsByDepthAndDistance[child->getDepth()][minDist].append(child);
+                        totalModelsByDepthAndDistance[child->getDepth()][minDist].append(child);
                         if (breakModelsUpdater) break;
                     }
                     if (breakModelsUpdater) break;
@@ -1462,11 +1462,11 @@ namespace MIS
             if (breakModelsUpdater) break;
         }
 
-        for (unsigned int depth : totlaModelsByDepthAndDistance.keys())
+        for (unsigned int depth : totalModelsByDepthAndDistance.keys())
         {
-            for (float dist : totlaModelsByDepthAndDistance[depth].keys())
+            for (float dist : totalModelsByDepthAndDistance[depth].keys())
             {
-                QList<Model3D*>& modelsToTest = totlaModelsByDepthAndDistance[depth][dist];
+                QList<Model3D*>& modelsToTest = totalModelsByDepthAndDistance[depth][dist];
                 for (Model3D* model : modelsToTest)
                 {
                     if (isOnScreen(model)) modelsByDepthAndDistance[depth][dist].append(model);
