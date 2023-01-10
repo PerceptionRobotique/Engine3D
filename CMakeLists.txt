@@ -29,6 +29,11 @@ include(cmake/FindQt.cmake)
 
 ### GLM ###
 find_package(glm REQUIRED)
+if(WIN32)
+    if(glm_VERSION_MAJOR EQUAL 0 AND glm_VERSION_MINOR EQUAL 9 AND glm_VERSION_PATCH EQUAL 9 AND glm_VERSION_TWEAK EQUAL 9)
+        set(GLM_INCLUDE_DIRS ${glm_DIR}/../../../include)
+    endif()
+endif()
 
 ### CONTROLLER ###
 set(WITH_CONTROLLER ON CACHE BOOL "Include controller functions")
@@ -157,6 +162,7 @@ target_include_directories(Engine3D PRIVATE
 
 target_link_libraries(Engine3D PRIVATE
     ${QT_LINKS}
+    glm::glm
     ${VISP_LIBRARIES}
     ${OPENVR_LIBRARIES}
 )
