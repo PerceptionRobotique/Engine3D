@@ -56,6 +56,7 @@ if(WIN32)
 else()
     find_package(glm)
     list(APPEND Engine3D_INCLUDE_DIRS ${GLM_INCLUDE_DIRS})
+    list(APPEND Engine3D_LIBRARIES "glm::glm")
 endif()
 
 if(WIN32)
