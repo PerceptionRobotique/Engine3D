@@ -28,7 +28,7 @@ set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 include(cmake/FindQt.cmake)
 
 ### GLM ###
-find_package(glm REQUIRED)
+find_package(glm)
 if(WIN32)
     if(glm_VERSION_MAJOR EQUAL 0 AND glm_VERSION_MINOR EQUAL 9 AND glm_VERSION_PATCH EQUAL 9 AND glm_VERSION_TWEAK EQUAL 9)
         set(GLM_INCLUDE_DIRS ${glm_DIR}/../../../include)
