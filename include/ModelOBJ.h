@@ -31,6 +31,8 @@ namespace MIS
 			Material(const Material& m);
 		};
 
+		static bool prepareInThread;
+
 		ModelOBJ(QString _fileName = "", QOpenGLShaderProgram* shader = nullptr, QOpenGLShaderProgram* boxShader = nullptr);
 		~ModelOBJ();
 

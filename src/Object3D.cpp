@@ -167,7 +167,7 @@ namespace MIS
         pose[3].z = _tz;
     }
 
-    void Object3D::setRotation(vec3 _rotation)
+    void Object3D::setRotationXYZ(vec3 _rotation)
     {
         _rotation = radians(_rotation);
         mat4 m(1.0);
@@ -183,17 +183,17 @@ namespace MIS
 
     void Object3D::setRotationX(const float& _rx)
     {
-        setRotation(vec3(_rx, getRotation().y, getRotation().z));
+        setRotationXYZ(vec3(_rx, getRotation().y, getRotation().z));
     }
 
     void Object3D::setRotationY(const float& _ry)
     {
-        setRotation(vec3(getRotation().x, _ry, getRotation().z));
+        setRotationXYZ(vec3(getRotation().x, _ry, getRotation().z));
     }
 
     void Object3D::setRotationZ(const float& _rz)
     {
-        setRotation(vec3(getRotation().x, getRotation().y, _rz));
+        setRotationXYZ(vec3(getRotation().x, getRotation().y, _rz));
     }
 
     //GETTERS

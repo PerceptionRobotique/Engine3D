@@ -40,7 +40,7 @@ namespace MIS
         void setPositionX(const float& _tx);
         void setPositionY(const float& _ty);
         void setPositionZ(const float& _tz);
-        void setRotation(vec3 _rotation);
+        void setRotationXYZ(vec3 _rotation);
         void setRotation(mat4 _rotation);
         void setRotationX(const float& _rx);
         void setRotationY(const float& _ry);

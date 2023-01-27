@@ -2,6 +2,7 @@
 
 namespace MIS
 {
+	bool ModelOBJ::prepareInThread = false;
 
 	ModelOBJ::Material::Material()
 		: Ns(0)
@@ -105,7 +106,8 @@ namespace MIS
 		primitives = TRIANGLES;
 		liveLoading = true;
 		prepareFuture = QtConcurrent::run(&ModelOBJ::prepare, this);
-		//prepareFuture.waitForFinished();
+		if(!prepareInThread)
+			prepareFuture.waitForFinished();
 	}
 
 	ModelOBJ::~ModelOBJ()

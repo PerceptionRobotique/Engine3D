@@ -161,9 +161,9 @@ namespace MIS
         setPositionZ((float)_tz);
     }
 
-    void Object3DQt::setRotation(vec3 _rotation)
+    void Object3DQt::setRotationXYZ(vec3 _rotation)
     {
-        Object3D::setRotation(_rotation);
+        Object3D::setRotationXYZ(_rotation);
         emit objectMoved();
     }
 

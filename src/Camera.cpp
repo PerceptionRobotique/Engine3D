@@ -287,7 +287,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(center);
-                setRotation(vec3(0, 0, 0));
+                setRotationXYZ(vec3(0, 0, 0));
                 translate(vec3(0, 0, distance));
                 setTarget(center);
                 break;
@@ -299,7 +299,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(center);
-                setRotation(vec3(0, 180, 0));
+                setRotationXYZ(vec3(0, 180, 0));
                 translate(vec3(0, 0, distance));
                 setTarget(center);
                 break;
@@ -311,7 +311,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(vec3(center.x, center.y + distance, center.z));
-                setRotation(vec3(-90, 0, 0));
+                setRotationXYZ(vec3(-90, 0, 0));
                 setTarget(center);
                 break;
             }
@@ -322,7 +322,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(vec3(center.x, center.y - distance, center.z));
-                setRotation(vec3(90, 0, 0));
+                setRotationXYZ(vec3(90, 0, 0));
                 setTarget(center);
                 break;
             }
@@ -333,7 +333,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(center);
-                setRotation(vec3(0, -90, 0));
+                setRotationXYZ(vec3(0, -90, 0));
                 translate(vec3(0, 0, distance));
                 setTarget(center);
                 break;
@@ -345,7 +345,7 @@ namespace MIS
                 float distance = glm::distance(center, getPosition());
                 if (distance == 0) distance = 1;
                 setPosition(center);
-                setRotation(vec3(0, 90, 0));
+                setRotationXYZ(vec3(0, 90, 0));
                 translate(vec3(0, 0, distance));
                 setTarget(center);
                 break;
@@ -386,7 +386,7 @@ namespace MIS
                 else
                 {
                     setPosition(model->getwMo() * vec4(model->getAABB().center, 1.0));
-                    setRotation(vec3(0, 0, 0));
+                    setRotationXYZ(vec3(0, 0, 0));
                 }
                 break;
             }
@@ -720,9 +720,9 @@ namespace MIS
         target = glm::translate(getwMc(), vec3(0, 0, -1))[3];
     }
 
-    void Camera::setRotation(vec3 _rotation)
+    void Camera::setRotationXYZ(vec3 _rotation)
     {
-        Object3DQt::setRotation(_rotation);
+        Object3DQt::setRotationXYZ(_rotation);
         target = glm::translate(getwMc(), vec3(0, 0, -1))[3];
     }
 
