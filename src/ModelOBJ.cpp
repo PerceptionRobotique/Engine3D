@@ -376,6 +376,7 @@ namespace MIS
 
 				shader->setUniformValue("hasTexture", !materials[materialUsed[objectNames[i]][j]].map_Kd.isEmpty());
 				f->glUniform3fv(f->glGetUniformLocation(shader->programId(), "faceColor"), 1, value_ptr(materials[materialUsed[objectNames[i]][j]].Kd));
+				f->glActiveTexture(GL_TEXTURE0);
 				if (j < materialUsed[objectNames[i]].count())
 					f->glBindTexture(GL_TEXTURE_2D, texturesBuffers[materialUsed[objectNames[i]][j]]->textureId());
 				else
@@ -384,6 +385,8 @@ namespace MIS
 				if(pointSizeEnabled)
 					f->glDrawArrays(GL_POINTS, 0, point[i][j].count());
 				f->glDrawArrays(primitives, 0, point[i][j].count());
+
+				f->glBindTexture(GL_TEXTURE_2D, 0);
 
 				shader->disableAttributeArray("in_vertex");
 				shader->disableAttributeArray("in_normal");
