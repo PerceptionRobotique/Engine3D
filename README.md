@@ -26,6 +26,9 @@ Télécharger l'[installeur de Qt](https://www.qt.io/download-qt-installer) sur 
 #### glm
 ```
 git clone https://github.com/g-truc/glm
+cd glm && mkdir build && cd build
+cmake -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=install ..
+cmake --build . --config=Release --target install
 ```
 
 #### OpenCV
@@ -73,7 +76,7 @@ git clone https://github.com/ValveSoftware/openvr.git
 git clone https://github.com/PerceptionRobotique/Engine3D.git
 cd Engine3D && mkdir build && cd build
 
-$glm_DIR="<glm_DIRECTORY>"
+$glm_DIR="<glm_INSTALL_DIRECTORY>"
 $OpenCV_DIR="<OpenCV_BUILD_DIRECTORY>"
 $ViSP_DIR="<ViSP_INSTALL_DIRECTORY>"
 $OpenVR_DIR="<OpenVR_DIRECTORY>"
@@ -83,7 +86,7 @@ $OpenCV_DIR=$OpenCV_DIR.replace("\","/")
 $ViSP_DIR=$ViSP_DIR.replace("\","/")
 $OpenVR_DIR=$OpenVR_DIR.replace("\","/")
 
-cmake -Dglm_DIR="$glm_DIR/cmake/glm" -DWITH_OPENCV=TRUE -DOpenCV_DIR="$OpenCV_DIR" -DWITH_ViSP=TRUE -DVISP_DIR="$ViSP_DIR" -DWITH_OpenVR=TRUE -DOPENVR_DIR="$OpenVR_DIR" ..
+cmake -Dglm_DIR="$glm_DIR/lib/cmake/glm" -DWITH_OPENCV=TRUE -DOpenCV_DIR="$OpenCV_DIR" -DWITH_ViSP=TRUE -DVISP_DIR="$ViSP_DIR" -DWITH_OpenVR=TRUE -DOPENVR_DIR="$OpenVR_DIR" ..
 cmake --build . --config Release --target install
 ```
 
