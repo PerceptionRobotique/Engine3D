@@ -11,7 +11,7 @@ Télécharger [Visual Studio](https://visualstudio.microsoft.com/fr/) et install
 * [Qt6](https://www.qt.io/)
 * [glm](https://github.com/g-truc/glm)
 
-Optionnelles
+### Optionnelles
 * [OpenCV](https://opencv.org/)
 * [ViSP](https://github.com/lagadic/visp) (OpenCV et [Eigen3](https://gitlab.com/libeigen/eigen) sont nécessaires)
 * [OpenVR](https://github.com/ValveSoftware/openvr)
@@ -38,9 +38,7 @@ Télécharger et extraire la [dernière version d'OpenCV](https://opencv.org/rel
 
 #### ViSP
 
-##### Compilation manuelle
-
-###### Eigen
+##### Eigen
 ```
 git clone https://gitlab.com/libeigen/eigen.git
 cd eigen && mkdir build && cd build
