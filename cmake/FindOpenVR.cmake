@@ -7,7 +7,7 @@ if(WIN32)
         message(FATAL_ERROR "OpenVR is missing.")
     endif()
 elseif(UNIX)
-    set(OPENVR_LIBRARIES /usr/lib/x86_64-linux-gnu/libopenvr_api.so)
+    set(OPENVR_LIBRARIES openvr_api)
 endif()
 
 list(APPEND HEADERS include/VRheadset.h)
