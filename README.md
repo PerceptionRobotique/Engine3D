@@ -79,7 +79,7 @@ $Eigen3_DIR=$Eigen3_DIR.replace("\","/")
 $OpenCV_DIR=$OpenCV_DIR.replace("\","/")
 
 cmake -DBUILD_DEMOS=FALSE -DBUILD_EXAMPLES=FALSE -DBUILD_TESTS=FALSE -DBUILD_TUTORIALS=FALSE -DEIGEN3_INCLUDE_DIR="$Eigen3_DIR/include/eigen3" -DOpenCV_DIR="$OpenCV_DIR" -DWITH_PTHREAD=FALSE ..
-cmake --build . --config Release --target install
+cmake --build . --config Release --parallel --target install
 ```
 
 #### OpenVR
@@ -90,20 +90,23 @@ git clone https://github.com/ValveSoftware/openvr.git
 #### Engine3D
 ```
 git clone https://github.com/PerceptionRobotique/Engine3D.git
-cd Engine3D && mkdir build && cd build
+cd Engine3D
+mkdir build && cd build
 
+$QT_DIR="<QT_MSVC_DIR>"
 $glm_DIR="<glm_INSTALL_DIRECTORY>"
 $OpenCV_DIR="<OpenCV_BUILD_DIRECTORY>"
 $ViSP_DIR="<ViSP_INSTALL_DIRECTORY>"
 $OpenVR_DIR="<OpenVR_DIRECTORY>"
 
+$QT_DIR=$QT_DIR.replace("\","/")
 $glm_DIR=$glm_DIR.replace("\","/")
 $OpenCV_DIR=$OpenCV_DIR.replace("\","/")
 $ViSP_DIR=$ViSP_DIR.replace("\","/")
 $OpenVR_DIR=$OpenVR_DIR.replace("\","/")
 
-cmake -Dglm_DIR="$glm_DIR/lib/cmake/glm" -DWITH_OPENCV=TRUE -DOpenCV_DIR="$OpenCV_DIR" -DWITH_ViSP=TRUE -DVISP_DIR="$ViSP_DIR" -DWITH_OpenVR=TRUE -DOPENVR_DIR="$OpenVR_DIR" ..
-cmake --build . --config Release --target install
+cmake -DQT_DIR="$QT_DIR/lib/cmake/Qt6" -Dglm_DIR="$glm_DIR/lib/cmake/glm" -DWITH_OPENCV=TRUE -DOpenCV_DIR="$OpenCV_DIR" -DWITH_ViSP=TRUE -DVISP_DIR="$ViSP_DIR" -DWITH_OpenVR=TRUE -DOPENVR_DIR="$OpenVR_DIR" ..
+cmake --build . --config Release --parallel --target install
 ```
 
 ##### Installer en Debug
@@ -118,7 +121,7 @@ Installer [NSIS](https://nsis.sourceforge.io/Download). Si Engine3D a été comp
 
 `cmake --build . --config Release --target package`
 
-### Ubuntu 22.04
+### Ubuntu
 
 #### Installer les dépendances
 `sudo apt install git cmake build-essential ninja-build ffmpeg libgl1-mesa-dev libglu1-mesa-dev`
@@ -201,9 +204,120 @@ sudo cmake --build . --target install
 git clone https://github.com/PerceptionRobotique/Engine3D.git
 cd Engine3D
 mkdir build && cd build
-cmake -DWITH_OPENCV=TRUE -DWITH_ViSP=TRUE -DWITH_OpenVR=TRUE ..
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_OPENCV=TRUE -DWITH_ViSP=TRUE -DWITH_OpenVR=TRUE ..
 cmake --build . --config Release --parallel
 ```
 
+#### Compiler en Debug
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_OPENCV=TRUE -DWITH_ViSP=TRUE -DWITH_OpenVR=TRUE ..
+cmake --build . --config Debug --parallel
+```
+
 #### Création d'un package DEB
-`ninja package`
+Si `libEngine3Dd.so` existe dans le dossier de build alors le package va inclure les deux configurations.
+```
+cmake -DCMAKE_BUILD_TYPE=Release -DWITH_OPENCV=TRUE -DWITH_ViSP=TRUE -DWITH_OpenVR=TRUE ..
+cmake --build . --config Release --target package
+```
+
+### Android
+
+Les étapes d'installation et de compilation pour Android sont très complexes et demandent parfois de faire face à des comportements "étranges" surtout venant de Qt. Les étapes ont été réalisées sur Windows.
+
+#### Installer et configurer les outils
+
+* Télécharger et installer la dernière version de [Qt6]{https://www.qt.io/} pour Android
+* Télécharger et installer [Java JDK]{https://download.oracle.com/java/17/latest/jdk-17_windows-x64_bin.exe} version 17 (LTS) pour éviter certains problèmes
+* Télécharger et installer [Android Studio]{https://developer.android.com/studio/}
+* Lancer Android Studio pour qu'il installe les outils par défaut
+* Dans le launcher d'Android Studio, aller dans `SDK Manager`
+* Cocher la dernière version du SDK d'Android (avec un "API Level" correspondant à un numéro, actuellement Android 13.0 Tiramisu avec un API Level à 33)
+* Aller dans `More Actions > SDK Manager > SDK Tools`
+* Décocher `Hide Obsolete Packages`
+* Cocher `Android SDK Command-line Tools (latest)`
+* Cocher `Android SDK Tools (Obsolete)` car il sera nécessaire pour ViSP
+* Valider l'installation et fermer Android Studio
+* Lancer Qt Creator
+* Aller dans `Édition > Preferences... > Appareils mobiles > Android`
+* Remplir l'emplacement du JDK (installé dans `C:\Program Files\Java\jdk-17`)
+* Si Qt demande d'installer des packages supplémentaires répondre oui
+* Remplir l'emplacement du SDK Android si besoin (par défaut `C:\Users\<user>\AppData\Local\Android\Sdk`)
+* Cliquer sur `Setup SDK` si Android n'est pas encore configuré, il faut parfois cliquer plusieurs fois dessus pour avoir toutes les coches vertes
+* Si OpenSSL est manquant, aller dans `C:\Users\<user>\AppData\Local\Android\Sdk`, ouvrir un terminal et cloner le dépôt git d'Android OpenSSL : `git clone https://github.com/KDAB/android_openssl.git`
+* Redémarrer Qt Creator et vérifier qu'Android OpenSSL est OK.
+
+Normalement, toutes les coches sont au vert.
+
+#### Compilation
+
+Pour rappel, les libraires OpenCV et ViSP sont optionnelles.
+
+##### glm
+
+* `git clone https://github.com/g-truc/glm.git`
+* Ouvrir le fichier `CMakeLists.txt` de glm dans Qt
+* glm peut être configuré pour Android sur les architectures arm64-v8a et x86_64 (sélectionner les configurations "Release" sauf si vous savez ce que vous faites)
+* Le changement de configuration se fait en cliquant sur le bouton au dessus de "Run" en bas à gauche (logo de smartphone avec une pastille rouge)
+* Aller dans `Projets`
+* Attendre la fin de la configuration initiale de glm
+* Aller dans l'onglet `Current Configuration`
+* Décocher les options : `BUILD_TESTING`
+* Changer `CMAKE_INSTALL_PREFIX` pour "install"
+* Dans "Étapes Build", cliquer sur "Détails" de Compilation, décocher `all` et cocher `install`
+* Désactiver le "Build Android APK" (logo à sélectionner à côté de "Détails")
+* Cliquer sur "Exécuter CMake" et attendre la fin de la configuration
+* Compiler (logo du marteau en bas à gauche)
+* Recommencer avec les autres architectures de processeur voulues
+
+##### OpenCV
+
+Télécharger et extraire la librairie [OpenCV]{https://opencv.org/releases/} pour Android.
+
+##### ViSP
+
+* `git clone https://github.com/lagadic/visp.git`
+* Ouvrir le fichier `CMakeLists.txt` de ViSP dans Qt
+* ViSP peut être configuré pour Android sur les architectures arm64-v8a et x86_64 (sélectionner les configurations "Release" sauf si vous savez ce que vous faites)
+* Le changement de configuration se fait en cliquant sur le bouton au dessus de "Run" en bas à gauche (logo de smartphone avec une pastille rouge)
+* Aller dans `Projets`
+* Attendre la fin de la configuration initiale de ViSP
+* Aller dans l'onglet `Current Configuration`
+* Décocher les options : `BUILD_ANDROID_EXAMPLES`, `BUILD_ANDROID_PROJECTS`, `BUILD_DEMOS`, `BUILD_EXAMPLES`, `BUILD_JAVA`, `BUILD_TESTS` et `BUILD_TUTORIALS`
+* Cocher l'option `BUILD_SHARED_LIBS`
+* Dans "Étapes Build", cliquer sur "Détails" de Compilation, décocher `all` et cocher `install`
+* Désactiver le "Build Android APK" (logo à sélectionner à côté de "Détails")
+* Cliquer sur "Exécuter CMake" et attendre la fin de la configuration (vérifier dans la sortie que Tests, Demos, Examples et Tutorials retournent "no", sinon fermer Qt Creator, supprimer tous les fichiers dans le dossier de build en cours à l'exception du "CMakeCache.txt" et recommencer, la configuration est normalement sauvegardée donc il suffit de ré-exécuter CMake)
+* Compiler (logo du marteau en bas à gauche)
+* Recommencer avec les autres architectures de processeur voulues
+
+##### Engine3D
+
+* `git clone https://github.com/PerceptionRobotique/Engine3D.git`
+* Ouvrir le fichier `CMakeLists.txt` d'Engine3D dans Qt
+* Engine3D peut être configuré pour Android sur les architectures arm64-v8a et x86_64 (sélectionner les configurations "Release" sauf si vous savez ce que vous faites)
+* Aller dans `Projets`
+* Attendre la fin de la configuration initiale (qui échoue, c'est normal)
+* Aller dans l'onglet `Current Configuration`
+* Créer la variable suivante en cliquant sur `Add > Directory` :
+	* `glm_DIR` : `<glm_install_dir>/lib/cmake/glm`
+* Cliquer sur "Exécuter CMake"
+* Définir la variable : `CMAKE_INSTALL_PREFIX` : `install`
+* [optionnel] Cocher les variables : `WITH_OPENCV` et `WITH_ViSP` et définir les variables :
+	* `OpenCV_DIR` : `<chemin_vers_OpenCV_android>/OpenCV-android-sdk/sdk/native/jni`
+	* `VISP_DIR` : `<visp_install_dir>/sdk/native/jni`
+* Changer `CMAKE_INSTALL_PREFIX` pour "install"
+* Dans "Étapes Build", cliquer sur "Détails" de Compilation, décocher `all` et cocher `install`
+* Désactiver le "Build Android APK" (logo à sélectionner à côté de "Détails")
+* Cliquer sur "Exécuter CMake" et attendre la fin de la configuration (vérifier dans la sortie que Tests, Demos, Examples et Tutorials retournent "no", sinon fermer Qt Creator, supprimer tous les fichiers dans le dossier de build en cours à l'exception du "CMakeCache.txt" et recommencer, la configuration est normalement sauvegardée donc il suffit de ré-exécuter CMake)
+* Compiler (logo du marteau en bas à gauche)
+* Recommencer avec les autres architectures de processeur voulues
+
+### Documentation
+
+Pour compiler la documentation, installer Doxygen.
+
+* Windows : https://www.doxygen.nl/download.html
+* Ubuntu : `sudo apt install doxygen`
+
+Ajouter `-DGENERATE_DOXYGEN=TRUE` à la commande cmake. Exécuter ensuite `cmake --build . --target Doxygen`. Quand la documentation a été générée, elle est installée avec le package.
