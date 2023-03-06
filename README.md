@@ -28,7 +28,7 @@ Télécharger l'[installeur de Qt](https://www.qt.io/download-qt-installer) sur 
 git clone https://github.com/g-truc/glm
 cd glm && mkdir build && cd build
 cmake -DBUILD_TESTING=False -DCMAKE_INSTALL_PREFIX=install ..
-cmake --build . --config=Release --target install
+cmake --build . --config Release --target install
 ```
 
 #### OpenCV
