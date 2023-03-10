@@ -56,7 +56,7 @@ namespace MIS
             file->open(QFile::ReadOnly);
             name = fileInfo.fileName();
 #ifndef ANDROID
-            settings = new QSettings(fileInfo.path() + '/' + fileInfo.fileName().remove(fileInfo.suffix()) + "ini", QSettings::IniFormat);
+            settings = new QSettings(fileInfo.path() + '/' + fileInfo.fileName().split(".")[0] + ".ini", QSettings::IniFormat);
 #else
             name = name.split("%2F").last();
             settings = new QSettings;
