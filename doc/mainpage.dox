@@ -1,7 +1,7 @@
 /*!
 \mainpage
 \section Requirements
-- Qt 6.3.0 (not sure if it can be used with more recent Qt versions)
+- Qt 6 (Be sure to use the same Qt version for your projects.)
  
 \section CMakeListsMinimumCommands CMakeLists minimum commands
 CMake commands used to include Engine3D library.
