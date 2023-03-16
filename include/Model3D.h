@@ -202,7 +202,6 @@ namespace MIS
         void removeVertexOnVRAM();
 
         QString fileName;
-        QString name;
 
         bool showIntensity;
         bool visible;
@@ -232,6 +231,7 @@ namespace MIS
 
         QFile* file;
         QFileInfo fileInfo;
+        QString name;
         QSettings* settings;
 
         Primitives primitives;

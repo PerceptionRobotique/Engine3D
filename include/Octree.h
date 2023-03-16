@@ -62,7 +62,6 @@ namespace MIS
 		bool drawBox() override;
 
 	private:
-		QString name;
 		Octree* main;
 		Octree* parent;
 		QVector<Octree*> children;
