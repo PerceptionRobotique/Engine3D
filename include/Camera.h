@@ -87,6 +87,14 @@ namespace MIS
         mat4 getwMc() const;
         bool isModelVisible(const Model3D* model) const;
         float distanceWith(const Model3D* model) const;
+        vec2 projectPoint(vec4 point3D) const;
+        vec2 projectPoint(vec3 point3D) const;
+        QVector<vec2> projectPoints(const QVector<vec4>& points3D) const;
+        QVector<vec2> projectPoints(const QVector<vec3>& points3D) const;
+        vec2 meterToPixel(vec2 point2D) const;
+        QVector<vec2> meterToPixel(const QVector<vec2>& points2D) const;
+        vec2 pixelToMeter(vec2 pixel) const;
+        QVector<vec2> pixelToMeter(const QVector<vec2>& pixels) const;
 
     public slots:
         //TRANSFORMS

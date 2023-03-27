@@ -565,6 +565,66 @@ namespace MIS
         }
     }
 
+    vec2 Camera::projectPoint(vec4 point3D) const
+    {
+        vec4 point2D = getiMc() * getcMw() * point3D;
+        point2D /= point2D.w;
+        return point2D;
+    }
+    
+    vec2 Camera::projectPoint(vec3 point3D) const
+    {
+        return projectPoint(vec4(point3D, 1.0));
+    }
+
+    QVector<vec2> Camera::projectPoints(const QVector<vec4>& points3D) const
+    {
+        QVector<vec2> points2D;
+        for (const vec4& point3D : points3D)
+            points2D.append(projectPoint(point3D));
+        return points2D;
+    }
+
+    QVector<vec2> Camera::projectPoints(const QVector<vec3>& points3D) const
+    {
+        QVector<vec2> points2D;
+        for (const vec3& point3D : points3D)
+            points2D.append(projectPoint(point3D));
+        return points2D;
+    }
+
+    vec2 Camera::meterToPixel(vec2 point2D) const
+    {
+        vec2 pixel;
+        pixel.x = point2D.x * (getWidth() - 1);
+        pixel.y = point2D.y * (getHeight() - 1);
+        return pixel;
+    }
+
+    QVector<vec2> Camera::meterToPixel(const QVector<vec2>& points2D) const
+    {
+        QVector<vec2> pixels;
+        for (const vec2& point2D : points2D)
+            pixels.append(meterToPixel(point2D));
+        return pixels;
+    }
+
+    vec2 Camera::pixelToMeter(vec2 pixel) const
+    {
+        vec2 point2D;
+        point2D.x = pixel.x / (getWidth() - 1);
+        point2D.y = pixel.y / (getHeight() - 1);
+        return point2D;
+    }
+
+    QVector<vec2> Camera::pixelToMeter(const QVector<vec2>& pixels) const
+    {
+        QVector<vec2> points2D;
+        for (const vec2& pixel : pixels)
+            points2D.append(pixelToMeter(pixel));
+        return points2D;
+    }
+
     void Camera::translate(const vec3& _translation, const bool& _onGround)
     {
         switch (viewPoint)
