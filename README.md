@@ -4,7 +4,9 @@ Engine3D est une librairie permettant le chargement, la manipulation et le rendu
 La librairie est disponible sur Windows, Ubuntu 22.04 et Android.
 
 ## Pré-requis
-Télécharger [Visual Studio](https://visualstudio.microsoft.com/fr/) et installer "Développement Desktop en C++".
+Télécharger [Visual Studio](https://visualstudio.microsoft.com/fr/) et installer :
+* Développement Desktop en C++
+* Kit de développement logiciel (SDK) Windows 11 (10.0.22621.0) -> Dans l'onglet "Composants individuels"
 
 ## Dépendances
 

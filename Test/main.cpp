@@ -37,16 +37,13 @@ int main(int argc, char* argv[])
 		settings.setValue("FileName", fileName);
 		settings.sync();
 		engine.openModel(fileName);
-		engine.getMainCamera()->lookAt(engine.getModel(0));
+		engine.getMainCamera()->translate(vec3(0, 0, 3));
+		//engine.getMainCamera()->lookAt(engine.getModel(0));
 		engine.getModels().last()->setBoxVisible(true);
+		engine.setLightOnMainCamera(false);
+		engine.setLightPosition(vec3(0, 0, 0));
+		engine.getModel(0)->setPosition(vec3(0, 0, 0));
 		engine.takePicture().save("frame.png");
-		//QMessageBox stopBox;
-		//stopBox.setText("VR is running.");
-		//stopBox.setStandardButtons(QMessageBox::Close);
-		//engine.startVR();
-		//cameraController.setVRInputsUpdaterEnabled(true);
-		//stopBox.exec();
-		//engine.stopVR();
 	}
 
 	engine.destroy();
