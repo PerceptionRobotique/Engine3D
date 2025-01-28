@@ -1,0 +1,13 @@
+{
+    "name": "engine3d",
+    "version": "0.1.0",
+    "homepage": "https://github.com/PerceptionRobotique/Engine3D",
+    "description": "???",
+    "license": "MIT",
+    "dependencies": [
+        "glm",
+        "openvr",
+        "qtbase"
+    ]
+}
+  
