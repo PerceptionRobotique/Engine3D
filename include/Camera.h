@@ -11,6 +11,8 @@
 #include <QMutex>
 #include <QSettings>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
 #include <glm/gtx/transform.hpp>

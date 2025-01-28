@@ -3,6 +3,8 @@
 
 #include "Engine3D_global.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <glm/common.hpp>
 #include <glm/matrix.hpp>
 #include <glm/gtx/euler_angles.hpp>

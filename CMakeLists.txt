@@ -19,7 +19,7 @@ set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared library")
 
 set(CMAKE_BUILD_PARALLEL_LEVEL ON)
 if(MSVC)
-    add_definitions(/MP)
+#    add_definitions(/MP)
 endif()
 
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
@@ -30,9 +30,9 @@ include(cmake/FindQt.cmake)
 ### GLM ###
 find_package(glm)
 if(WIN32)
-    if(glm_VERSION_MAJOR EQUAL 0 AND glm_VERSION_MINOR EQUAL 9 AND glm_VERSION_PATCH EQUAL 9 AND glm_VERSION_TWEAK EQUAL 9)
-        set(GLM_INCLUDE_DIRS ${glm_DIR}/../../../include)
-    endif()
+    #if(glm_VERSION_MAJOR EQUAL 0 AND glm_VERSION_MINOR EQUAL 9 AND glm_VERSION_PATCH EQUAL 9 AND glm_VERSION_TWEAK EQUAL 9)
+    #    set(GLM_INCLUDE_DIRS ${glm_DIR}/../../../include)
+    #endif()
 endif()
 
 ### CONTROLLER ###
@@ -179,11 +179,28 @@ if(EXISTS ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake)
     file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/Engine3DExtras.cmake)
 endif()
 if(WIN32)
-    install(
-        TARGETS Engine3D
-        RUNTIME DESTINATION bin/$<CONFIG>
-        ARCHIVE DESTINATION lib/$<CONFIG>
-    )
+    #install(
+    #    TARGETS Engine3D
+    #    RUNTIME DESTINATION debug/bin/
+    #    ARCHIVE DESTINATION debug/lib/
+    #    CONFIGURATIONS Debug
+    #)
+    #install(
+    #    TARGETS Engine3D
+    #    RUNTIME DESTINATION bin/
+    #    ARCHIVE DESTINATION lib/
+    #    CONFIGURATIONS Release
+    #)
+    install(TARGETS Engine3D
+        EXPORT Engine3D_targets
+        ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+    install(EXPORT Engine3D_targets
+        FILE Engine3D-targets.cmake
+        NAMESPACE Engine3D::
+        DESTINATION share/Engine3D)
 
     install(FILES ${HEADERS} DESTINATION include)
 
@@ -191,7 +208,7 @@ if(WIN32)
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/engine3d-config.cmake DESTINATION .)
 
     ### GLM ###
-    install(DIRECTORY ${GLM_INCLUDE_DIRS}/glm DESTINATION include/3rdParty/glm)
+    #install(DIRECTORY ${GLM_INCLUDE_DIRS}/glm DESTINATION include/3rdParty/glm)
 
     if(GENERATE_DOXYGEN)
         install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/ DESTINATION doc)
@@ -330,12 +347,12 @@ set(Engine3D_INCLUDE_DIRS
 if(WIN32)
     set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>)
     set(Engine3D_DLL ${Engine3D_DIR}/$<CONFIG>/Engine3D$<$<CONFIG:Debug>:d>.dll)
-    set(Engine3D_EXTRA_DLL_DIR ${Engine3D_DIR}/bin/$<CONFIG>/3rdParty/)
+    #set(Engine3D_EXTRA_DLL_DIR ${Engine3D_DIR}/bin/$<CONFIG>/3rdParty/)
 elseif(UNIX)
     set(Engine3D_LIBRARIES_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 set(Engine3D_LIBRARIES Engine3D$<$<CONFIG:Debug>:d>
-    ${QT_LINKS}
+    #${QT_LINKS}
     ${VISP_LIBRARIES}
     ${OPENVR_LIBRARIES}
 )
