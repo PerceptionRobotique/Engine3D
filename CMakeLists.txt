@@ -64,10 +64,12 @@ if(WITH_ViSP)
 endif()
 
 ### VR ###
-#set(WITH_OpenVR OFF CACHE BOOL "Include OpenVR functions")
-#if(WITH_OpenVR)
+set(WITH_OpenVR OFF CACHE BOOL "Include OpenVR functions")
+if(WITH_OpenVR)
     find_package(OpenVR REQUIRED)
-#endif()
+    list(APPEND HEADERS include/VRheadset.h)
+    list(APPEND SOURCES src/VRheadset.cpp)
+endif()
 
 ### DOXYGEN ###
 set(GENERATE_DOXYGEN CACHE BOOL "Doxygen documentation generator")
@@ -97,7 +99,6 @@ list(APPEND HEADERS
 
     include/TrajectoryManager.h
     include/VideoWriter.h
-    include/VRheadset.h
 )
 
 list(APPEND SOURCES
@@ -116,7 +117,6 @@ list(APPEND SOURCES
 
     src/TrajectoryManager.cpp
     src/VideoWriter.cpp
-    src/VRheadset.cpp
 )
 
 list(APPEND ENGINE3D_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc)
