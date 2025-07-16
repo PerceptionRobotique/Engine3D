@@ -1,6 +1,6 @@
 # Project
 build
-CmakeUserPresets.json
+CMakeUserPresets.json
 
 # C++ objects and libs
 *.slo
