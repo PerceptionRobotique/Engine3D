@@ -8,6 +8,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 if(WIN32)
     if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
         set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/install CACHE PATH "Install directory" FORCE)
@@ -25,7 +27,7 @@ endif()
 set(PRINT_CMAKE_VARIABLES OFF CACHE BOOL "Print CMake variables")
 
 ### QT ###
-include(cmake/FindQt.cmake)
+find_package(Qt6 REQUIRED COMPONENTS Concurrent Core OpenGLWidgets)
 
 ### GLM ###
 find_package(glm)
@@ -62,10 +64,10 @@ if(WITH_ViSP)
 endif()
 
 ### VR ###
-set(WITH_OpenVR OFF CACHE BOOL "Include OpenVR functions")
-if(WITH_OpenVR)
-    include(cmake/FindOpenVR.cmake)
-endif()
+#set(WITH_OpenVR OFF CACHE BOOL "Include OpenVR functions")
+#if(WITH_OpenVR)
+    find_package(OpenVR REQUIRED)
+#endif()
 
 ### DOXYGEN ###
 set(GENERATE_DOXYGEN CACHE BOOL "Doxygen documentation generator")
@@ -95,6 +97,7 @@ list(APPEND HEADERS
 
     include/TrajectoryManager.h
     include/VideoWriter.h
+    include/VRheadset.h
 )
 
 list(APPEND SOURCES
@@ -113,6 +116,7 @@ list(APPEND SOURCES
 
     src/TrajectoryManager.cpp
     src/VideoWriter.cpp
+    src/VRheadset.cpp
 )
 
 list(APPEND ENGINE3D_RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/resources/Engine3D.qrc)
@@ -134,7 +138,7 @@ set(SHADERS
 )
 
 if(BUILD_SHARED_LIBS)
-    add_library(Engine3D SHARED
+    qt_add_library(Engine3D SHARED
         ${HEADERS}
         ${SOURCES}
         ${ENGINE3D_RESOURCES}
@@ -142,7 +146,7 @@ if(BUILD_SHARED_LIBS)
         ${SHADERS}
     )
 else()
-    add_library(Engine3D STATIC
+    qt_add_library(Engine3D STATIC
         ${HEADERS}
         ${SOURCES}
 
@@ -161,10 +165,14 @@ target_include_directories(Engine3D PRIVATE
 )
 
 target_link_libraries(Engine3D PRIVATE
-    ${QT_LINKS}
+    Qt::Concurrent Qt6::Concurrent Qt::ConcurrentPrivate Qt6::ConcurrentPrivate
+    Qt::Core Qt6::Core Qt::CorePrivate Qt6::CorePrivate
+    Qt::OpenGL Qt6::OpenGL Qt::OpenGLPrivate Qt6::OpenGLPrivate
+    Qt::OpenGLWidgets Qt6::OpenGLWidgets Qt::OpenGLWidgetsPrivate Qt6::OpenGLWidgetsPrivate
+    Qt::Widgets Qt6::Widgets Qt::WidgetsPrivate Qt6::WidgetsPrivate
     glm::glm
     ${VISP_LIBRARIES}
-    ${OPENVR_LIBRARIES}
+    OpenVR::OpenVR
 )
 
 if(WIN32)
