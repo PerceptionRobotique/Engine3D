@@ -355,3 +355,6 @@ if(PRINT_CMAKE_VARIABLES)
                 message(STATUS "${_variableName}=${${_variableName}}")
         endforeach()
 endif()
+
+target_compile_definitions(Engine3D PRIVATE GLM_ENABLE_EXPERIMENTAL)
+
