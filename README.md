@@ -323,3 +323,21 @@ Pour compiler la documentation, installer Doxygen.
 * Ubuntu : `sudo apt install doxygen`
 
 Ajouter `-DGENERATE_DOXYGEN=TRUE` à la commande cmake. Exécuter ensuite `cmake --build . --target Doxygen`. Quand la documentation a été générée, elle est installée avec le package.
+
+## Credits
+
+```
+This software was developed at:
+MIS - UPJV
+33 rue Saint-Leu
+80039 AMIENS CEDEX
+France
+
+This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+
+Description:
+Insight about how to set the project and build the program
+Authors:
+Noel Villette, El Mustapha Mouaddib
+```
