@@ -61,6 +61,7 @@ namespace MIS
         void release();
         GLuint texture();
         QImage toImage();
+        QImage getFrame();
 
         bool isActive() const;
         QSize getSize() const;
@@ -172,6 +173,8 @@ namespace MIS
     private:
         bool active;
         vec3 target;
+
+        QImage frame;
 
         QSize size;
         QMutex FBOMutex;
