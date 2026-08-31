@@ -1,5 +1,6 @@
 #ifndef OBJECT3D_H
 #define OBJECT3D_H
+#define GLM_ENABLE_EXPERIMENTAL
 
 #include "Engine3D_global.h"
 

@@ -1,6 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <QObject>
 #include <QSize>
 #include <QOpenGLFramebufferObject>
