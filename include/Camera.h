@@ -1,6 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <QObject>
 #include <QSize>
 #include <QOpenGLFramebufferObject>
@@ -59,6 +61,7 @@ namespace MIS
         void release();
         GLuint texture();
         QImage toImage();
+        QImage getFrame();
 
         bool isActive() const;
         QSize getSize() const;
@@ -170,6 +173,8 @@ namespace MIS
     private:
         bool active;
         vec3 target;
+
+        QImage frame;
 
         QSize size;
         QMutex FBOMutex;

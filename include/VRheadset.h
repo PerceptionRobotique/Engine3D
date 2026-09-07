@@ -1,6 +1,8 @@
 #ifndef __VRHEADSET_H__
 #define __VRHEADSET_H__
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <Engine3D_global.h>
 #ifdef _WIN32
 #include <openvr.h>

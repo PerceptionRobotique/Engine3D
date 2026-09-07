@@ -533,7 +533,13 @@ namespace MIS
      */
     void Engine3D::setMainCamera(Camera* camera)
     {
+        if (!camera) return;
         mainCamera = camera;
+        // The render loop and visibility tests only iterate over "cameras", so a
+        // main camera set from the outside must be part of that list to actually
+        // be rendered (and to have a valid frame in takePicture()/getFrame()).
+        if (!cameras.contains(camera))
+            cameras.append(camera);
     }
 
     /**
@@ -555,8 +561,11 @@ namespace MIS
     {
         if (index < cameras.count())
         {
-            delete cameras[index];
+            Camera* removed = cameras[index];
             cameras.remove(index);
+            if (mainCamera == removed)
+                mainCamera = cameras.isEmpty() ? nullptr : cameras.first();
+            delete removed;
         }
     }
 
@@ -1871,12 +1880,21 @@ namespace MIS
         else
         {
 #endif
-            if (mainCamera->isActive())
+            if (mainCamera && mainCamera->isActive())
             {
                 frameMutex.lock();
                 frame = mainCamera->toImage();
                 frameMutex.unlock();
                 emit frameReady(frame);
+            }
+
+            // Capture the secondary cameras while the OpenGL context is still
+            // current (see render()), so Camera::getFrame() can be used to grab
+            // their stream afterwards without a current context (issue #2).
+            for (Camera* cam : cameras)
+            {
+                if (cam != mainCamera && cam->isActive())
+                    cam->toImage();
             }
 #ifdef HAVE_OpenVR
         }

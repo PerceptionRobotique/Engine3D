@@ -104,11 +104,18 @@ namespace MIS
 
     QImage Camera::toImage()
     {
-        QImage image;
         FBOMutex.lock();
-        if (FBO) image = FBO->toImage();
+        if (FBO) frame = FBO->toImage();
         FBOMutex.unlock();
-        return image;
+        return frame;
+    }
+
+    QImage Camera::getFrame()
+    {
+        FBOMutex.lock();
+        QImage copy = frame;
+        FBOMutex.unlock();
+        return copy;
     }
 
     bool Camera::isActive() const

@@ -1,6 +1,8 @@
 #ifndef MODEL3D_H
 #define MODEL3D_H
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <QMutex>
 #include <QVector>
 #include <QOpenGLBuffer>
